@@ -52,6 +52,13 @@ notebooks/
 figures/
 tests/
 
+# R working files — the library is huge and rebuildable from renv.lock.
+renv/library/
+renv/staging/
+.RData
+.Rhistory
+.Rproj.user/
+
 # Private scratch space — never enters an image either.
 .dev/
 

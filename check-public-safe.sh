@@ -84,11 +84,23 @@ else
   echo "OK"
 fi
 
-# --- 5. Is the virtual environment being tracked? -----------------
+# --- 5. Are the language environments being tracked? --------------
+# Both are large, machine-specific, and rebuildable from their lockfiles:
+# .venv/ from requirements.lock.txt, renv/library/ from renv.lock.
 echo -n "5. .venv not tracked ................ "
 if git ls-files | grep -qE '^\.venv/'; then
   echo "FAIL"
   echo "   Fix: git rm -r --cached .venv   then commit."
+  problems=$((problems+1))
+else
+  echo "OK"
+fi
+
+echo -n "5b. renv/library not tracked ........ "
+if git ls-files | grep -qE '^renv/(library|staging|sandbox)/'; then
+  echo "FAIL"
+  echo "   The R package library is hundreds of MB and rebuildable from renv.lock."
+  echo "   Fix: git rm -r --cached renv/library   then commit."
   problems=$((problems+1))
 else
   echo "OK"

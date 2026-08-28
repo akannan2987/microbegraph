@@ -40,6 +40,32 @@ Thumbs.db
 desktop.ini
 *~
 
+# --- R -----------------------------------------------------------
+# The installed package library: large, machine-specific, and fully
+# rebuildable from renv.lock. Exactly like .venv/ for Python.
+renv/library/
+renv/staging/
+renv/python/
+renv/sandbox/
+
+# A saved snapshot of your entire R workspace. Never commit this: it can
+# silently contain data or credentials, and it makes scripts appear to work
+# when they only work on YOUR machine.
+.RData
+.Rhistory
+.Rapp.history
+
+# RStudio's per-user state (open tabs, pane sizes)
+.Rproj.user/
+
+# Output from R CMD check
+*.Rcheck/
+
+# NOT ignored, and committed on purpose:
+#   microbegraph.Rproj  — so everyone gets the same project settings
+#   renv.lock           — so everyone can rebuild the same package versions
+#   .Rprofile           — so renv activates automatically on open
+
 # Private scratch space — personal working notes, never published.
 # Anything in here stays on your machine only.
 .dev/

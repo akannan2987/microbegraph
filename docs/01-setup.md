@@ -1149,10 +1149,36 @@ __pycache__/
 .ipynb_checkpoints/
 
 # Operating-system clutter
-.DS_Store          # macOS
-Thumbs.db          # Windows
-desktop.ini        # Windows
-*~                 # Linux editor backups
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+
+# --- R -----------------------------------------------------------
+# The installed package library: large, machine-specific, and fully
+# rebuildable from renv.lock. Exactly like .venv/ for Python.
+renv/library/
+renv/staging/
+renv/python/
+renv/sandbox/
+
+# A saved snapshot of your entire R workspace. Never commit this: it can
+# silently contain data or credentials, and it makes scripts appear to work
+# when they only work on YOUR machine.
+.RData
+.Rhistory
+.Rapp.history
+
+# RStudio's per-user state (open tabs, pane sizes)
+.Rproj.user/
+
+# Output from R CMD check
+*.Rcheck/
+
+# NOT ignored, and committed on purpose:
+#   microbegraph.Rproj  — so everyone gets the same project settings
+#   renv.lock           — so everyone can rebuild the same package versions
+#   .Rprofile           — so renv activates automatically on open
 
 # Private scratch space — personal working notes, never published.
 # Anything in here stays on your machine only.
@@ -1289,11 +1315,23 @@ else
   echo "OK"
 fi
 
-# --- 5. Is the virtual environment being tracked? -----------------
+# --- 5. Are the language environments being tracked? --------------
+# Both are large, machine-specific, and rebuildable from their lockfiles:
+# .venv/ from requirements.lock.txt, renv/library/ from renv.lock.
 echo -n "5. .venv not tracked ................ "
 if git ls-files | grep -qE '^\.venv/'; then
   echo "FAIL"
   echo "   Fix: git rm -r --cached .venv   then commit."
+  problems=$((problems+1))
+else
+  echo "OK"
+fi
+
+echo -n "5b. renv/library not tracked ........ "
+if git ls-files | grep -qE '^renv/(library|staging|sandbox)/'; then
+  echo "FAIL"
+  echo "   The R package library is hundreds of MB and rebuildable from renv.lock."
+  echo "   Fix: git rm -r --cached renv/library   then commit."
   problems=$((problems+1))
 else
   echo "OK"
@@ -2185,6 +2223,11 @@ That's a genuinely substantial foundation, and it transfers to every project you
 ever build — not just this one.
 
 ---
+
+> **From here on, every change you make ends with the same short sequence.**
+> The commit-message convention, a ready-written message for every phase, and
+> what to do when something goes wrong are all in
+> [`GIT-WORKFLOW.md`](GIT-WORKFLOW.md). Keep it open in a tab.
 
 **Next:** [`02-ontology-and-data-model.md`](02-ontology-and-data-model.md) — the
 rulebook that decides what may become a dot and what may become an arrow, and
