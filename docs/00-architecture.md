@@ -666,6 +666,8 @@ and the honest alternative.
 | **requests** | The standard Python library for fetching things over the internet | Simple, universal, and does exactly one job well | Heavier HTTP frameworks add complexity we'd never use |
 | **pandas** | A library for working with tables in Python — "programmable Excel that never gets tired" | The universal shape for tabular data in Python; every other library speaks it | Plain Python lists work but you'd rewrite pandas badly |
 | **Streamlit** | Turns a Python script into a web app | Fastest honest path from analysis to something clickable; free public hosting | **React** gives a polished custom interface at the cost of learning a second language and a build system — roadmap, not core |
+| **R + igraph** | A language built by statisticians, and its graph library | Phase 6 asks "could this pattern have arisen by chance?" — R's tooling for that is more direct and better documented. It also gives an independent second implementation to check the Python results against | Doing the statistics in Python would work; it would just mean one implementation checking itself, which validates nothing |
+| **ggplot2** | R's plotting library, layer by layer | Best-in-class static, publication-quality figures for the docs | `matplotlib` is used for quick Python-side charts; both are kept, each where it's stronger |
 | **pytest** | Runs small automated checks that prove your code does what you claim | Catches your own mistakes before your users do; a graph built by untested code is a graph you can't trust | Python's built-in `unittest` works but is clunkier |
 | **Git + GitHub** | A save-game system for your work, and its online home | The universal standard; the branch model (`master`/`beta`/`develop`) is set up in Phase 0 | Nothing else is worth considering |
 | **venv** | A sealed toolbox of packages belonging to this project only | Stops projects breaking each other; makes the setup reproducible on any machine | **conda** is heavier; **Docker** is a superb answer to a problem we don't have yet |
@@ -757,7 +759,12 @@ The decisions that shaped this architecture, each with its reason. Understanding
 8. **Everything is cross-platform Python.** The project runs identically on
    Windows, macOS, and RHEL 8 Linux, with no compiled dependencies, no
    OS-specific tools, and platform-neutral file paths throughout.
-9. **Containers are an additional path, never a required one.** The whole
+9. **The data format is language-neutral, so the language is a per-task choice.**
+   DuckDB has clients for Python and R, so both read the *same file* with no
+   export step. That is why R can do the statistics without a second copy of the
+   truth existing anywhere. When data lives in a shared, open format, choosing a
+   language stops being a lock-in decision.
+10. **Containers are an additional path, never a required one.** The whole
    application can be packaged and run with one command (Phases 9b and 18, under
    either Docker or Podman) — but the plain `.venv` path stays supported forever,
    so a fresh clone works for someone who doesn't want a container engine at all.

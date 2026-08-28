@@ -30,13 +30,13 @@ attached are more informative than promises.
 
 ## The shape of the plan
 
-Nineteen phases (plus one optional sub-phase), three releases. **Each release is a complete, usable, publishable
+Nineteen phases (plus two optional sub-phases, 8b and 9b), three releases. **Each release is a complete, usable, publishable
 thing on its own** — that's the design constraint. If the project stopped at 1.0
 it would still be finished, not abandoned.
 
 | Release | What it is | Phases | The question it answers |
 |---|---|---|---|
-| **1.0 — the science** | A working knowledge graph, statistically validated, with machine learning and a public app | 1–9 (+9b) | *Does the idea work, and can I prove it honestly?* |
+| **1.0 — the science** | A working knowledge graph, statistically validated, with machine learning and a public app | 1–9 (+8b, 9b) | *Does the idea work, and can I prove it honestly?* |
 | **2.0 — the platform** | The same thing, rebuilt on production data infrastructure | 10–13 | *Would this survive contact with a real data team?* |
 | **3.0 — the product** | A real API, a real frontend, AI integrations, and the whole stack containerized | 14–19 | *Can other people and other systems actually use it?* |
 
@@ -63,7 +63,7 @@ the others, that's said plainly rather than hidden.
 
 ---
 
-# Release 1.0 — the science (Phases 1–9, plus optional 9b)
+# Release 1.0 — the science (Phases 1–9, plus optional 8b and 9b)
 
 *The complete data-science project: real public data, an ontology-governed graph,
 statistical validation, machine learning, and a deployed app.*
@@ -232,7 +232,10 @@ Agreement between two independent implementations is itself a validation.
 **New concepts:** null models, permutation testing, p-values in a network context,
 degree-preserving rewiring, cross-implementation validation.
 
-**New tools:** R, `igraph`, `renv` (R's sealed toolbox, the equivalent of `.venv`).
+**New tools:** R, RStudio, `igraph`, `DBI` + `duckdb` (reading the project
+database from R), `dplyr`, `ggplot2` (the publication-quality figures in
+`docs/img/`), and `renv` — R's sealed toolbox, the exact counterpart of `.venv`,
+with `renv.lock` playing the role of `requirements.lock.txt`.
 
 **Effort:** ~6–8 hours.
 
@@ -301,6 +304,145 @@ thing you must design against misuse.
 reads precomputed artifacts rather than recomputing.
 
 **Effort:** ~10–12 hours.
+
+---
+
+## Phase 8b — The same app in R Shiny (optional)
+
+**What gets built:** the core of the Streamlit app rebuilt in **R Shiny** — pick a
+pathogen, see candidate microbes, trace the evidence chain — reading the *same*
+DuckDB file, producing the *same* answers, in a different language.
+
+### What Shiny is, in plain words
+
+**Shiny** is R's equivalent of Streamlit: a library that turns R code into a web
+application with dropdowns, sliders, tables and plots, without writing any web
+code yourself.
+
+*Everyday parallel:* Streamlit and Shiny are two brands of flat-pack furniture.
+Both give you a wardrobe from a box and an Allen key. They assemble differently
+and the finished pieces have different strengths — but you did not have to be a
+carpenter for either.
+
+### Why build the same thing twice? That sounds like waste
+
+It is the opposite of waste, for three specific reasons.
+
+**1. It is the clearest comparison you can make.** Comparing languages by reading
+about them teaches you very little. Comparing them by building *the identical
+thing* in both, with the same data and the same requirements, teaches you exactly
+where each one is comfortable and where it fights you. Everything except the
+language is held constant — which is, incidentally, how a controlled experiment
+works.
+
+*Everyday parallel:* you learn far more about two knives by chopping the same
+onion with each than by reading two knife reviews.
+
+**2. It proves the architecture was right.** Remember the design decision from
+[`00-architecture.md`](00-architecture.md): the *app* is a thin frontend, and all
+the real work lives in the backend and the database. If that separation is
+genuine, a second frontend in a completely different language should be
+straightforward — it just reads the same tables and draws them.
+
+**If it turns out to be hard, that is a finding.** It would mean logic had leaked
+into the Streamlit app that should have been in the shared layer. Building the
+second app is therefore a *test of the first one's design*, and it is the kind of
+test you cannot fake.
+
+**3. It settles a real argument.** "Streamlit or Shiny?" is a question teams
+genuinely disagree about, usually without either side having built the same thing
+in both. Having done it, you can answer from evidence rather than preference.
+
+### The two models of how an app updates
+
+This is the heart of the comparison, and it is worth understanding properly
+because it explains almost every difference you will notice.
+
+**Streamlit re-runs the whole script.** Every time you touch a control, Streamlit
+executes your script from the first line to the last, with the new value in
+place. Simple to reason about — there is only one path through the code — and
+occasionally wasteful, because it redoes work that did not need redoing.
+
+*Everyday parallel:* a chef who, whenever an order changes, throws out the dish
+and cooks it again from raw ingredients. Never confusing, sometimes slow.
+
+**Shiny recalculates only what changed.** Shiny builds a dependency map of your
+outputs: this chart depends on that dropdown, that table depends on this slider.
+Change one input and only the outputs downstream of it recompute. This is called
+**reactive programming**.
+
+*Everyday parallel:* a spreadsheet. Change cell B2 and only the formulas that
+reference B2 update — the rest of the sheet sits still. You have used reactive
+programming for years without calling it that.
+
+**The trade-off, stated fairly:** Shiny's model is more efficient and scales
+better to complex applications. It is also harder to learn, because the code no
+longer runs top to bottom and you must think in terms of dependencies rather than
+sequence. Streamlit's model is easier to hold in your head and does more work
+than strictly necessary.
+
+**Neither is correct.** They are different answers to the same question, and
+knowing *why* each was chosen is worth more than knowing either syntax.
+
+### The other structural difference: `ui` and `server`
+
+Every Shiny app has exactly two halves, and this catches Streamlit users out:
+
+- **`ui`** — *what the page looks like.* Which controls exist, where they sit.
+- **`server`** — *what the app does.* How inputs become outputs.
+
+Streamlit mixes these freely: you write a slider and then immediately use its
+value, on the next line.
+
+*Everyday parallel:* Shiny is a restaurant with a printed menu (the `ui`) and a
+kitchen (the `server`) — designed separately, connected by order numbers.
+Streamlit is a food truck where you point at what you want and watch it being
+made. Both feed you. One separates concerns; one keeps everything in view.
+
+**Which is better?** For a small app, Streamlit's directness wins. As an app
+grows, Shiny's separation stops it becoming a tangle. That is a genuine
+engineering pattern — separating presentation from logic — and meeting it here,
+in a small app you already understand, is the easiest place to learn it.
+
+### What gets built, concretely
+
+| Piece | Streamlit (Phase 8) | Shiny (Phase 8b) |
+|---|---|---|
+| Read the database | `duckdb.connect()` | `DBI::dbConnect(duckdb::duckdb())` |
+| Dropdown | `st.selectbox()` | `selectInput()` in `ui` |
+| Table | `st.dataframe()` | `renderDT()` in `server` |
+| Chart | `plotly` | `ggplot2` + `renderPlot()` |
+| Network view | `pyvis` | `visNetwork` |
+| Run it | `streamlit run app.py` | `shiny::runApp("shiny/")` |
+
+The file is `shiny/app.R` — Shiny's convention is one file with `ui` and `server`
+in it, which keeps a small app in one place.
+
+### Deploying it
+
+**shinyapps.io** has a free tier from the same company that makes RStudio: a
+handful of applications and a monthly quota of active hours, which is ample for a
+portfolio project. Publishing is one command from RStudio. The free tier's limits
+and signup steps are checked and written out when this phase is built, since these
+change.
+
+### Honest costs
+
+- **~8–10 hours**, most of it learning reactivity rather than writing code.
+- **A second app to keep in step** when the shared layer changes. Real, and
+  manageable because both are thin.
+- **A second deployment** to maintain, if you publish both.
+
+### What you will be able to say afterwards
+
+Not "I know R and Python" — plenty of people say that. Instead: *"I built the same
+application in Streamlit and in Shiny, over one shared database, and here is
+specifically where each one was better and why."* That is a concrete, evidenced
+statement about two ecosystems, and very few people have earned the right to make
+it.
+
+**Effort:** ~8–10 hours. **Prerequisites:** Phase 8 (the Streamlit app) and
+[`R-SETUP.md`](R-SETUP.md).
 
 ---
 
@@ -374,8 +516,9 @@ guide: [`CONTAINERIZATION.md`](CONTAINERIZATION.md).
 At this point the repository contains: five real public data sources, an
 ontology-governed multi-omics knowledge graph, entity resolution with a ledger,
 statistical validation against a null model, machine learning with honest
-evaluation, a deployed public app, an AI answer layer, optionally a
-runnable container image, and a full beginner tutorial. **That is a finished
+evaluation, a deployed public app, an AI answer layer, optionally the
+same app rebuilt in R Shiny and a runnable container image, and a full beginner
+tutorial. **That is a finished
 thing.** Everything below is genuine improvement,
 not completion.
 
@@ -802,10 +945,11 @@ Realistic at **4–5.5 hours per week**, assuming some weeks are missed:
 | Release | Phases | Hours | Calendar |
 |---|---|---|---|
 | 1.0 — the science | 1–9 | ~75–90 | ~16–20 weeks |
+| 1.0 — the same app in Shiny *(optional)* | 8b | ~8–10 | ~2 weeks |
 | 1.0 — one container *(optional)* | 9b | ~4–5 | ~1 week |
 | 2.0 — the platform | 10–13 | ~35–42 | ~8–10 weeks |
 | 3.0 — the product | 14–19 | ~52–62 | ~12–14 weeks |
-| **Total** | **19 (+9b)** | **~166–199** | **~37–45 weeks** |
+| **Total** | **19 (+8b, 9b)** | **~174–209** | **~39–47 weeks** |
 
 **How to read that honestly.** It is a substantial commitment — roughly a
 part-time year. Three things make it manageable:
