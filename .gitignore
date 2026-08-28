@@ -1,0 +1,49 @@
+# ---------------------------------------------------------------
+# MicrobeGraph — what Git must never publish
+# ---------------------------------------------------------------
+
+# Secrets — API keys, tokens, anything private. NEVER commit these.
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+*.pem
+*.key
+
+# The virtual environment — rebuildable from requirements.txt,
+# large, and machine-specific. Never commit it.
+.venv/
+venv/
+env/
+
+# Data — rebuilt by the pipeline. Keeping it out of Git is the proof
+# the pipeline works, and keeps the repository small.
+data/
+*.duckdb
+*.duckdb.wal
+*.db
+*.sqlite
+
+# Python's own working files
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Operating-system clutter
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+
+# Private scratch space — personal working notes, never published.
+# Anything in here stays on your machine only.
+.dev/
+
+# Editor settings
+.vscode/
+.idea/

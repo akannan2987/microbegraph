@@ -1,0 +1,30 @@
+# MicrobeGraph — extra dependencies for Phase 7 (graph machine learning)
+#
+# Install ONLY when you reach Phase 7:
+#     pip install -r requirements-ml.txt
+#
+# WHY THESE ARE SEPARATE:
+#   These packages contain compiled C code, which makes them the most fragile
+#   part of the stack — they are always the first to break on a new Python
+#   release, because someone has to rebuild and test them for it. Nothing in
+#   Phases 1-6 uses them.
+#
+#   Keeping them out of requirements.txt means a beginner can always set the
+#   project up and complete six phases, even during the months after a new
+#   Python version appears when these libraries have not caught up yet.
+#
+#   This is a general lesson worth taking away: separate the dependencies you
+#   need to START from the dependencies you need for one LATER feature. It
+#   makes a project far easier for other people to pick up.
+#
+# Version ranges are explained at the top of requirements.txt.
+
+gensim>=4.3,<5           # the word2vec engine underneath node2vec
+node2vec>=0.4.6,<0.6     # turns each node's position in the graph into numbers
+
+# IF THESE FAIL TO INSTALL:
+#   1. Check your Python version:  python --version
+#      gensim needs 3.10-3.12. It does not yet build on 3.13 or 3.14.
+#   2. If you are on a newer Python, Phase 7 documents a pure-scikit-learn
+#      fallback that computes embeddings without gensim. It is slower on large
+#      graphs and perfectly adequate at this project's size.

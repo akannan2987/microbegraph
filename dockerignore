@@ -1,0 +1,63 @@
+# ---------------------------------------------------------------
+# MicrobeGraph — what the container build must NOT receive
+#
+# WHY THIS EXISTS:
+#   When you run a build, the engine first sends this whole folder to
+#   the build process. Without filtering, that means .venv/ (hundreds of
+#   MB), data/ (potentially gigabytes), and .git/ — all copied for nothing.
+#
+#   It is also a SECURITY file. A secret that reaches an image is baked
+#   into a layer, and deleting it in a later layer does NOT remove it.
+#   Anything inside a published image is effectively public.
+#
+# Read by BOTH Docker and Podman.
+# ---------------------------------------------------------------
+
+# Rebuilt inside the container from requirements.txt — and it would be the
+# WRONG platform's binaries anyway (macOS packages inside a Linux image).
+.venv/
+venv/
+env/
+
+# Secrets — must NEVER be baked into an image.
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+*.pem
+*.key
+
+# Rebuilt by the pipeline; often gigabytes.
+data/
+*.duckdb
+*.duckdb.wal
+*.db
+*.sqlite
+
+# Version history — not needed at runtime, often the largest folder.
+.git/
+.github/
+
+# Python working files
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Not needed to RUN the app (docs are for humans reading the repo).
+docs/
+notebooks/
+figures/
+tests/
+
+# Private scratch space — never enters an image either.
+.dev/
+
+# Editor and operating-system clutter
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
