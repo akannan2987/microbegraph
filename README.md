@@ -24,6 +24,14 @@ which molecule acts against which crop disease, into a single graph you can
 walk, query, and ask questions of in plain English — built from scratch, in
 public, fully explained.**
 
+> **In one sentence:** an open, reproducible knowledge graph that connects curated
+> biosynthetic gene cluster data to crop disease outcomes, with evidence
+> provenance on every relationship — including a transparently hand-curated bridge
+> for the literature-derived links that no public database provides.
+>
+> *What that claim deliberately does not include, and why, is set out in*
+> [`docs/PRIOR-ART.md`](docs/PRIOR-ART.md).
+
 > Every term used anywhere in this repo — biological or technical — is defined
 > in plain language in [`docs/GLOSSARY.md`](docs/GLOSSARY.md). If a word isn't
 > there, that's a documentation bug.
@@ -40,6 +48,7 @@ public, fully explained.**
 - [Build log](#build-log) — every phase, linked to its guide, with status
 - [**The tutorial, in order**](#the-tutorial-in-order) — the documents that teach every step from a blank laptop
 - [Roadmap](#roadmap) — three releases, nineteen phases, each tool justified
+- [How this differs from existing work](#how-this-differs-from-existing-work)
 - [About the data (honesty notes)](#about-the-data-honesty-notes)
 - [Repository map](#repository-map) — every file, annotated
 - [How to run](#how-to-run)
@@ -305,6 +314,7 @@ place, and for the honest note on which one is the weakest fit.
 |---|---|---|
 | — | [Glossary — every term in plain words](docs/GLOSSARY.md) | 🔨 living document |
 | — | [Git workflow — commit messages and the branch flow](docs/GIT-WORKFLOW.md) | ✅ |
+| — | [Prior art — related work, and what this does not claim](docs/PRIOR-ART.md) | ✅ |
 | 0 | [Architecture — how it all fits together](docs/00-architecture.md) | ✅ |
 | 0 | [Environment setup from a blank laptop](docs/01-setup.md) | ✅ |
 | 0 | [The ontology & data model — the rulebook](docs/02-ontology-and-data-model.md) | ✅ |
@@ -365,6 +375,7 @@ taught in `docs/`, written for a complete beginner, with every term defined
 | 01 | [Setup](docs/01-setup.md) | Blank laptop → working workshop on Windows, macOS or RHEL 8 (Python, Git, `.venv`, GitHub, the `master`/`beta`/`develop` model) |
 | 02 | [Ontology & data model](docs/02-ontology-and-data-model.md) | What an ontology is; nine node types, ten edge types; CURIE identifiers; evidence on every arrow |
 | — | [**Roadmap**](docs/ROADMAP.md) | The nineteen phases, three releases, and why each tool earns its place |
+| — | [**Prior art**](docs/PRIOR-ART.md) | What already exists, how this differs, and what it does not claim |
 | — | [**Git workflow**](docs/GIT-WORKFLOW.md) | The commit message convention, the branch flow, and what to do when something goes wrong |
 | — | [R setup](docs/R-SETUP.md) | R, RStudio and `renv` alongside Python; reading the same DuckDB file from both languages |
 | — | [Containers](docs/CONTAINERS.md) | Docker vs Podman vs no containers at all — choosing a runtime |
@@ -429,6 +440,52 @@ attached say more than promises. Each phase above states what it adds, what it
 costs, and — for the one weakest-justified tool — that it is the weakest.
 
 ---
+## How this differs from existing work
+
+This project sits on top of a mature ecosystem, and it's worth being precise
+about what is new here and what isn't. A full survey — with references — is in
+[`docs/PRIOR-ART.md`](docs/PRIOR-ART.md).
+
+**What already exists, and is better at its own job:** **MIBiG** curates
+experimentally validated gene clusters; **antiSMASH** predicts them at genome
+scale; **BiG-SCAPE** builds cluster similarity networks; and **SocialGene** builds
+large-scale Neo4j knowledge graphs linking clusters, genomes, chemicals and
+mass-spectrometry data across hundreds of thousands of genomes. For mining
+biosynthetic potential at scale, use those. MicrobeGraph consumes some of them and
+does not compete with any.
+
+**What is uncommon here**, stated modestly:
+
+1. **The chain continues past the compound.** Every system above stops at
+   chemistry. This one continues to *pathogen* and *crop* — which is only possible
+   because of a small, cited, hand-curated bridge, and which is exactly why nobody
+   else's system does it. That knowledge exists in abundance, but it lives in the
+   prose of papers, not in any queryable table.
+2. **Evidence level is a first-class, filterable property.** Every edge records how
+   strongly it is known; the loader *refuses* uncited curated facts; predicted
+   edges live in their own layer, excluded from evidence chains by default.
+3. **It is open, reproducible, and taught.** Commercial platforms are closed;
+   academic tools assume you are already a bioinformatician. This repository is
+   both a working system and a beginner's tutorial for rebuilding it.
+
+**What it does not claim:** not a new scientific method — knowledge graphs, entity
+resolution, link prediction and GraphRAG are all established, and this project
+applies them. Not a discovery: no suggested organism has been shown to control any
+disease. Not a comprehensive biocontrol database: the bridge layer is dozens of
+rows, not thousands. Not validated in a greenhouse or a field.
+
+**So the honest one-sentence claim is:** *an open, reproducible knowledge graph
+that connects curated biosynthetic gene cluster data to crop disease outcomes,
+with evidence provenance on every relationship — including a transparently
+hand-curated bridge for the literature-derived links that no public database
+provides.*
+
+*A smaller true claim is worth more than a larger one that doesn't survive a
+question. The full boundary, clause by clause, is set out in
+[`docs/PRIOR-ART.md`](docs/PRIOR-ART.md).*
+
+---
+
 ## About the data (honesty notes)
 
 - **Most of the graph is real, and every arrow says where it came from.** The
@@ -501,6 +558,7 @@ microbegraph/
 │   ├── 01-setup.md                  ← blank laptop → working workshop             ✅
 │   ├── 02-ontology-and-data-model.md← the rulebook: nodes, edges, evidence        ✅
 │   ├── ROADMAP.md               ← 19 phases + 2 optional, every tool justified ✅
+│   ├── PRIOR-ART.md             ← related work + what this does NOT claim     ✅
 │   ├── GIT-WORKFLOW.md          ← commit messages + the branch flow           ✅
 │   ├── R-SETUP.md               ← R, RStudio, renv alongside Python           ✅
 │   ├── CONTAINERS.md            ← Docker · Podman · Prefect compared          ✅
