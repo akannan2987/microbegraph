@@ -1046,12 +1046,12 @@ system you'll ever meet.
 ## 19. Committing this phase
 
 ```bash
-# safety first, before staging anything
+git switch develop
+git add -A                    # stage first, so the gate can see the new files
+
 pytest -q                     # once tests exist
 ./check-public-safe.sh        # must print "SAFE TO PUSH"
 
-git switch develop
-git add -A
 git commit -m "feat: containerize the application (Docker + Podman)"
 git push origin develop develop:beta develop:master
 

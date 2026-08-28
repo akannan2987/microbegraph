@@ -7,8 +7,13 @@
 #   is ACTUALLY tracking, right now. Two independent checks, because a
 #   secret published once is public forever.
 #
-# USAGE:  ./check-public-safe.sh     (run before every push)
-#         Windows:  bash check-public-safe.sh
+# USAGE:  git add -A  &&  ./check-public-safe.sh      (run before every push)
+#         Windows:  git add -A ; bash check-public-safe.sh
+#
+# RUN "git add -A" FIRST. This script inspects what Git is TRACKING
+# (git ls-files). A brand-new file that has never been staged is invisible
+# to Git, and therefore invisible to this check. Staging first means the
+# gate inspects exactly what you are about to publish.
 # ---------------------------------------------------------------
 
 set -uo pipefail

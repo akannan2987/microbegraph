@@ -504,10 +504,11 @@ so the tool is a less important choice than it first appears.
 ## Committing this phase
 
 ```bash
+git switch develop
+git add -A                    # stage first, so the gate can see the new files
+
 ./check-public-safe.sh        # must print "SAFE TO PUSH"
 
-git switch develop
-git add -A
 git commit -m "docs: choose and document the container runtime"
 git push origin develop develop:beta develop:master
 

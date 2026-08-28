@@ -84,12 +84,23 @@ except (subprocess.CalledProcessError, FileNotFoundError):
     check("git installed", False, "Install Git. See Step 3.")
 
 # --- 5. Branches exist --------------------------------------------------
+# Only master and develop are REQUIRED locally. The push command
+#     git push origin develop develop:beta develop:master
+# updates remote beta straight from local develop, so a local beta branch is
+# never needed. Keeping one is a matter of taste, not correctness.
 try:
-    branches = subprocess.run(["git", "branch"], capture_output=True,
-                              text=True).stdout
-    for branch in ["master", "beta", "develop"]:
-        check(f"branch: {branch}", branch in branches,
+    local = subprocess.run(["git", "branch"], capture_output=True,
+                           text=True).stdout
+    for branch in ["master", "develop"]:
+        check(f"local branch: {branch}", branch in local,
               f"Create it: git branch {branch}. See Step 10.")
+
+    # The remote is what actually matters for beta.
+    remote = subprocess.run(["git", "branch", "-r"], capture_output=True,
+                            text=True).stdout
+    for branch in ["master", "beta", "develop"]:
+        check(f"remote branch: origin/{branch}", f"origin/{branch}" in remote,
+              f"Push it: git push origin develop:{branch}. See Step 10.")
 except FileNotFoundError:
     pass
 

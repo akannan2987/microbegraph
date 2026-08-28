@@ -842,11 +842,11 @@ You've finished this document when you can answer these without scrolling up:
 ## Committing this phase
 
 ```bash
-# safety first
+git switch develop
+git add -A                    # stage first, so the gate can see the new files
+
 ./check-public-safe.sh        # must print "SAFE TO PUSH"
 
-git switch develop
-git add -A
 git commit -m "feat: add the ontology and data model (nodes, edges, evidence)"
 git push origin develop develop:beta develop:master
 

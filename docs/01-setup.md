@@ -461,19 +461,59 @@ git config --global user.email "your.email@example.com"
 > address like `12345678+username@users.noreply.github.com`. Use that here
 > instead. You can change this later at any time.
 
-Two more settings that prevent classic beginner headaches:
+One more setting worth having:
 
 ```bash
 # Make "master" the default branch name for new repositories.
 # (Git's historical default; some newer installs default to "main".
 #  This project uses master, so set it explicitly.)
 git config --global init.defaultBranch master
-
-# Only fast-forward when pulling, instead of silently creating merge commits.
-# "Fast-forward" = "just move my pointer along the line" — the clean case.
-# If it can't, Git stops and tells you, instead of inventing history.
-git config --global pull.ff only
 ```
+
+### Optional: the fast-forward-only preference
+
+There's one more setting some people like, and it's genuinely **optional** —
+decide for yourself:
+
+```bash
+git config pull.ff only
+```
+
+**What it does.** "Fast-forward" means Git can update your branch by simply
+moving its pointer along an existing line, with nothing to reconcile — the clean
+case. `pull.ff only` says: *if a pull isn't that clean, stop and tell me rather
+than inventing a merge commit I didn't ask for.*
+
+*Everyday parallel:* the difference between a colleague adding paragraphs to the
+end of your draft (just accept it) and a colleague rewriting your middle section
+while you rewrote it too (someone has to decide what the document says). The
+setting says "in the second case, ask me."
+
+**Why it's optional here:** every `pull` in this project's documented workflow
+already passes the flag explicitly —
+
+```bash
+git pull --ff-only origin master
+```
+
+— so the config adds nothing to *this* project. It only helps in repositories
+where you might forget the flag.
+
+**Choosing a scope.** Git config has three levels, and the most specific wins:
+
+| Command | Applies to | When you'd want it |
+|---|---|---|
+| `git config pull.ff only` | **This repository only** (`.git/config`) | You like the safety net here but don't want to change how Git behaves elsewhere |
+| `git config --global pull.ff only` | Your whole user account | You want it everywhere, always |
+| *(don't set it)* | — | Perfectly fine; the workflow's explicit `--ff-only` covers you |
+
+*Everyday parallel:* a house rule versus a rule for one room. "No shoes in the
+flat" versus "no shoes in the bedroom."
+
+**A recommendation, not a requirement:** the repository-scoped version is the
+comfortable middle ground — protection where you're working, no side effects on
+your other projects. But skipping it entirely is a legitimate choice, and this
+tutorial works either way.
 
 <details>
 <summary><b>🪟 Windows only — one extra setting</b></summary>
@@ -500,8 +540,12 @@ git config --global --list
 user.name=Your Name
 user.email=your.email@example.com
 init.defaultbranch=master
-pull.ff=only
 ```
+
+(You may see other lines too — Git installations and tools add their own
+settings. That's normal. If you set `pull.ff` globally above, it appears here;
+if you set it per-repository, it won't — check with `git config --list --local`
+from inside the project instead.)
 
 ✅ **Checkpoint.** Your name and email appear.
 
@@ -1168,8 +1212,13 @@ Create `check-public-safe.sh` in the project root:
 #   is ACTUALLY tracking, right now. Two independent checks, because a
 #   secret published once is public forever.
 #
-# USAGE:  ./check-public-safe.sh     (run before every push)
-#         Windows:  bash check-public-safe.sh
+# USAGE:  git add -A  &&  ./check-public-safe.sh      (run before every push)
+#         Windows:  git add -A ; bash check-public-safe.sh
+#
+# RUN "git add -A" FIRST. This script inspects what Git is TRACKING
+# (git ls-files). A brand-new file that has never been staged is invisible
+# to Git, and therefore invisible to this check. Staging first means the
+# gate inspects exactly what you are about to publish.
 # ---------------------------------------------------------------
 
 set -uo pipefail
@@ -1354,19 +1403,31 @@ git branch
 ```
 The `*` marks where you are.
 
-Create the other two from `master`, so all three start identical:
+Create `develop` from `master`:
 
 ```bash
-git branch beta
 git branch develop
 ```
 
-Push them so GitHub knows about them:
+Now publish all three branches to GitHub. Note that `beta` is created **on the
+remote only** — pushed straight from `develop`:
 
 ```bash
-git push -u origin beta
 git push -u origin develop
+git push origin develop:beta
+git push origin develop:master
 ```
+
+> **Why no local `beta`?** Because you never work on it. The daily push command
+> (below) sends local `develop` to remote `beta` directly, so a local copy would
+> just be a branch you'd have to remember to keep in step — an extra thing to go
+> stale for no benefit.
+>
+> *Everyday parallel:* you keep a working draft on your desk and email copies to
+> two people. You don't need a third copy on your desk labelled "the one I
+> emailed to Sam."
+>
+> Keeping a local `beta` is harmless if you prefer it. It just isn't needed.
 
 *What's `origin`?* Git's default nickname for "the repository I cloned from" —
 here, your GitHub copy. `-u` sets it as the default destination so later pushes
@@ -1381,13 +1442,12 @@ git switch develop
 Switched to branch 'develop'
 ```
 
-Confirm all three exist:
+Confirm the layout:
 
 ```bash
 git branch -a
 ```
 ```
-  beta
 * develop
   master
   remotes/origin/beta
@@ -1395,8 +1455,21 @@ git branch -a
   remotes/origin/master
 ```
 
-The `remotes/origin/*` entries are GitHub's copies. Six lines = three branches,
-each in two places. ✅
+Two local branches, three on the remote. The `remotes/origin/*` entries are
+GitHub's copies. ✅
+
+A useful variant shows which remote branch each local one tracks:
+
+```bash
+git branch -vv
+```
+```
+* develop b9c3295 [origin/develop] chore: initial project structure
+  master  b9c3295 [origin/master] chore: initial project structure
+```
+
+The name in square brackets is the branch's **upstream** — where a bare
+`git push` or `git pull` would go. Both are correctly paired.
 
 ### The push that updates all three at once
 
@@ -1435,7 +1508,8 @@ git switch develop
 laptop's. Without the sync-back, your local `master` slowly drifts behind and
 one day confuses you. `--ff-only` means "only update if it's a clean
 fast-forward; if it isn't, stop and tell me" — so Git can never silently invent
-a merge you didn't ask for.
+a merge you didn't ask for. **The flag is written into the command on purpose**,
+so this works whether or not you set the optional `pull.ff` config earlier.
 
 ---
 
@@ -1467,15 +1541,7 @@ nothing added to commit but untracked files present
 Read this output every time before committing. It's how you notice you're about
 to commit something you didn't mean to.
 
-### 2. Run the safety gate
-
-```bash
-./check-public-safe.sh      # Windows: bash check-public-safe.sh
-```
-
-Must say `SAFE TO PUSH`. If not, fix what it names and re-run.
-
-### 3. Stage the changes
+### 2. Stage the changes
 
 ```bash
 git add -A
@@ -1485,6 +1551,28 @@ git add -A
 
 *Everyday example:* putting items in a shopping basket. Nothing's bought yet —
 you're choosing what goes in this trip. `-A` means "everything that changed".
+
+### 3. Run the safety gate
+
+```bash
+./check-public-safe.sh      # Windows: bash check-public-safe.sh
+```
+
+Must say `SAFE TO PUSH`. If not, fix what it names and re-run.
+
+> **Why staging comes first — this ordering matters.** The gate inspects what
+> Git is *tracking*, using `git ls-files`. A brand-new file that has never been
+> staged is invisible to Git, and therefore invisible to the gate. Run the check
+> before staging and you're inspecting the *previous* state of the repository,
+> not the one you're about to publish.
+>
+> *Everyday parallel:* checking your bag before you've finished packing it.
+>
+> If the gate fails, take the offending file back out of the basket and fix it:
+> ```bash
+> git restore --staged path/to/file      # unstage, keeping the file on disk
+> ```
+> then correct the problem (usually a `.gitignore` entry) and re-run the gate.
 
 ### 4. Commit
 
@@ -1641,12 +1729,23 @@ except (subprocess.CalledProcessError, FileNotFoundError):
     check("git installed", False, "Install Git. See Step 3.")
 
 # --- 5. Branches exist --------------------------------------------------
+# Only master and develop are REQUIRED locally. The push command
+#     git push origin develop develop:beta develop:master
+# updates remote beta straight from local develop, so a local beta branch is
+# never needed. Keeping one is a matter of taste, not correctness.
 try:
-    branches = subprocess.run(["git", "branch"], capture_output=True,
-                              text=True).stdout
-    for branch in ["master", "beta", "develop"]:
-        check(f"branch: {branch}", branch in branches,
+    local = subprocess.run(["git", "branch"], capture_output=True,
+                           text=True).stdout
+    for branch in ["master", "develop"]:
+        check(f"local branch: {branch}", branch in local,
               f"Create it: git branch {branch}. See Step 10.")
+
+    # The remote is what actually matters for beta.
+    remote = subprocess.run(["git", "branch", "-r"], capture_output=True,
+                            text=True).stdout
+    for branch in ["master", "beta", "develop"]:
+        check(f"remote branch: origin/{branch}", f"origin/{branch}" in remote,
+              f"Push it: git push origin develop:{branch}. See Step 10.")
 except FileNotFoundError:
     pass
 
@@ -1730,9 +1829,9 @@ You never have to do this again on this computer.**
 Commit it:
 
 ```bash
-./check-public-safe.sh
 git switch develop
 git add -A
+./check-public-safe.sh
 git commit -m "chore: add setup verification script"
 git push origin develop develop:beta develop:master
 git switch master
@@ -1759,10 +1858,11 @@ Three lines. That's it.
 **Ending a session:**
 
 ```bash
+git add -A                   # stage FIRST — the gate can only see tracked files
+
 pytest -q                    # once tests exist (Phase 1 onward)
 ./check-public-safe.sh       # must say SAFE TO PUSH
 
-git add -A
 git commit -m "feat: describe what you did"
 git push origin develop develop:beta develop:master
 
@@ -2061,7 +2161,8 @@ You've finished setup when **all** of these are true:
 - [ ] `git --version` works and `git config --global --list` shows your identity
 - [ ] You have a GitHub account and a `microbegraph` repository
 - [ ] The repository is cloned into `~/projects/microbegraph`
-- [ ] Three branches exist locally and on GitHub: `master`, `beta`, `develop`
+- [ ] Two local branches: `master` and `develop` (a local `beta` is optional)
+- [ ] Three remote branches: `origin/master`, `origin/beta`, `origin/develop`
 - [ ] `git branch` shows `* develop`
 - [ ] Your prompt shows `(.venv)` when you're working
 - [ ] `pip install -r requirements.txt` completed without errors

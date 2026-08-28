@@ -669,12 +669,12 @@ all three at once, then bring local `master` back in step. Every phase ends with
 exactly this:
 
 ```bash
-# safety first, before staging anything
+git switch develop
+git add -A                    # stage first, so the gate can see the new files
+
 pytest -q                     # once tests exist (Phase 1 on)
 ./check-public-safe.sh        # must print "SAFE TO PUSH"
 
-git switch develop
-git add -A
 git commit -m "clear message describing the change"
 git push origin develop develop:beta develop:master
 
@@ -693,7 +693,8 @@ The push line sends local `develop` to remote `develop` and fast-forwards remote
 `beta` and `master` to match — three branches kept in lock-step with one
 command. The `master` sync-back keeps the local copy consistent with what was
 just pushed. `--ff-only` means "update only if it's clean, otherwise stop and
-warn." Tags are pushed with `--tags` only when a new version is cut. The full
+warn" — written into the command so it applies regardless of your Git
+configuration. Tags are pushed with `--tags` only when a new version is cut. The full
 reasoning and the "if it goes wrong" cases are in
 [`docs/01-setup.md`](docs/01-setup.md).
 
