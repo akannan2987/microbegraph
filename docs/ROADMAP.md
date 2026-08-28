@@ -30,8 +30,12 @@ attached are more informative than promises.
 
 ## The shape of the plan
 
-Nineteen phases (plus two optional sub-phases, 8b and 9b), three releases. **Each release is a complete, usable, publishable
-thing on its own** — that's the design constraint. If the project stopped at 1.0
+**Nineteen numbered phases (1–19), plus two optional sub-phases (8b and 9b)** —
+twenty-one pieces of work in total, grouped into three releases. The design work
+you have already read (architecture, setup, ontology, this roadmap) is Phase 0.
+
+**Each release is a complete, usable, publishable thing on its own** — that's the
+design constraint. If the project stopped at 1.0
 it would still be finished, not abandoned.
 
 | Release | What it is | Phases | The question it answers |

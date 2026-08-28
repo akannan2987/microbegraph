@@ -39,7 +39,7 @@ public, fully explained.**
 - [Results, phase by phase](#results-phase-by-phase) — fills in as each phase completes
 - [Build log](#build-log) — every phase, linked to its guide, with status
 - [**The tutorial, in order**](#the-tutorial-in-order) — the documents that teach every step from a blank laptop
-- [Roadmap](#roadmap) — three releases, eighteen phases, each tool justified
+- [Roadmap](#roadmap) — three releases, nineteen phases, each tool justified
 - [About the data (honesty notes)](#about-the-data-honesty-notes)
 - [Repository map](#repository-map) — every file, annotated
 - [How to run](#how-to-run)
@@ -294,8 +294,9 @@ build log below. **Nothing is shown before it exists.***
 
 ## Build log
 
-Eighteen phases across three releases. **Each release is complete and publishable
-on its own** — see [`ROADMAP.md`](docs/ROADMAP.md) for why each tool earns its
+Nineteen phases across three releases, plus two optional sub-phases (8b and 9b)
+and the design work in Phase 0. **Each release is complete and publishable on its
+own** — see [`ROADMAP.md`](docs/ROADMAP.md) for why each tool earns its
 place, and for the honest note on which one is the weakest fit.
 
 ### Phase 0 — design
@@ -303,10 +304,11 @@ place, and for the honest note on which one is the weakest fit.
 | # | Document | Status |
 |---|---|---|
 | — | [Glossary — every term in plain words](docs/GLOSSARY.md) | 🔨 living document |
+| — | [Git workflow — commit messages and the branch flow](docs/GIT-WORKFLOW.md) | ✅ |
 | 0 | [Architecture — how it all fits together](docs/00-architecture.md) | ✅ |
 | 0 | [Environment setup from a blank laptop](docs/01-setup.md) | ✅ |
 | 0 | [The ontology & data model — the rulebook](docs/02-ontology-and-data-model.md) | ✅ |
-| 0 | [Roadmap — eighteen phases, every tool justified](docs/ROADMAP.md) | ✅ |
+| 0 | [Roadmap — nineteen phases, every tool justified](docs/ROADMAP.md) | ✅ |
 | — | [Containers — Docker · Podman · Prefect, compared](docs/CONTAINERS.md) | ✅ |
 
 ### Release 1.0 — the science
@@ -321,6 +323,7 @@ place, and for the honest note on which one is the weakest fit.
 | 6 | [Statistical validation in R](docs/08-statistical-validation-r.md) | R, `igraph`, `renv`, permutation tests | ⬜ |
 | 7 | [Graph machine learning](docs/09-graph-machine-learning.md) | `scikit-learn`, node2vec, honest evaluation | ⬜ |
 | 8 | [The Streamlit app](docs/10-app-streamlit.md) | Streamlit, read-only SQL console | ⬜ |
+| 8b | [The same app in R Shiny (optional)](docs/10b-app-shiny.md) | Shiny, reactivity, `ggplot2`, `visNetwork` — one database, two frontends | ⬜ |
 | 9 | [Deployment, GraphRAG & release 1.0](docs/11-deployment-graphrag.md) | LLM layer, public URL, v1.0 tag | ⬜ |
 | 9b | [One container (optional)](docs/11b-one-container.md) | Docker/Podman image of the app — one command, no Python needed | ⬜ |
 
@@ -361,7 +364,9 @@ taught in `docs/`, written for a complete beginner, with every term defined
 | 00 | [Architecture](docs/00-architecture.md) | How all the pieces fit together; frontend/backend/database/graph in plain words |
 | 01 | [Setup](docs/01-setup.md) | Blank laptop → working workshop on Windows, macOS or RHEL 8 (Python, Git, `.venv`, GitHub, the `master`/`beta`/`develop` model) |
 | 02 | [Ontology & data model](docs/02-ontology-and-data-model.md) | What an ontology is; nine node types, ten edge types; CURIE identifiers; evidence on every arrow |
-| — | [**Roadmap**](docs/ROADMAP.md) | The eighteen phases, three releases, and why each tool earns its place |
+| — | [**Roadmap**](docs/ROADMAP.md) | The nineteen phases, three releases, and why each tool earns its place |
+| — | [**Git workflow**](docs/GIT-WORKFLOW.md) | The commit message convention, the branch flow, and what to do when something goes wrong |
+| — | [R setup](docs/R-SETUP.md) | R, RStudio and `renv` alongside Python; reading the same DuckDB file from both languages |
 | — | [Containers](docs/CONTAINERS.md) | Docker vs Podman vs no containers at all — choosing a runtime |
 | — | [Containerization](docs/CONTAINERIZATION.md) | Packaging the whole application in a box: images, layers, volumes, networks, compose |
 | — | [Glossary](docs/GLOSSARY.md) | Every term, plain language, by section |
@@ -380,7 +385,10 @@ reason, new concepts, effort estimate, and checkpoint. The short version:
 three-layer multi-omics knowledge graph; entity resolution with a written ledger;
 graph analytics; statistical validation against a null model in R; graph machine
 learning with honest evaluation; a deployed Streamlit app with a GraphRAG answer
-layer. *Complete and publishable on its own.*
+layer — and, optionally, **the same app rebuilt in R Shiny** over the same
+database, which is both the clearest possible language comparison and a real test
+of whether the frontend/backend separation was genuine. *Complete and publishable
+on its own.*
 
 **Release 2.0 — the platform.** The same system rebuilt on production data
 infrastructure: **dbt** (the ontology's validation rules become dbt tests —
@@ -492,7 +500,9 @@ microbegraph/
 │   ├── 00-architecture.md           ← how it all fits together                    ✅
 │   ├── 01-setup.md                  ← blank laptop → working workshop             ✅
 │   ├── 02-ontology-and-data-model.md← the rulebook: nodes, edges, evidence        ✅
-│   ├── ROADMAP.md               ← 19 phases, 3 releases, every tool justified ✅
+│   ├── ROADMAP.md               ← 19 phases + 2 optional, every tool justified ✅
+│   ├── GIT-WORKFLOW.md          ← commit messages + the branch flow           ✅
+│   ├── R-SETUP.md               ← R, RStudio, renv alongside Python           ✅
 │   ├── CONTAINERS.md            ← Docker · Podman · Prefect compared          ✅
 │   ├── CONTAINERIZATION.md      ← packaging the whole app in a box            ✅
 │   ├── 03..11                   ← Release 1.0: ingest, proteins, resolve,
@@ -512,10 +522,11 @@ microbegraph/
 │   ├── ontology.py                  ← the data model in code (node/edge types)    ⬜
 │   ├── fetch.py                     ← the ingestion command (probe / fetch)       ⬜
 │   ├── sources/                     ← one socket, many plugs: MIBiG · PubChem ·
-│   │                                  NCBI · KEGG · curated bridge                ⬜
+│   │                                  NCBI · KEGG · UniProt · curated bridge      ⬜
 │   ├── resolve.py                   ← entity resolution + the resolution ledger   ⬜
 │   ├── build_graph.py               ← nodes/edges → DuckDB → NetworkX             ⬜
 │   ├── analytics.py                 ← paths, centrality, communities              ⬜
+│   ├── embed.py                     ← node2vec embeddings (Phase 7)               ⬜
 │   ├── predict.py                   ← link prediction / candidate ranking         ⬜
 │   ├── sql.py                       ← the read-only SQL console engine            ⬜
 │   └── answer.py                    ← the GraphRAG answer layer (optional)        ⬜
@@ -529,10 +540,32 @@ microbegraph/
 │   └── candidate_rankings.csv       ← predicted links, with scores                ⬜
 │
 ├── app/
-│   └── streamlit_app.py             ← the deployed app (Phases 6–7)               ⬜
+│   └── streamlit_app.py             ← the Streamlit app (Phases 8–9)             ⬜
+│
+├── microbegraph.Rproj               ← RStudio project settings (Phase 6)         ⬜
+├── renv.lock                        ← exact R package versions (Phase 6)         ⬜
+│
+├── R/                               ← the statistical validation layer
+│   ├── explore.R                    ← read the project DuckDB file from R        ⬜
+│   └── validate_graph.R             ← igraph cross-check + permutation tests     ⬜
+│
+├── shiny/                           ← the R frontend (Phase 8b, optional)
+│   └── app.R                        ← the same app in Shiny: ui + server         ⬜
+│
+├── dbt/                             ← Release 2.0: the ontology as tested SQL
+│   ├── models/                      ← staging → intermediate → nodes/edges       ⬜
+│   └── models/schema.yml            ← the validation rules, as dbt tests         ⬜
+│
+├── airflow/                         ← Release 2.0: the orchestrated pipeline
+│   └── dags/microbegraph_dag.py     ← 5 fetches → resolve → build → test         ⬜
+│
+├── api/                             ← Release 3.0: the shared service layer
+│   └── main.py                      ← FastAPI: paths, ranking, query             ⬜
+│
+├── frontend/                        ← Release 3.0: React + TypeScript            ⬜
 │
 ├── mcp/
-│   └── server.py                    ← the MCP server (Phase 8)                    ⬜
+│   └── server.py                    ← the MCP server (Phase 16)                  ⬜
 │
 ├── tests/                           ← automated checks (pytest), grown each phase ⬜
 ├── notebooks/                       ← optional exploratory notebooks              ⬜
@@ -542,7 +575,8 @@ microbegraph/
 │   │   └── provenance.csv           ← what was fetched, from where, when
 │   └── processed/                   ← nodes.csv, edges.csv, microbegraph.duckdb
 │
-└── .venv/                           ← Python's sealed toolbox — NOT in Git
+├── .venv/                           ← Python's sealed toolbox — NOT in Git
+└── renv/library/                    ← R's sealed toolbox — NOT in Git
 ```
 
 | Path | What lives here |
@@ -552,8 +586,9 @@ microbegraph/
 | `src/microbegraph/` | The reusable Python backend: fetch, resolve, build, analyse, predict, answer |
 | `curation/` | The hand-curated, cited bridge facts — small, readable, version-controlled |
 | `artifacts/` | Small precomputed outputs the app serves — the bridge from laptop to cloud |
-| `app/` | The Streamlit app (the public frontend) |
-| `R/` | Statistical validation: an independent cross-check and the null-model tests |
+| `app/` | The Streamlit app — the Python frontend |
+| `shiny/` | The Shiny app — the same interface in R, over the same database |
+| `R/` | Statistical validation: an independent cross-check and the null-model tests, reading the same DuckDB file Python built |
 | `dbt/` | Release 2.0 — transformations as tested, documented SQL |
 | `airflow/` | Release 2.0 — the pipeline as a scheduled, retrying DAG |
 | `api/` | Release 3.0 — the FastAPI service layer all three clients share |
@@ -599,13 +634,15 @@ pip install -r requirements.txt        # Phases 1-6
 # Build everything on your laptop
 python -m microbegraph.fetch --probe        # Phase 1: see what's available, free
 python -m microbegraph.fetch --all          # Phase 1: download it
-python -m microbegraph.resolve              # Phase 3: merge aliases
-python -m microbegraph.build_graph          # Phase 3: DuckDB + NetworkX
-python -m microbegraph.analytics            # Phase 4: paths, hubs, communities
-python -m microbegraph.predict              # Phase 5: candidate rankings
+python -m microbegraph.resolve              # Phase 4: merge aliases
+python -m microbegraph.build_graph          # Phase 4: DuckDB + NetworkX
+python -m microbegraph.analytics            # Phase 5: paths, hubs, communities
+Rscript R/validate_graph.R                  # Phase 6: null-model validation
+python -m microbegraph.predict              # Phase 7: graph ML + rankings
 
-# Run the app locally
-streamlit run app/streamlit_app.py          # Phases 6–7
+# Run an app locally — two frontends over the same database
+streamlit run app/streamlit_app.py          # Phases 8-9 (Python)
+Rscript -e 'shiny::runApp("shiny/")'        # Phase 8b (R, optional)
 ```
 
 > **Runs the same on Windows, macOS, and Linux (including RHEL 8 VMs).** The
