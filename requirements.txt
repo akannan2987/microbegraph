@@ -65,6 +65,14 @@ ruff>=0.5,<1             # spots style problems and likely bugs
 python-dotenv>=1.0,<2    # reads optional API keys from a .env file
 
 # ---------------------------------------------------------------------------
+# IF YOU ADD A PACKAGE HERE, ADD IT TO check-setup.py TOO.
+#   Otherwise the setup check quietly verifies fewer things than it claims,
+#   and a green result stops meaning what you think it means. A verification
+#   script that has drifted from reality is worse than no script at all,
+#   because it produces confident false reassurance.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
 # A NOTE ON THE 0.x PACKAGES (pyvis, ruff)
 #   Before version 1.0, the rules are different: the SECOND number is the one
 #   allowed to break things. So pyvis is capped at <0.4 rather than <1, because

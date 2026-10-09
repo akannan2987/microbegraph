@@ -10,6 +10,7 @@ USAGE:
     python check-setup.py
 """
 
+import shutil              # for finding command-line tools on the PATH
 import subprocess          # for running other programs (git) and reading output
 import sys                 # for information about the running Python
 from pathlib import Path   # for file paths that work on every operating system
@@ -60,14 +61,56 @@ check(
 )
 
 # --- 3. Required packages import ---------------------------------------
-for package in ["pandas", "numpy", "requests", "duckdb", "networkx",
-                "matplotlib", "plotly", "streamlit", "pytest"]:
+# Every package in requirements.txt is listed here. If you add one there,
+# add it here too, or this check quietly stops meaning what it says.
+#
+# NOTE ON THE PAIRS BELOW: a package's INSTALL name and its IMPORT name are
+# not always the same. You install "scikit-learn" but you write
+# "import sklearn"; you install "python-dotenv" but you write "import dotenv".
+# So each entry is (name you install, name you import).
+#
+# EVERYDAY PARALLEL: a shop sells "sparkling mineral water"; at home you just
+# call it "fizzy water". Same thing, two names, depending on where you are.
+PACKAGES = [
+    ("pandas", "pandas"),
+    ("numpy", "numpy"),
+    ("requests", "requests"),
+    ("tenacity", "tenacity"),
+    ("duckdb", "duckdb"),
+    ("networkx", "networkx"),
+    ("matplotlib", "matplotlib"),
+    ("plotly", "plotly"),
+    ("pyvis", "pyvis"),
+    ("scikit-learn", "sklearn"),        # installs as scikit-learn, imports as sklearn
+    ("streamlit", "streamlit"),
+    ("pytest", "pytest"),
+    ("python-dotenv", "dotenv"),        # installs as python-dotenv, imports as dotenv
+]
+
+for install_name, import_name in PACKAGES:
     try:
-        __import__(package)
-        check(f"package: {package}", True)
+        __import__(import_name)
+        check(f"package: {install_name}", True)
     except ImportError:
-        check(f"package: {package}", False,
+        check(f"package: {install_name}", False,
               "Run: pip install -r requirements.txt  (with .venv active). See Step 8.")
+
+# ruff is checked differently, and the reason is worth knowing.
+#
+# Most packages are LIBRARIES: code you import into your own program.
+# ruff is a TOOL: a standalone program you run from the terminal. It installs
+# a command, not something importable, so "import ruff" fails even when it is
+# perfectly installed. Testing it the wrong way would report a problem that
+# does not exist -- worse than not testing it at all.
+#
+# EVERYDAY PARALLEL: you check the flour is in the cupboard by looking in the
+# cupboard, and you check the oven works by turning it on. Different things,
+# different tests.
+check(
+    "tool: ruff",
+    shutil.which("ruff") is not None,
+    "Run: pip install -r requirements.txt  (with .venv active). See Step 8.",
+)
 
 # --- 4. Git available and configured -----------------------------------
 try:
