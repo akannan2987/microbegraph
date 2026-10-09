@@ -1,4 +1,4 @@
-# 01 — Setup: from a blank laptop to a working workshop
+# 01. Setup: from a blank laptop to a working workshop
 
 **Prerequisites:** a computer running **Windows 10/11**, **macOS**, or
 **Linux (RHEL 8 / Rocky / AlmaLinux)**, an internet connection, and permission
@@ -13,7 +13,7 @@ an empty MicrobeGraph repository with three branches (`master`, `beta`,
 stops you from ever publishing a secret. You will also understand *why* each of
 those exists.
 
-**Time:** 60–90 minutes the first time. **You do this once per machine.** After
+**Time:** 60-90 minutes the first time. **You do this once per machine.** After
 that, day-to-day work is three or four short commands.
 
 **Checkpoint at the end:** a `check-setup` command that verifies every piece.
@@ -25,19 +25,19 @@ that, day-to-day work is three or four short commands.
 ## Contents
 
 1. [How to read this document](#1-how-to-read-this-document)
-2. [Step 0 — The terminal, explained](#2-step-0--the-terminal-explained)
-3. [Step 1 — Install Python](#3-step-1--install-python)
-4. [Step 2 — Install a code editor (VS Code)](#4-step-2--install-a-code-editor-vs-code)
-5. [Step 3 — Install and configure Git](#5-step-3--install-and-configure-git)
-6. [Step 4 — Create your GitHub account](#6-step-4--create-your-github-account)
-7. [Step 5 — Connect your computer to GitHub](#7-step-5--connect-your-computer-to-github)
-8. [Step 6 — Create the project folder](#8-step-6--create-the-project-folder)
-9. [Step 7 — The virtual environment](#9-step-7--the-virtual-environment-what-and-why)
-10. [Step 8 — Install the project's packages](#10-step-8--install-the-projects-packages)
-11. [Step 9 — Protect your secrets before you have any](#11-step-9--protect-your-secrets-before-you-have-any)
-12. [Step 10 — The three-branch model](#12-step-10--the-three-branch-model)
-13. [Step 11 — Your first push](#13-step-11--your-first-push)
-14. [Step 12 — Verify everything](#14-step-12--verify-everything)
+2. [Step 0. The terminal, explained](#2-step-0--the-terminal-explained)
+3. [Step 1. Install Python](#3-step-1--install-python)
+4. [Step 2. Install a code editor (VS Code)](#4-step-2--install-a-code-editor-vs-code)
+5. [Step 3. Install and configure Git](#5-step-3--install-and-configure-git)
+6. [Step 4. Create your GitHub account](#6-step-4--create-your-github-account)
+7. [Step 5. Connect your computer to GitHub](#7-step-5--connect-your-computer-to-github)
+8. [Step 6. Create the project folder](#8-step-6--create-the-project-folder)
+9. [Step 7. The virtual environment](#9-step-7--the-virtual-environment-what-and-why)
+10. [Step 8. Install the project's packages](#10-step-8--install-the-projects-packages)
+11. [Step 9. Protect your secrets before you have any](#11-step-9--protect-your-secrets-before-you-have-any)
+12. [Step 10. The three-branch model](#12-step-10--the-three-branch-model)
+13. [Step 11. Your first push](#13-step-11--your-first-push)
+14. [Step 12. Verify everything](#14-step-12--verify-everything)
 15. [Your daily rhythm from now on](#15-your-daily-rhythm-from-now-on)
 16. [Troubleshooting](#16-troubleshooting)
 17. [Checkpoint](#17-checkpoint)
@@ -68,7 +68,7 @@ that, day-to-day work is three or four short commands.
 
 ---
 
-## 2. Step 0 — The terminal, explained
+## 2. Step 0. The terminal, explained
 
 ### What it is
 
@@ -77,7 +77,7 @@ type instructions to your computer as text instead of clicking.
 
 *Everyday example:* clicking through folders is like wandering a supermarket
 looking for pasta. The terminal is handing the assistant a written list. Slower
-to learn, far faster once you know it — and, crucially, **a written list can be
+to learn, far faster once you know it, and, crucially, **a written list can be
 handed to someone else and produce the same result.** That reproducibility is
 why every serious data project lives here.
 
@@ -85,14 +85,14 @@ You will not need many commands. Realistically, five do 90% of the work.
 
 ### Open it
 
-**Windows** — press <kbd>Win</kbd>, type `PowerShell`, press <kbd>Enter</kbd>.
+**Windows**: press <kbd>Win</kbd>, type `PowerShell`, press <kbd>Enter</kbd>.
 Use **PowerShell**, not the older "Command Prompt"; every Windows command in
 this tutorial assumes PowerShell.
 
-**macOS** — press <kbd>Cmd</kbd>+<kbd>Space</kbd>, type `Terminal`, press
+**macOS**: press <kbd>Cmd</kbd>+<kbd>Space</kbd>, type `Terminal`, press
 <kbd>Enter</kbd>.
 
-**Linux (RHEL 8)** — <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd>, or find
+**Linux (RHEL 8)**: <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd>, or find
 "Terminal" in the applications menu. On a headless VM you're already there when
 you SSH in.
 
@@ -103,7 +103,7 @@ Try each one now. They're all harmless.
 ```bash
 pwd
 ```
-*"Print working directory" — where am I right now?* Expected output is a path:
+*"Print working directory", where am I right now?* Expected output is a path:
 
 ```
 /Users/yourname          # macOS
@@ -120,7 +120,7 @@ ls
 ```bash
 cd Documents
 ```
-*"Change directory" — go into the Documents folder.* No output means success.
+*"Change directory", go into the Documents folder.* No output means success.
 **Silence is success** is a general rule in terminals: tools print when
 something's wrong, not when things are fine.
 
@@ -148,14 +148,14 @@ copy, check the output, continue.
 
 ---
 
-## 3. Step 1 — Install Python
+## 3. Step 1. Install Python
 
 ### What Python is, and why this project uses it
 
-**Python** is a programming language — a way of writing instructions a computer
+**Python** is a programming language, a way of writing instructions a computer
 can follow. It's used here because it's unusually readable (its code looks close
 to English), it's free, it runs identically on Windows, macOS and Linux, and
-every library MicrobeGraph needs — graphs, databases, web apps, AI — already
+every library MicrobeGraph needs, graphs, databases, web apps, AI, already
 exists in it.
 
 *Everyday example:* choosing a language for a project is like choosing a
@@ -167,22 +167,22 @@ that break libraries.
 
 **Use Python 3.11 or 3.12.** (3.10 and 3.13 also work for the core project, but
 3.11 and 3.12 have pre-built versions of every package this project uses,
-including the Phase 7 extras — so they are the choices that never bite you
+including the Phase 7 extras, so they are the choices that never bite you
 later.)
 
-**Check what you already have before installing anything** — see below. Machines
+**Check what you already have before installing anything**: see below. Machines
 often have several versions, and using one you already own is faster and tidier
 than adding another.
 
 > ⚠️ **Do not use Python 3.14 (or whatever the newest release is).** This is a
 > real trap and it catches almost everyone once. Many scientific packages
 > contain compiled C code, and someone has to rebuild and test each of them for
-> every new Python release. That takes **6–12 months**. Until then, `pip` finds
+> every new Python release. That takes **6-12 months**. Until then, `pip` finds
 > no ready-made version, tries to compile from source, and fails with a wall of
 > C compiler errors that look alarming and have nothing to do with you.
 >
 > *Everyday parallel:* buying a brand-new phone model on launch day. The phone
-> is fine — half your favourite apps just haven't been updated for it yet.
+> is fine, half your favourite apps just haven't been updated for it yet.
 >
 > **The professional habit:** for data work, always run one or two versions
 > behind the newest. Newest is for people testing the language itself. If you
@@ -213,9 +213,9 @@ command starting with what you typed. **This is the fastest way to see which
 Python versions a machine actually has**, and it's worth remembering for any
 command, not just this one.
 
-Read the list for a version in the **3.10–3.13** range:
+Read the list for a version in the **3.10-3.13** range:
 
-- **See `python3.11` or `python3.12`?** You're done — skip the installation
+- **See `python3.11` or `python3.12`?** You're done, skip the installation
   below entirely and use that name in Step 7. Note it down.
 - **Only `python3.13`?** Usable, but see the note below before choosing it.
 - **Only `python3.14` or nothing in range?** Install 3.12 using the instructions
@@ -224,7 +224,7 @@ Read the list for a version in the **3.10–3.13** range:
 > **On 3.13 specifically:** everything in `requirements.txt` works on it. But
 > `gensim`, one of the two Phase 7 extras in `requirements-ml.txt`, was last
 > released before 3.13 existed and has no pre-built version for it. If you have
-> **3.11 or 3.12 available, prefer those** — otherwise you'll meet the same
+> **3.11 or 3.12 available, prefer those**, otherwise you'll meet the same
 > problem months from now, at Phase 7, instead of today.
 
 **Windows note:** Tab-completion works differently in PowerShell. List your
@@ -237,7 +237,7 @@ versions with `py --list` instead.
 
 1. Go to <https://www.python.org/downloads/windows/>
 2. Scroll down to **Python 3.12.x** and download its "Windows installer
-   (64-bit)". **Do not** click the big green button at the top of the page —
+   (64-bit)". **Do not** click the big green button at the top of the page,
    that gives you the newest release, which is exactly what you don't want (see
    the warning above).
 3. Run the installer. **Before clicking Install, tick the box at the bottom that
@@ -246,7 +246,7 @@ versions with `py --list` instead.
 
    *What is PATH?* A list of folders your computer searches when you type a
    command name. If Python isn't on the list, typing `python` gets you "not
-   recognised" even though Python is installed — like a phone book that doesn't
+   recognised" even though Python is installed, like a phone book that doesn't
    list a number you own.
 4. Click **Install Now**, wait, then **Close**.
 5. **Close your PowerShell window and open a new one.** PATH changes only apply
@@ -260,17 +260,17 @@ versions with `py --list` instead.
 macOS ships with an old Python that must not be used for projects. Install your
 own.
 
-**Option A — the installer (simplest):**
+**Option A, the installer (simplest):**
 1. Go to <https://www.python.org/downloads/macos/>
 2. Scroll down to **Python 3.12.x** and download its macOS 64-bit universal2
-   installer. **Do not** click the big green button at the top — that gives you
+   installer. **Do not** click the big green button at the top, that gives you
    the newest release, which is exactly what you don't want (see the warning
    above).
 3. Run it and accept the defaults.
 4. It installs as `python3.12`, alongside any other version you have. Use that
    exact name when creating the virtual environment in Step 7.
 
-**Option B — Homebrew** (if you already have it, or want a package manager):
+**Option B. Homebrew** (if you already have it, or want a package manager):
 ```bash
 brew install python@3.12
 ```
@@ -278,9 +278,9 @@ brew install python@3.12
 </details>
 
 <details open>
-<summary><b>🐧 Linux — RHEL 8 / Rocky / AlmaLinux</b></summary>
+<summary><b>🐧 Linux. RHEL 8 / Rocky / AlmaLinux</b></summary>
 
-RHEL 8 ships with Python 3.6, which is too old. Install 3.12 alongside it —
+RHEL 8 ships with Python 3.6, which is too old. Install 3.12 alongside it,
 **do not remove or replace the system Python**, because system tools depend on
 it. (This is a real and common RHEL trap: replacing the system Python breaks
 `yum`/`dnf` itself.)
@@ -290,14 +290,14 @@ sudo dnf install -y python3.12 python3.12-pip
 ```
 
 If your RHEL 8 minor version doesn't offer `python3.12`, use `python3.11` or
-`python3.9` — both work — and substitute that name everywhere `python3.12`
+`python3.9`, both work, and substitute that name everywhere `python3.12`
 appears below:
 
 ```bash
 sudo dnf install -y python3.11 python3.11-pip
 ```
 
-*What is `dnf`?* RHEL's package manager — an app store for command-line
+*What is `dnf`?* RHEL's package manager, an app store for command-line
 software. `sudo` means "run this as administrator". You'll be asked for your
 password; the cursor won't move as you type it, which is normal.
 
@@ -322,12 +322,12 @@ Python 3.12.7
 
 ✅ **Checkpoint.** You want a version between **3.10 and 3.13**, ideally
 **3.12**. Note down which command produced it (`python`, `python3`, or
-`python3.12`) — **you'll use that same word throughout this tutorial.** For the
+`python3.12`), **you'll use that same word throughout this tutorial.** For the
 rest of this document it is written as `python`; substitute yours.
 
 ⚠️ **If it says 3.14 or higher, stop and install 3.12** using the instructions
 above. Continuing will work fine for several steps and then fail confusingly at
-`pip install`. Installing 3.12 does **not** remove your other version — they
+`pip install`. Installing 3.12 does **not** remove your other version, they
 live side by side, and you simply use `python3.12` when creating the virtual
 environment.
 
@@ -336,7 +336,7 @@ environment.
 
 ---
 
-## 4. Step 2 — Install a code editor (VS Code)
+## 4. Step 2. Install a code editor (VS Code)
 
 ### Why not just use Notepad?
 
@@ -354,7 +354,7 @@ systems, and by a wide margin the most common editor in this field.
 ### Install it
 
 1. Go to <https://code.visualstudio.com/>
-2. The site detects your system — click the big download button.
+2. The site detects your system, click the big download button.
 3. Install with defaults.
    - **Windows:** tick "Add to PATH" and "Open with Code" if offered.
    - **macOS:** drag it to Applications.
@@ -365,7 +365,7 @@ systems, and by a wide margin the most common editor in this field.
    **Python**, and install the one published by **Microsoft**.
 
    *What's an extension?* An add-on that teaches the editor about a specific
-   language — like installing a dictionary for a language your word processor
+   language, like installing a dictionary for a language your word processor
    didn't know.
 
 ✅ **Checkpoint.** VS Code opens and the Python extension appears in your
@@ -373,14 +373,14 @@ installed list.
 
 ---
 
-## 5. Step 3 — Install and configure Git
+## 5. Step 3. Install and configure Git
 
 ### What Git is, properly
 
 **Git** is a system that records snapshots of your project over time.
 
 *Everyday example:* saving in a video game. You save before the hard bit. If it
-goes badly, you reload. Git is that, for your work — except every save is
+goes badly, you reload. Git is that, for your work, except every save is
 permanent, labelled with a message explaining what changed, and you can compare
 any two saves to see exactly what's different.
 
@@ -397,7 +397,7 @@ Three words you'll use constantly:
 
 **Git ≠ GitHub.** Git is the program on your computer. **GitHub** is a website
 that stores copies of Git repositories online, so your work is backed up,
-shareable, and readable by others. You can use Git with no GitHub at all — but
+shareable, and readable by others. You can use Git with no GitHub at all, but
 we want the backup and the public home.
 
 ### Install it
@@ -405,8 +405,8 @@ we want the backup and the public home.
 <details open>
 <summary><b>🪟 Windows</b></summary>
 
-1. Go to <https://git-scm.com/download/win> — the download starts automatically.
-2. Run the installer. **Accept every default** — there are many screens and the
+1. Go to <https://git-scm.com/download/win>, the download starts automatically.
+2. Run the installer. **Accept every default**, there are many screens and the
    defaults are correct for our purposes. The one worth noticing: it installs
    "Git Bash", an extra terminal. You can ignore it; PowerShell is enough.
 3. Close and reopen PowerShell.
@@ -419,13 +419,13 @@ we want the backup and the public home.
 ```bash
 git --version
 ```
-If Git isn't installed, macOS offers to install the Developer Tools — accept,
+If Git isn't installed, macOS offers to install the Developer Tools, accept,
 and wait a few minutes. Otherwise: `brew install git`.
 
 </details>
 
 <details open>
-<summary><b>🐧 Linux — RHEL 8</b></summary>
+<summary><b>🐧 Linux. RHEL 8</b></summary>
 
 ```bash
 sudo dnf install -y git
@@ -472,7 +472,7 @@ git config --global init.defaultBranch master
 
 ### Optional: the fast-forward-only preference
 
-There's one more setting some people like, and it's genuinely **optional** —
+There's one more setting some people like, and it's genuinely **optional**,
 decide for yourself:
 
 ```bash
@@ -480,7 +480,7 @@ git config pull.ff only
 ```
 
 **What it does.** "Fast-forward" means Git can update your branch by simply
-moving its pointer along an existing line, with nothing to reconcile — the clean
+moving its pointer along an existing line, with nothing to reconcile, the clean
 case. `pull.ff only` says: *if a pull isn't that clean, stop and tell me rather
 than inventing a merge commit I didn't ask for.*
 
@@ -490,13 +490,13 @@ while you rewrote it too (someone has to decide what the document says). The
 setting says "in the second case, ask me."
 
 **Why it's optional here:** every `pull` in this project's documented workflow
-already passes the flag explicitly —
+already passes the flag explicitly,
 
 ```bash
 git pull --ff-only origin master
 ```
 
-— so the config adds nothing to *this* project. It only helps in repositories
+so the config adds nothing to *this* project. It only helps in repositories
 where you might forget the flag.
 
 **Choosing a scope.** Git config has three levels, and the most specific wins:
@@ -505,18 +505,24 @@ where you might forget the flag.
 |---|---|---|
 | `git config pull.ff only` | **This repository only** (`.git/config`) | You like the safety net here but don't want to change how Git behaves elsewhere |
 | `git config --global pull.ff only` | Your whole user account | You want it everywhere, always |
-| *(don't set it)* | — | Perfectly fine; the workflow's explicit `--ff-only` covers you |
+| *(don't set it)* |  | Perfectly fine; the workflow's explicit `--ff-only` covers you |
 
 *Everyday parallel:* a house rule versus a rule for one room. "No shoes in the
 flat" versus "no shoes in the bedroom."
 
+I decided not to set this globally. The reasoning: every `pull` in this
+project's documented workflow already passes `--ff-only` on the command line, so
+the config adds nothing here and only changes how Git behaves in my other
+repositories. If you want the safety net without that side effect, set it for
+this repository alone by dropping `--global`.
+
 **A recommendation, not a requirement:** the repository-scoped version is the
-comfortable middle ground — protection where you're working, no side effects on
+comfortable middle ground, protection where you're working, no side effects on
 your other projects. But skipping it entirely is a legitimate choice, and this
 tutorial works either way.
 
 <details>
-<summary><b>🪟 Windows only — one extra setting</b></summary>
+<summary><b>🪟 Windows only, one extra setting</b></summary>
 
 Windows and Unix mark line endings differently, which can make Git report that
 every line of a file changed when nothing did. This setting handles the
@@ -542,22 +548,22 @@ user.email=your.email@example.com
 init.defaultbranch=master
 ```
 
-(You may see other lines too — Git installations and tools add their own
+(You may see other lines too. Git installations and tools add their own
 settings. That's normal. If you set `pull.ff` globally above, it appears here;
-if you set it per-repository, it won't — check with `git config --list --local`
+if you set it per-repository, it won't, check with `git config --list --local`
 from inside the project instead.)
 
 ✅ **Checkpoint.** Your name and email appear.
 
 ---
 
-## 6. Step 4 — Create your GitHub account
+## 6. Step 4. Create your GitHub account
 
 **GitHub** is where your repositories live online. Free, and the standard place
 this kind of work is published and read.
 
 1. Go to <https://github.com/> and click **Sign up**.
-2. Choose a username you're happy for people to see — it becomes part of every
+2. Choose a username you're happy for people to see, it becomes part of every
    URL (`github.com/yourname/microbegraph`). Something close to your real name
    is the norm.
 3. Verify your email address.
@@ -568,14 +574,14 @@ this kind of work is published and read.
 
 ---
 
-## 7. Step 5 — Connect your computer to GitHub
+## 7. Step 5. Connect your computer to GitHub
 
 Your computer needs to prove it's you when it uploads. There are two ways.
 
-### Option A — Personal Access Token (simplest; recommended to start)
+### Option A. Personal Access Token (simplest; recommended to start)
 
 A **Personal Access Token** (PAT) is a long password generated for programs
-rather than humans. Your normal GitHub password won't work for Git operations —
+rather than humans. Your normal GitHub password won't work for Git operations,
 this is deliberate, because a token can be limited in scope and revoked
 individually without changing your account password.
 
@@ -586,7 +592,7 @@ individually without changing your account password.
    (classic)**.
 5. **Note:** `microbegraph laptop`. **Expiration:** 90 days is a sensible
    balance. **Scopes:** tick **`repo`** only. Nothing else.
-6. **Generate token**, then **copy it immediately** — GitHub shows it once and
+6. **Generate token**, then **copy it immediately**. GitHub shows it once and
    never again. Paste it somewhere safe (a password manager is ideal).
 
 When Git asks for a password later, paste the token. To avoid re-pasting every
@@ -599,7 +605,7 @@ git config --global credential.helper manager
 # macOS
 git config --global credential.helper osxkeychain
 
-# Linux (RHEL 8) — caches in memory for 1 hour; nothing written to disk
+# Linux (RHEL 8), caches in memory for 1 hour; nothing written to disk
 git config --global credential.helper 'cache --timeout=3600'
 ```
 
@@ -609,7 +615,7 @@ git config --global credential.helper 'cache --timeout=3600'
 > tokens are dead instantly. This is exactly the accident
 > `check-public-safe.sh` (Step 9) exists to prevent.
 
-### Option B — SSH keys (nicer long-term)
+### Option B. SSH keys (nicer long-term)
 
 An **SSH key** is a matched pair of files: a *private* key that never leaves
 your machine and a *public* key you give GitHub. They prove your identity
@@ -622,7 +628,7 @@ lock is fitted to the door and is useless to a thief on its own.
 # 1. Generate the pair (press Enter three times to accept defaults)
 ssh-keygen -t ed25519 -C "your.email@example.com"
 
-# 2. Show the PUBLIC key (safe to share — never show the one without .pub)
+# 2. Show the PUBLIC key (safe to share, never show the one without .pub)
 cat ~/.ssh/id_ed25519.pub          # macOS / Linux
 type $env:USERPROFILE\.ssh\id_ed25519.pub    # Windows PowerShell
 ```
@@ -644,7 +650,7 @@ That message is success, despite how it reads.
 
 ---
 
-## 8. Step 6 — Create the project folder
+## 8. Step 6. Create the project folder
 
 ### Create the repository on GitHub first
 
@@ -655,12 +661,12 @@ Creating it online first, then cloning it down, avoids a whole category of
 2. **Repository name:** `microbegraph`
 3. **Description:** `A knowledge graph of microbes, the molecules they make, and the crop diseases those molecules act on.`
 4. **Public.**
-5. ✅ **Add a README file** — this creates the first commit, so the repository
+5. ✅ **Add a README file**, this creates the first commit, so the repository
    isn't empty (an empty repo has no branches, which makes the next steps
    awkward).
 6. **Add .gitignore:** choose **Python** from the dropdown. (We'll replace it
    with a fuller version in Step 9.)
-7. **Choose a license:** **MIT**. It's the standard permissive licence — anyone
+7. **Choose a license:** **MIT**. It's the standard permissive licence, anyone
    may use your work provided they keep your copyright notice.
 8. **Create repository.**
 
@@ -714,7 +720,7 @@ ls -a
 ```
 
 `.git` is the hidden folder holding the entire history. **Never edit or delete
-it** — it *is* the repository. (The `-a` flag means "show hidden files"; on
+it**, it *is* the repository. (The `-a` flag means "show hidden files"; on
 Windows PowerShell use `ls -Force`.)
 
 ### Create the folder structure
@@ -752,7 +758,7 @@ touch artifacts/.gitkeep curation/.gitkeep tests/.gitkeep
 New-Item -ItemType File -Force artifacts/.gitkeep, curation/.gitkeep, tests/.gitkeep
 ```
 
-*Why?* `.gitkeep` isn't a Git feature — it's a convention. Git tracks files, not
+*Why?* `.gitkeep` isn't a Git feature, it's a convention. Git tracks files, not
 folders, so a folder with one dummy file inside is how you make an "empty"
 folder survive a clone.
 
@@ -760,7 +766,7 @@ folder survive a clone.
 
 ---
 
-## 9. Step 7 — The virtual environment: what and why
+## 9. Step 7. The virtual environment: what and why
 
 **This is the concept beginners skip and later regret. Read the why.**
 
@@ -768,7 +774,7 @@ folder survive a clone.
 
 Python libraries are installed on your machine and shared by everything. Project
 A needs version 1.0 of a library; project B needs version 2.0. Install 2.0 and
-project A breaks — with an error that has nothing obviously to do with the
+project A breaks, with an error that has nothing obviously to do with the
 install you just did. This is known, affectionately, as *dependency hell*.
 
 *Everyday example:* one shared kitchen for a whole apartment block. Someone
@@ -783,8 +789,8 @@ versions it needs.
 Concretely, a virtual environment (`venv`) is just a **folder** containing its
 own copy of Python and its own libraries. It has two enormous benefits:
 
-1. **Isolation** — projects can't break each other.
-2. **Reproducibility** — you can write down exactly what's in the toolbox
+1. **Isolation**, projects can't break each other.
+2. **Reproducibility**, you can write down exactly what's in the toolbox
    (`requirements.txt`) so anyone, anywhere, on any operating system, can build
    an identical one. That's what makes "clone this repo and run it" actually
    work.
@@ -795,7 +801,7 @@ Run this **inside** the `microbegraph` folder:
 
 ```bash
 # Use the exact version name you identified in Step 1.
-python3.11 -m venv .venv        # macOS / Linux — if 3.11 is what you have
+python3.11 -m venv .venv        # macOS / Linux, if 3.11 is what you have
 python3.12 -m venv .venv        # ...or 3.12
 python -m venv .venv            # only if `python --version` already shows 3.11-3.12
 # py -3.12 -m venv .venv        # Windows, choosing a specific version
@@ -803,15 +809,20 @@ python -m venv .venv            # only if `python --version` already shows 3.11-
 
 ⚠️ **Name the version explicitly rather than using bare `python`.** On a machine
 with several versions installed, plain `python` may point at whichever one was
-installed last — often the newest, which is exactly the one you don't want. Being
+installed last, often the newest, which is exactly the one you don't want. Being
 explicit here takes two extra characters and prevents the most common setup
 failure in this whole document.
+
+I learned this the slow way. After the 3.14 failure described in Troubleshooting
+T11 I went off to download 3.12, and only then discovered I already had 3.11
+sitting on the machine. Typing `python` and pressing Tab twice would have told
+me that in two seconds. Check what you have before you install anything.
 
 If you get `command not found`, that version isn't installed. Go back to Step 1
 and use a name the Tab-completion check actually listed.
 
 *Reading the command:* `-m venv` means "run the built-in module called venv";
-`.venv` is the folder to create. The leading dot makes it hidden — by
+`.venv` is the folder to create. The leading dot makes it hidden, by
 convention, because it's machinery, not content.
 
 No output means success.
@@ -861,7 +872,7 @@ Your prompt now starts with `(.venv)`:
 `pip install` would put packages in the wrong place. Get in the habit of
 glancing at it.
 
-**You must activate once per terminal session** — every time you open a new
+**You must activate once per terminal session**: every time you open a new
 window to work on this project. It is not permanent, and that's by design.
 
 To leave: `deactivate`.
@@ -888,14 +899,14 @@ Python 3.11.9
 ```
 
 ✅ **Checkpoint.** Two things must be true: the path points inside your project's
-`.venv`, and the version is in the 3.11–3.12 range. If the path points somewhere
-else (like `/usr` or `C:\Python312`), the environment isn't active — re-run the
+`.venv`, and the version is in the 3.11-3.12 range. If the path points somewhere
+else (like `/usr` or `C:\Python312`), the environment isn't active, re-run the
 activate command. If the *version* is wrong, delete `.venv` and recreate it
 naming the right Python: `rm -rf .venv` then `python3.11 -m venv .venv`.
 
 ---
 
-## 10. Step 8 — Install the project's packages
+## 10. Step 8. Install the project's packages
 
 ### What a package is
 
@@ -907,7 +918,7 @@ graph algorithms from scratch. It would take months, and yours would be slower
 and buggier than NetworkX, which hundreds of people have improved over twenty
 years.
 
-**pip** is Python's package installer — the thing that fetches and installs
+**pip** is Python's package installer, the thing that fetches and installs
 them.
 
 ### The requirements file
@@ -920,7 +931,7 @@ Create it in the project root (VS Code: **File → New File**, save as
 `requirements.txt`):
 
 ```
-# MicrobeGraph — core Python dependencies
+# MicrobeGraph, core Python dependencies
 #
 # Install with:  pip install -r requirements.txt
 #
@@ -987,6 +998,14 @@ ruff>=0.5,<1             # spots style problems and likely bugs
 python-dotenv>=1.0,<2    # reads optional API keys from a .env file
 
 # ---------------------------------------------------------------------------
+# IF YOU ADD A PACKAGE HERE, ADD IT TO check-setup.py TOO.
+#   Otherwise the setup check quietly verifies fewer things than it claims,
+#   and a green result stops meaning what you think it means. A verification
+#   script that has drifted from reality is worse than no script at all,
+#   because it produces confident false reassurance.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
 # A NOTE ON THE 0.x PACKAGES (pyvis, ruff)
 #   Before version 1.0, the rules are different: the SECOND number is the one
 #   allowed to break things. So pyvis is capped at <0.4 rather than <1, because
@@ -995,17 +1014,17 @@ python-dotenv>=1.0,<2    # reads optional API keys from a .env file
 # ---------------------------------------------------------------------------
 
 # NOTE: the node-embedding libraries (gensim, node2vec) are NOT here.
-# They are the most fragile dependencies in the stack — they contain compiled
-# C code and break first on new Python versions — and nothing before Phase 7
+# They are the most fragile dependencies in the stack, they contain compiled
+# C code and break first on new Python versions, and nothing before Phase 7
 # needs them. They live in requirements-ml.txt, installed only when you reach
 # that phase. Keeping them out means a broken embedding library can never
 # block someone from setting the project up.
 ```
 
 > **Why there are two requirements files.** `requirements.txt` holds everything
-> Phases 1–6 need. A second file, `requirements-ml.txt`, holds two node-embedding
+> Phases 1-6 need. A second file, `requirements-ml.txt`, holds two node-embedding
 > libraries used only in Phase 7. Those two contain compiled C code, which makes
-> them the most fragile part of the stack — they are always the first to break on
+> them the most fragile part of the stack, they are always the first to break on
 > a new Python release. Keeping them separate means a broken library can never
 > stop you setting the project up and completing six phases. **Separating what
 > you need to start from what you need for one later feature is a habit worth
@@ -1017,7 +1036,7 @@ Install everything you need for now:
 pip install -r requirements.txt
 ```
 
-Expect a wall of scrolling text for 1–3 minutes, ending with something like:
+Expect a wall of scrolling text for 1-3 minutes, ending with something like:
 
 ```
 Successfully installed duckdb-1.1.3 matplotlib-3.9.2 networkx-3.4.2 numpy-2.1.3
@@ -1025,13 +1044,13 @@ pandas-2.2.3 plotly-5.24.1 pytest-8.3.3 pyvis-0.3.2 requests-2.32.3 ruff-0.7.4
 streamlit-1.40.1 tenacity-9.0.0 python-dotenv-1.0.1 ...
 ```
 
-Version numbers will differ from these and that's expected — `>=` means "this or
+Version numbers will differ from these and that's expected, `>=` means "this or
 newer".
 
 ### Lock the exact versions
 
 You've just installed working versions of 74 packages. **Write down exactly which
-ones**, so this environment can be recreated identically — by you on another
+ones**, so this environment can be recreated identically, by you on another
 machine, by anyone cloning the repository, or by you in a year when the latest
 versions have moved on.
 
@@ -1052,29 +1071,29 @@ pandas==3.0.5
 ...
 ```
 
-**Two files, two jobs — and this trips people up, so it's worth being clear:**
+**Two files, two jobs, and this trips people up, so it's worth being clear:**
 
 | File | Contains | Answers |
 |---|---|---|
 | `requirements.txt` | Ranges (`pandas>=2.2,<4`) | *What does this project need?* |
 | `requirements.lock.txt` | Exact versions (`pandas==3.0.5`) | *What exactly was working on the day it was tested?* |
 
-*Everyday parallel:* `requirements.txt` is the shopping list — "a medium onion,
-plain flour". `requirements.lock.txt` is the till receipt — the exact brands and
+*Everyday parallel:* `requirements.txt` is the shopping list, "a medium onion,
+plain flour". `requirements.lock.txt` is the till receipt, the exact brands and
 sizes you actually bought, on that day, from that shop. The list lets someone
 cook the dish. The receipt lets them reproduce your exact result.
 
 **Which one do people install from?**
 
-- **Normally, `requirements.txt`** — you want the bug fixes and security patches
+- **Normally, `requirements.txt`**: you want the bug fixes and security patches
   that arrive within the allowed range.
-- **`requirements.lock.txt` when something is wrong** — if the project suddenly
+- **`requirements.lock.txt` when something is wrong**: if the project suddenly
   misbehaves after an update, installing the locked versions tells you instantly
   whether a dependency change caused it. That is an enormously useful diagnostic
   and the main reason to keep the file.
 
 **Both are committed to Git.** Regenerate the lockfile whenever you deliberately
-change dependencies — a one-line command at the end of any phase that adds a
+change dependencies, a one-line command at the end of any phase that adds a
 package.
 
 ### Verify
@@ -1094,7 +1113,7 @@ all core packages import OK
 
 ---
 
-## 11. Step 9 — Protect your secrets before you have any
+## 11. Step 9. Protect your secrets before you have any
 
 ### Why now, before there's anything to protect
 
@@ -1105,7 +1124,7 @@ within minutes of a push.
 
 Set the locks up first, while the house is empty. It takes five minutes.
 
-### `.gitignore` — the lock on the door
+### `.gitignore`, the lock on the door
 
 `.gitignore` is a list of things Git must never track. Replace the file GitHub
 created with this fuller version (VS Code: open `.gitignore`, select all,
@@ -1113,10 +1132,10 @@ paste):
 
 ```gitignore
 # ---------------------------------------------------------------
-# MicrobeGraph — what Git must never publish
+# MicrobeGraph, what Git must never publish
 # ---------------------------------------------------------------
 
-# Secrets — API keys, tokens, anything private. NEVER commit these.
+# Secrets. API keys, tokens, anything private. NEVER commit these.
 .env
 .env.*
 !.env.example
@@ -1124,13 +1143,13 @@ paste):
 *.pem
 *.key
 
-# The virtual environment — rebuildable from requirements.txt,
+# The virtual environment, rebuildable from requirements.txt,
 # large, and machine-specific. Never commit it.
 .venv/
 venv/
 env/
 
-# Data — rebuilt by the pipeline. Keeping it out of Git is the proof
+# Data, rebuilt by the pipeline. Keeping it out of Git is the proof
 # the pipeline works, and keeps the repository small.
 data/
 *.duckdb
@@ -1176,11 +1195,11 @@ renv/sandbox/
 *.Rcheck/
 
 # NOT ignored, and committed on purpose:
-#   microbegraph.Rproj  — so everyone gets the same project settings
-#   renv.lock           — so everyone can rebuild the same package versions
-#   .Rprofile           — so renv activates automatically on open
+#   microbegraph.Rproj:  so everyone gets the same project settings
+#   renv.lock:           so everyone can rebuild the same package versions
+#   .Rprofile:           so renv activates automatically on open
 
-# Private scratch space — personal working notes, never published.
+# Private scratch space, personal working notes, never published.
 # Anything in here stays on your machine only.
 .dev/
 
@@ -1189,23 +1208,33 @@ renv/sandbox/
 .idea/
 ```
 
-Note `!.env.example` — the `!` means "except this one". The example file
+Worth knowing what the `.dev/` line costs you. I keep working notes there,
+gitignored so they never reach GitHub. Six weeks later I came back to the
+project and the folder was gone from the machine I had been working on. Because
+it was gitignored there was no copy anywhere, which is exactly what I had asked
+for.
+
+Gitignoring something means it is private and it is unbacked up. Those are the
+same decision. If you want both privacy and a backup, keep the files in a
+separate private repository rather than an ignored folder inside a public one.
+
+Note `!.env.example`, the `!` means "except this one". The example file
 contains no real secrets and *should* be published, so others know which keys
 the project can use.
 
-### `.env.example` — the template
+### `.env.example`, the template
 
 Create `.env.example` in the project root:
 
 ```bash
-# MicrobeGraph — optional API keys
+# MicrobeGraph, optional API keys
 #
 # HOW TO USE:
 #   1. Copy this file:   cp .env.example .env      (Windows: copy .env.example .env)
 #   2. Fill in real values in .env
 #   3. .env is gitignored and must NEVER be committed
 #
-# Everything here is OPTIONAL. The project runs fully without any of it —
+# Everything here is OPTIONAL. The project runs fully without any of it,
 # missing keys just mean slower fetching or a hidden AI feature.
 
 # NCBI (optional). A free key raises the request rate limit from 3/sec to 10/sec.
@@ -1220,10 +1249,10 @@ NCBI_EMAIL=
 ANTHROPIC_API_KEY=
 ```
 
-### `check-public-safe.sh` — the guard at the door
+### `check-public-safe.sh`, the guard at the door
 
 `.gitignore` is the lock. This script is the guard who checks your bag on the
-way out — because locks can be misconfigured, and a second, independent check
+way out, because locks can be misconfigured, and a second, independent check
 costs nothing.
 
 Create `check-public-safe.sh` in the project root:
@@ -1231,7 +1260,7 @@ Create `check-public-safe.sh` in the project root:
 ```bash
 #!/usr/bin/env bash
 # ---------------------------------------------------------------
-# MicrobeGraph — pre-push safety gate
+# MicrobeGraph, pre-push safety gate
 #
 # WHY THIS EXISTS:
 #   .gitignore tells Git what to ignore. This script checks what Git
@@ -1342,7 +1371,7 @@ if [ "$problems" -eq 0 ]; then
   echo "SAFE TO PUSH"
   exit 0
 else
-  echo "NOT SAFE TO PUSH — $problems problem(s) above. Fix, then re-run."
+  echo "NOT SAFE TO PUSH, $problems problem(s) above. Fix, then re-run."
   exit 1
 fi
 ```
@@ -1357,7 +1386,7 @@ chmod +x check-public-safe.sh
 ./check-public-safe.sh
 ```
 
-*What is `chmod +x`?* File permissions. `+x` marks the file "executable" —
+*What is `chmod +x`?* File permissions. `+x` marks the file "executable",
 allowed to be run as a program rather than just read. Without it you'd get
 "Permission denied".
 
@@ -1401,7 +1430,7 @@ the one mistake that can't be undone.
 
 ---
 
-## 12. Step 10 — The three-branch model
+## 12. Step 10. The three-branch model
 
 ### What a branch is
 
@@ -1420,13 +1449,13 @@ whole duplicate files.
 | Branch | Role | Everyday parallel |
 |---|---|---|
 | **`master`** | The stable, official version | The published edition on the shelf |
-| **`beta`** | Release candidate — finished but getting a final look | The advance copy sent to reviewers |
+| **`beta`** | Release candidate, finished but getting a final look | The advance copy sent to reviewers |
 | **`develop`** | Where all day-to-day work happens | Your working draft, with pen marks |
 
 **The rule: you always work on `develop`.** You never edit `master` directly.
 That's what keeps the official version always in a good state.
 
-This is a simplified version of a real, widely-used industrial pattern — nothing
+This is a simplified version of a real, widely-used industrial pattern, nothing
 invented for the tutorial.
 
 ### Create them
@@ -1448,7 +1477,7 @@ git branch develop
 ```
 
 Now publish all three branches to GitHub. Note that `beta` is created **on the
-remote only** — pushed straight from `develop`:
+remote only**, pushed straight from `develop`:
 
 ```bash
 git push -u origin develop
@@ -1458,7 +1487,7 @@ git push origin develop:master
 
 > **Why no local `beta`?** Because you never work on it. The daily push command
 > (below) sends local `develop` to remote `beta` directly, so a local copy would
-> just be a branch you'd have to remember to keep in step — an extra thing to go
+> just be a branch you'd have to remember to keep in step, an extra thing to go
 > stale for no benefit.
 >
 > *Everyday parallel:* you keep a working draft on your desk and email copies to
@@ -1467,7 +1496,7 @@ git push origin develop:master
 >
 > Keeping a local `beta` is harmless if you prefer it. It just isn't needed.
 
-*What's `origin`?* Git's default nickname for "the repository I cloned from" —
+*What's `origin`?* Git's default nickname for "the repository I cloned from",
 here, your GitHub copy. `-u` sets it as the default destination so later pushes
 need less typing.
 
@@ -1506,7 +1535,7 @@ git branch -vv
   master  b9c3295 [origin/master] chore: initial project structure
 ```
 
-The name in square brackets is the branch's **upstream** — where a bare
+The name in square brackets is the branch's **upstream**, where a bare
 `git push` or `git pull` would go. Both are correctly paired.
 
 ### The push that updates all three at once
@@ -1545,13 +1574,13 @@ git switch develop
 *Why this last bit matters:* the push updated GitHub's `master`, not your
 laptop's. Without the sync-back, your local `master` slowly drifts behind and
 one day confuses you. `--ff-only` means "only update if it's a clean
-fast-forward; if it isn't, stop and tell me" — so Git can never silently invent
+fast-forward; if it isn't, stop and tell me", so Git can never silently invent
 a merge you didn't ask for. **The flag is written into the command on purpose**,
 so this works whether or not you set the optional `pull.ff` config earlier.
 
 ---
 
-## 13. Step 11 — Your first push
+## 13. Step 11. Your first push
 
 Time to save everything you've created.
 
@@ -1587,7 +1616,7 @@ git add -A
 
 **Staging** means "include this in the next snapshot".
 
-*Everyday example:* putting items in a shopping basket. Nothing's bought yet —
+*Everyday example:* putting items in a shopping basket. Nothing's bought yet,
 you're choosing what goes in this trip. `-A` means "everything that changed".
 
 ### 3. Run the safety gate
@@ -1598,8 +1627,11 @@ you're choosing what goes in this trip. `-A` means "everything that changed".
 
 Must say `SAFE TO PUSH`. If not, fix what it names and re-run.
 
-> **Why staging comes first — this ordering matters.** The gate inspects what
-> Git is *tracking*, using `git ls-files`. A brand-new file that has never been
+> **Why staging comes first, this ordering matters.** I had this the wrong way
+> round for the first few weeks. The gate ran before `git add`, printed SAFE TO
+> PUSH every time, and was telling the truth about the wrong snapshot.
+>
+> The gate inspects what Git is *tracking*, using `git ls-files`. A brand-new file that has never been
 > staged is invisible to Git, and therefore invisible to the gate. Run the check
 > before staging and you're inspecting the *previous* state of the repository,
 > not the one you're about to publish.
@@ -1669,20 +1701,20 @@ git switch develop
 Open `https://github.com/yourname/microbegraph`. Your files are there. Use the
 branch dropdown (top left, says `master`) to confirm all three exist and match.
 
-🎉 **You have just published a project.** That is not a small thing — the
+🎉 **You have just published a project.** That is not a small thing, the
 scaffolding, the safety gate, and the branch model you've set up are how real
 projects are run.
 
 ---
 
-## 14. Step 12 — Verify everything
+## 14. Step 12. Verify everything
 
 One script that checks every piece of the setup at once. Save it as
 `check-setup.py` in the project root:
 
 ```python
 """
-MicrobeGraph — setup verification.
+MicrobeGraph, setup verification.
 
 WHY THIS EXISTS:
     Setup has many steps and a half-finished environment produces confusing
@@ -1693,6 +1725,7 @@ USAGE:
     python check-setup.py
 """
 
+import shutil              # for finding command-line tools on the PATH
 import subprocess          # for running other programs (git) and reading output
 import sys                 # for information about the running Python
 from pathlib import Path   # for file paths that work on every operating system
@@ -1739,18 +1772,60 @@ check(
     "Virtual environment active",
     in_venv,
     "Activate it: source .venv/bin/activate  "
-    "(Windows: .\\.venv\\Scripts\\Activate.ps1). See Step 7.",
+    "(Windows:.\\.venv\\Scripts\\Activate.ps1). See Step 7.",
 )
 
 # --- 3. Required packages import ---------------------------------------
-for package in ["pandas", "numpy", "requests", "duckdb", "networkx",
-                "matplotlib", "plotly", "streamlit", "pytest"]:
+# Every package in requirements.txt is listed here. If you add one there,
+# add it here too, or this check quietly stops meaning what it says.
+#
+# NOTE ON THE PAIRS BELOW: a package's INSTALL name and its IMPORT name are
+# not always the same. You install "scikit-learn" but you write
+# "import sklearn"; you install "python-dotenv" but you write "import dotenv".
+# So each entry is (name you install, name you import).
+#
+# EVERYDAY PARALLEL: a shop sells "sparkling mineral water"; at home you just
+# call it "fizzy water". Same thing, two names, depending on where you are.
+PACKAGES = [
+    ("pandas", "pandas"),
+    ("numpy", "numpy"),
+    ("requests", "requests"),
+    ("tenacity", "tenacity"),
+    ("duckdb", "duckdb"),
+    ("networkx", "networkx"),
+    ("matplotlib", "matplotlib"),
+    ("plotly", "plotly"),
+    ("pyvis", "pyvis"),
+    ("scikit-learn", "sklearn"),        # installs as scikit-learn, imports as sklearn
+    ("streamlit", "streamlit"),
+    ("pytest", "pytest"),
+    ("python-dotenv", "dotenv"),        # installs as python-dotenv, imports as dotenv
+]
+
+for install_name, import_name in PACKAGES:
     try:
-        __import__(package)
-        check(f"package: {package}", True)
+        __import__(import_name)
+        check(f"package: {install_name}", True)
     except ImportError:
-        check(f"package: {package}", False,
+        check(f"package: {install_name}", False,
               "Run: pip install -r requirements.txt  (with .venv active). See Step 8.")
+
+# ruff is checked differently, and the reason is worth knowing.
+#
+# Most packages are LIBRARIES: code you import into your own program.
+# ruff is a TOOL: a standalone program you run from the terminal. It installs
+# a command, not something importable, so "import ruff" fails even when it is
+# perfectly installed. Testing it the wrong way would report a problem that
+# does not exist -- worse than not testing it at all.
+#
+# EVERYDAY PARALLEL: you check the flour is in the cupboard by looking in the
+# cupboard, and you check the oven works by turning it on. Different things,
+# different tests.
+check(
+    "tool: ruff",
+    shutil.which("ruff") is not None,
+    "Run: pip install -r requirements.txt  (with .venv active). See Step 8.",
+)
 
 # --- 4. Git available and configured -----------------------------------
 try:
@@ -1815,7 +1890,7 @@ if failed == 0:
     print("All checks passed. Your workshop is ready.\n")
     sys.exit(0)
 else:
-    print(f"{failed} check(s) failed — see the hints above.\n")
+    print(f"{failed} check(s) failed, see the hints above.\n")
     sys.exit(1)
 ```
 
@@ -1835,17 +1910,24 @@ MicrobeGraph setup check
   [PASS]  package: pandas
   [PASS]  package: numpy
   [PASS]  package: requests
+  [PASS]  package: tenacity
   [PASS]  package: duckdb
   [PASS]  package: networkx
   [PASS]  package: matplotlib
   [PASS]  package: plotly
+  [PASS]  package: pyvis
+  [PASS]  package: scikit-learn
   [PASS]  package: streamlit
   [PASS]  package: pytest
+  [PASS]  package: python-dotenv
+  [PASS]  tool: ruff
   [PASS]  git installed
   [PASS]  git identity configured
-  [PASS]  branch: master
-  [PASS]  branch: beta
-  [PASS]  branch: develop
+  [PASS]  local branch: master
+  [PASS]  local branch: develop
+  [PASS]  remote branch: origin/master
+  [PASS]  remote branch: origin/beta
+  [PASS]  remote branch: origin/develop
   [PASS]  folder: docs
   [PASS]  folder: src/microbegraph
   [PASS]  folder: curation
@@ -1887,7 +1969,7 @@ Setup was the long part. Actual work looks like this:
 
 ```bash
 cd ~/projects/microbegraph          # Windows: cd $HOME\projects\microbegraph
-source .venv/bin/activate           # Windows: .\.venv\Scripts\Activate.ps1
+source .venv/bin/activate           # Windows:.\.venv\Scripts\Activate.ps1
 git switch develop
 ```
 
@@ -1896,7 +1978,7 @@ Three lines. That's it.
 **Ending a session:**
 
 ```bash
-git add -A                   # stage FIRST — the gate can only see tracked files
+git add -A                   # stage FIRST, the gate can only see tracked files
 
 pytest -q                    # once tests exist (Phase 1 onward)
 ./check-public-safe.sh       # must say SAFE TO PUSH
@@ -1915,14 +1997,14 @@ Linux VM), the whole setup collapses to:
 ```bash
 git clone https://github.com/yourname/microbegraph.git
 cd microbegraph
-python3.11 -m venv .venv        # or python3.12 — whichever you have
+python3.11 -m venv .venv        # or python3.12, whichever you have
 source .venv/bin/activate
 pip install -r requirements.txt
 python check-setup.py
 ```
 
 Six lines, because everything needed was written down. **That is the entire
-point of `requirements.txt`, `.gitignore`, and the verification script** — the
+point of `requirements.txt`, `.gitignore`, and the verification script**, the
 setup is a *file*, not a memory.
 
 ---
@@ -1936,7 +2018,7 @@ problem from Step 1).
 
 - **Windows:** the "Add python.exe to PATH" box wasn't ticked. Re-run the
   installer → **Modify** → ensure "Add Python to environment variables" is on.
-  Then **open a new PowerShell window** — existing ones keep the old PATH.
+  Then **open a new PowerShell window**, existing ones keep the old PATH.
 - **macOS/Linux:** try `python3` instead of `python`. On RHEL 8 try
   `python3.12`. Whichever works is your command from now on.
 - **Still stuck?** `which python3` (macOS/Linux) or `where.exe python`
@@ -1950,7 +2032,7 @@ The file isn't marked executable.
 chmod +x check-public-safe.sh
 ```
 
-On Windows use `bash check-public-safe.sh` instead — Windows doesn't use the
+On Windows use `bash check-public-safe.sh` instead. Windows doesn't use the
 executable bit.
 
 ### T3: `ModuleNotFoundError` after installing
@@ -1987,7 +2069,7 @@ GitHub stopped accepting account passwords for Git operations. Use your
 **Personal Access Token** as the password (Step 5, Option A). Username stays
 your GitHub username.
 
-### T6: `git push` rejected — "Updates were rejected because the remote contains work that you do not have locally"
+### T6: `git push` rejected, "Updates were rejected because the remote contains work that you do not have locally"
 
 Someone (or you, from another machine, or GitHub's web editor) changed the
 remote since you last synced.
@@ -2005,10 +2087,10 @@ git log --oneline -5 origin/develop
 ```
 
 Then either `git pull --rebase origin develop` (replays your commits on top of
-theirs — the tidy option) or ask for help. **Never** `git push --force` on a
+theirs, the tidy option) or ask for help. **Never** `git push --force` on a
 shared branch to make an error go away; it deletes other people's work.
 
-### T7: `git pull --ff-only` fails — "Not possible to fast-forward"
+### T7: `git pull --ff-only` fails, "Not possible to fast-forward"
 
 Your local branch and the remote have both moved, so there's no clean line to
 follow. This is Git protecting you, working exactly as configured.
@@ -2052,7 +2134,7 @@ Order matters: rewriting history takes time, and copies may already exist.
 Revoking makes the leaked value worthless immediately, which is the only step
 that truly closes the hole.
 
-### T10: RHEL 8 — `python3.12: command not found` after `dnf install`
+### T10: RHEL 8, `python3.12: command not found` after `dnf install`
 
 Your RHEL 8 minor version may not carry that module. Check what's offered:
 
@@ -2061,34 +2143,40 @@ dnf module list python3*
 ```
 
 Install whichever 3.9+ version is listed, then use that name everywhere
-`python3.12` appears in this tutorial. **Do not** remove the system `python3` —
+`python3.12` appears in this tutorial. **Do not** remove the system `python3`,
 `dnf` itself depends on it.
 
 ### T11: pip fails to build a package with C compiler errors
 
-**The symptom** — `pip install -r requirements.txt` runs for a while, then a wall
-of red output ending with something like:
+This one cost me an evening, so it gets a long entry.
+
+I ran `pip install -r requirements.txt` and got 788 lines of red output. The
+line that mattered was buried in the middle:
 
 ```
 error: Failed building wheel for gensim
 × Failed to build installable wheels for some pyproject.toml based projects
 ```
 
-Scroll up and you'll see compiler errors like `no member named 'ma_version_tag'`,
-`no member named 'ob_digit'`, or `no member named 'curexc_traceback'`.
+Above it, pages of C compiler complaints about things called `ma_version_tag`,
+`ob_digit` and `curexc_traceback`.
 
-**What it means — and it is not your fault.** Some Python packages contain code
-written in C for speed. Normally pip downloads a ready-built version (a "wheel")
-that someone has already compiled and tested for your exact Python version and
-operating system. If no wheel exists for your combination, pip falls back to
-compiling from source on your machine — and if that package's C code hasn't been
-updated for your Python version yet, the compile fails.
+I started reading from the bottom, which was the wrong end. The answer was
+sitting in the file paths, and every one of them said `python3.14`.
 
-Those specific errors are the giveaway: `ma_version_tag`, `ob_digit` and
-`curexc_traceback` are internal parts of Python that recent releases **removed**.
-The package is written against a version of Python that no longer exists.
+**What was actually happening.** Some Python packages contain C code for speed.
+Normally pip downloads a pre-built version, called a wheel, that someone has
+already compiled and tested for your exact Python version and operating system.
+No wheel existed for 3.14, so pip fell back to compiling gensim from source on
+my laptop. Gensim's C code refers to internal parts of Python that newer
+versions have removed, so the compile failed.
 
-**The cause, 95% of the time: your Python is too new.**
+Nothing was wrong with my machine, my setup, or the package. I was just early.
+The scientific Python ecosystem usually takes six to twelve months to catch up
+with a new release, because every package containing C code has to be rebuilt
+and tested.
+
+**So check your version before reading any of the error.**
 
 Check it:
 
@@ -2096,11 +2184,11 @@ Check it:
 python --version
 ```
 
-If it says **3.14 or higher**, that's the problem. New Python releases take 6–12
+If it says **3.14 or higher**, that's the problem. New Python releases take 6-12
 months for the scientific ecosystem to catch up, because every package with
 compiled code needs rebuilding and testing.
 
-**The fix — rebuild the environment on a suitable Python version.**
+**The fix, rebuild the environment on a suitable Python version.**
 
 1. **First check whether you already have one.** Type `python` and press
    <kbd>Tab</kbd> twice (PowerShell: run `py --list`):
@@ -2112,7 +2200,7 @@ compiled code needs rebuilding and testing.
    python3.11          python3.13          python3.14
    ```
 
-   Look for **3.11** or **3.12**. If one is there, **skip to step 2** — you don't
+   Look for **3.11** or **3.12**. If one is there, **skip to step 2**, you don't
    need to install anything. Most people hitting this error already have a usable
    version and simply built the environment with the wrong one.
 
@@ -2121,7 +2209,7 @@ compiled code needs rebuilding and testing.
    find 3.12.x. It installs *alongside* your existing versions; nothing is
    removed.
 
-2. **Delete the virtual environment.** It's disposable by design — this is
+2. **Delete the virtual environment.** It's disposable by design, this is
    exactly the situation venvs exist for. Nothing of yours is lost:
 
    ```bash
@@ -2134,19 +2222,19 @@ compiled code needs rebuilding and testing.
 3. **Create a new one, naming your chosen version explicitly:**
 
    ```bash
-   python3.11 -m venv .venv                # macOS / Linux — use the version you found
+   python3.11 -m venv .venv                # macOS / Linux, use the version you found
    # python3.12 -m venv .venv              # ...or this one
    # py -3.12 -m venv .venv                # Windows
    ```
 
-   ⚠️ **`python3.12: command not found` here means you don't have 3.12** — use
+   ⚠️ **`python3.12: command not found` here means you don't have 3.12**, use
    whichever version the Tab-completion check in step 1 actually listed. The name
    must match something that exists on your machine.
 
 4. **Activate and confirm the version:**
 
    ```bash
-   source .venv/bin/activate               # Windows: .\.venv\Scripts\Activate.ps1
+   source .venv/bin/activate               # Windows:.\.venv\Scripts\Activate.ps1
    python --version
    ```
    ```
@@ -2159,7 +2247,7 @@ compiled code needs rebuilding and testing.
    pip install -r requirements.txt
    ```
 
-   Expect it to be much faster this time — with wheels available, pip downloads
+   Expect it to be much faster this time, with wheels available, pip downloads
    ready-made packages instead of compiling anything.
 
 ✅ **Checkpoint.** `python check-setup.py` prints "All checks passed".
@@ -2167,13 +2255,13 @@ compiled code needs rebuilding and testing.
 **If you cannot install a different Python** (a locked-down work machine, say),
 you still have a route: everything in `requirements.txt` has wheels for a wide
 range of versions, and the two fragile embedding libraries live separately in
-`requirements-ml.txt`. Skip that second file and Phases 1–6 work normally.
+`requirements-ml.txt`. Skip that second file and Phases 1-6 work normally.
 Phase 7 documents a pure-scikit-learn fallback that computes embeddings without
-gensim — slower on very large graphs, entirely adequate at this project's size.
+gensim, slower on very large graphs, entirely adequate at this project's size.
 
 **The lasting lesson.** For data and scientific work, run **one or two versions
 behind the newest** Python. The newest release is for people testing the language
-itself. This is not timidity — it's the standard practice in the field, and it
+itself. This is not timidity, it's the standard practice in the field, and it
 saves hours of exactly this kind of confusion.
 
 ### T12: Corporate proxy / firewall blocks `pip`
@@ -2220,7 +2308,7 @@ be protected before you have any; the three-branch model and the push that keeps
 them in step; and the habit of verifying every step instead of assuming.
 
 That's a genuinely substantial foundation, and it transfers to every project you
-ever build — not just this one.
+ever build, not just this one.
 
 ---
 
@@ -2229,6 +2317,6 @@ ever build — not just this one.
 > what to do when something goes wrong are all in
 > [`GIT-WORKFLOW.md`](GIT-WORKFLOW.md). Keep it open in a tab.
 
-**Next:** [`02-ontology-and-data-model.md`](02-ontology-and-data-model.md) — the
+**Next:** [`02-ontology-and-data-model.md`](02-ontology-and-data-model.md), the
 rulebook that decides what may become a dot and what may become an arrow, and
 why writing it *before* the code is the difference between a graph and a tangle.

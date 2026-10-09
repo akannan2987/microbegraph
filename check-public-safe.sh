@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------
-# MicrobeGraph — pre-push safety gate
+# MicrobeGraph, pre-push safety gate
 #
 # WHY THIS EXISTS:
 #   .gitignore tells Git what to ignore. This script checks what Git
@@ -111,6 +111,6 @@ if [ "$problems" -eq 0 ]; then
   echo "SAFE TO PUSH"
   exit 0
 else
-  echo "NOT SAFE TO PUSH — $problems problem(s) above. Fix, then re-run."
+  echo "NOT SAFE TO PUSH, $problems problem(s) above. Fix, then re-run."
   exit 1
 fi

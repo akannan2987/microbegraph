@@ -1,11 +1,11 @@
-# MicrobeGraph — extra dependencies for Phase 7 (graph machine learning)
+# MicrobeGraph, extra dependencies for Phase 7 (graph machine learning)
 #
 # Install ONLY when you reach Phase 7:
 #     pip install -r requirements-ml.txt
 #
 # WHY THESE ARE SEPARATE:
 #   These packages contain compiled C code, which makes them the most fragile
-#   part of the stack — they are always the first to break on a new Python
+#   part of the stack, they are always the first to break on a new Python
 #   release, because someone has to rebuild and test them for it. Nothing in
 #   Phases 1-6 uses them.
 #

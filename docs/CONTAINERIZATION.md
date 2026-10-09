@@ -2,15 +2,15 @@
 
 **Prerequisites:** [`CONTAINERS.md`](CONTAINERS.md) (what a container is, and
 choosing a runtime) and [`01-setup.md`](01-setup.md). You do not need to have
-built any phase yet — this document explains the destination.
+built any phase yet, this document explains the destination.
 
 **Learning goal:** understand what it means to containerize an entire
-application, why it's worth doing, and exactly how MicrobeGraph does it — with
+application, why it's worth doing, and exactly how MicrobeGraph does it, with
 **one set of files that works identically under Docker and Podman**, on Windows,
 macOS, and RHEL 8. By the end you will be able to explain images, layers,
 volumes, networks, health checks, and compose files to someone else.
 
-**Time:** 40–50 minutes reading. The build work happens in Phases 9b and 18.
+**Time:** 40-50 minutes reading. The build work happens in Phases 9b and 18.
 
 > Every term here is also in [`GLOSSARY.md`](GLOSSARY.md).
 
@@ -46,21 +46,21 @@ Containerization solves the same problem three times over, at growing scale. It'
 worth seeing all three, because each one motivates a different piece of the
 tooling.
 
-### Size 1 — "it works on my machine"
+### Size 1, "it works on my machine"
 
 You finish the project. A colleague clones it. It fails: their Python is 3.9,
 they're missing a system library, their operating system puts files somewhere
 else.
 
 *Everyday parallel:* you write a recipe that works in your kitchen. A friend tries
-it and it fails — their oven runs hot, their flour is different, they don't own a
+it and it fails, their oven runs hot, their flour is different, they don't own a
 stand mixer. The recipe was never the whole story. **The kitchen was part of it.**
 
-`.venv` fixes part of this — it seals your Python packages. But it doesn't seal
+`.venv` fixes part of this, it seals your Python packages. But it doesn't seal
 the Python itself, the operating system libraries underneath, or the system tools
 your code shells out to.
 
-### Size 2 — "five things have to start in the right order"
+### Size 2, "five things have to start in the right order"
 
 By Release 3.0, MicrobeGraph isn't one program. It's a **PostgreSQL database**, a
 **FastAPI service**, a **Streamlit app**, a **React frontend**, and (optionally)
@@ -72,18 +72,18 @@ Doing that by hand means five terminal windows, a written start-up order, and a
 page of notes that goes stale.
 
 *Everyday parallel:* a restaurant isn't one machine. It's an oven, a fridge, a
-dishwasher, a till, and a coffee machine — each installed separately, each
+dishwasher, a till, and a coffee machine, each installed separately, each
 depending on plumbing and power that must already be working. Opening a new branch
 by shipping the *fully-fitted kitchen as one unit* is a very different proposition
 from buying five appliances and hoping.
 
-### Size 3 — "the same thing must run in three places"
+### Size 3, "the same thing must run in three places"
 
 Your laptop. A RHEL 8 server. A cloud host. Same application, three very different
 environments.
 
 *Everyday parallel:* this is the actual, literal shipping container. Before them,
-loading a ship meant hand-stacking barrels, crates and sacks — every cargo
+loading a ship meant hand-stacking barrels, crates and sacks, every cargo
 different, every port needing its own handling. The standard steel box changed
 that: **the crane doesn't care what's inside.** One agreed shape, and any ship,
 truck, or train can carry it.
@@ -98,12 +98,12 @@ care what's inside it.
 
 Concretely, it means producing:
 
-1. **A recipe file per service** — called a `Containerfile` (or `Dockerfile`;
+1. **A recipe file per service**, called a `Containerfile` (or `Dockerfile`;
    identical format, two names). It says: start from this base, install these
    things, copy in this code, run this command.
-2. **An image per service** — the built, packaged result of that recipe. Static,
+2. **An image per service**, the built, packaged result of that recipe. Static,
    shareable, versioned.
-3. **A compose file** — one file describing all the services, how they connect,
+3. **A compose file**, one file describing all the services, how they connect,
    what storage they keep, and in what order they start.
 4. **One command that runs everything.**
 
@@ -115,7 +115,7 @@ cd microbegraph
 docker compose up          # or: podman compose up
 ```
 
-Two commands and the entire system is running — database, API, app, frontend — on
+Two commands and the entire system is running, database, API, app, frontend, on
 a machine with **no Python installed, no R, no PostgreSQL, no configuration**.
 
 That is the difference between "here is my code" and "here is my application."
@@ -139,7 +139,7 @@ second, is the gentler order.
 
 **Release 1.0 never requires containers.** `.venv` remains a fully supported path
 forever. Containerization is an *additional* way to run the project, never a
-replacement — which keeps a fresh clone runnable by someone who doesn't want to
+replacement, which keeps a fresh clone runnable by someone who doesn't want to
 install a container engine at all.
 
 ---
@@ -154,7 +154,7 @@ Python.
 docker build -t microbegraph-app .
 docker run -p 8501:8501 microbegraph-app
 
-# Podman — identical, one word changed
+# Podman, identical, one word changed
 podman build -t microbegraph-app .
 podman run -p 8501:8501 microbegraph-app
 ```
@@ -164,30 +164,30 @@ pandas, no NetworkX.
 
 **Notice how similar the two engines are.** Podman deliberately mirrors Docker's
 command line, so nearly every Docker tutorial you find works by substituting one
-word. This is not a coincidence — it's Podman's explicit design goal.
+word. This is not a coincidence, it's Podman's explicit design goal.
 
 ---
 
 ## 5. The Containerfile, line by line
 
-Here is the real one, with every line explained. **Read the comments — they're the
+Here is the real one, with every line explained. **Read the comments, they're the
 lesson.**
 
 ```dockerfile
 # ==============================================================================
-# MicrobeGraph — the Streamlit app, in a box
+# MicrobeGraph, the Streamlit app, in a box
 #
 # BUILD:  docker build -t microbegraph-app .      (or: podman build ...)
 # RUN:    docker run -p 8501:8501 microbegraph-app
 #
-# This file is called "Containerfile". Docker also accepts "Dockerfile" —
+# This file is called "Containerfile". Docker also accepts "Dockerfile",
 # same format, two names. Podman prefers Containerfile; both engines read
 # both. We use Containerfile because it's the vendor-neutral name.
 # ==============================================================================
 
 # ---- 1. The starting point --------------------------------------------------
 # Every image is built ON TOP of another image. This one starts from an
-# official Python 3.12 image built on Debian "slim" — a minimal Linux with
+# official Python 3.12 image built on Debian "slim", a minimal Linux with
 # Python already installed.
 #
 # EVERYDAY PARALLEL: you don't build a kitchen from raw ore. You start with a
@@ -228,14 +228,14 @@ WORKDIR /app
 # WHY "rm -rf /var/lib/apt/lists/*": the package index is ~40 MB and useless
 # after installing. Deleting it IN THE SAME instruction keeps it out of the
 # layer entirely. Deleting it in a later instruction would NOT shrink the
-# image — the data would still be sitting in the earlier layer.
+# image, the data would still be sitting in the earlier layer.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-# ---- 5. Python dependencies — copied BEFORE the code ------------------------
+# ---- 5. Python dependencies, copied BEFORE the code ------------------------
 # This ordering looks odd and is the single most important optimisation in
 # this file. Full explanation in section 6 below.
 COPY requirements.txt .
@@ -248,7 +248,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # edit only invalidates this layer, so rebuilds take seconds instead of
 # minutes.
 #
-# .dockerignore controls what is excluded here — see section 6.
+# .dockerignore controls what is excluded here, see section 6.
 COPY src/ ./src/
 COPY app/ ./app/
 COPY artifacts/ ./artifacts/
@@ -264,7 +264,7 @@ COPY artifacts/ ./artifacts/
 #
 # This is good practice under Docker and largely redundant under rootless
 # Podman (where "root" inside the container is already an unprivileged ID
-# outside it) — but we do it anyway, because the image must be safe under
+# outside it), but we do it anyway, because the image must be safe under
 # either engine.
 RUN useradd --create-home --shell /bin/bash appuser \
     && chown -R appuser:appuser /app
@@ -308,7 +308,7 @@ CMD ["streamlit", "run", "app/streamlit_app.py", \
 
 ## 6. Layers and caching: why the order matters
 
-Every instruction in a Containerfile creates a **layer** — a saved snapshot of the
+Every instruction in a Containerfile creates a **layer**, a saved snapshot of the
 filesystem after that step. The image is those layers stacked.
 
 *Everyday parallel:* **packing a suitcase.** Shoes at the bottom, then folded
@@ -333,7 +333,7 @@ your time, decided by two lines being in the right order.
 
 **The general rule:** put the things that change *least often* earliest.
 
-### `.dockerignore` — what not to send
+### `.dockerignore`, what not to send
 
 When you run a build, the engine first sends the whole folder to the build
 process. Without filtering, that includes `.venv/` (hundreds of MB), `data/`
@@ -347,16 +347,16 @@ process. Without filtering, that includes `.venv/` (hundreds of MB), `data/`
 #
 # WHY: everything here is either huge, secret, rebuildable, or
 # irrelevant inside the container. Excluding it makes builds much
-# faster and images much smaller — and prevents secrets ending up
+# faster and images much smaller, and prevents secrets ending up
 # baked into a published image.
 # ---------------------------------------------------------------
 
-# Rebuilt inside the container from requirements.txt — and it would be
+# Rebuilt inside the container from requirements.txt, and it would be
 # the WRONG platform's binaries anyway (macOS packages in a Linux image).
 .venv/
 venv/
 
-# Secrets — must NEVER be baked into an image. An image is shareable;
+# Secrets, must NEVER be baked into an image. An image is shareable;
 # treat anything inside it as public.
 .env
 .env.*
@@ -370,7 +370,7 @@ data/
 *.duckdb
 *.db
 
-# Version history — not needed at runtime, often the biggest folder
+# Version history, not needed at runtime, often the biggest folder
 .git/
 .github/
 
@@ -392,7 +392,7 @@ figures/
 ```
 
 > ⚠️ **The most important line in that file is `.env`.** An image is a shareable
-> artifact. If you publish one with a secret baked in, that secret is public —
+> artifact. If you publish one with a secret baked in, that secret is public,
 > and deleting the file in a later layer does **not** remove it, because it's
 > still in the earlier layer. Anyone can extract it. This is one of the most
 > common real-world container security failures.
@@ -415,7 +415,7 @@ copying only the finished result across:
 
 ```dockerfile
 # ==============================================================================
-# MicrobeGraph — the React frontend, multi-stage
+# MicrobeGraph, the React frontend, multi-stage
 # ==============================================================================
 
 # ---- STAGE 1: the messy kitchen ---------------------------------------------
@@ -435,7 +435,7 @@ RUN npm run build               # produces a /build/dist folder of static files
 FROM nginx:alpine
 
 # Reach back into the builder stage and take ONLY the finished files.
-# Node.js, npm, node_modules — all left behind.
+# Node.js, npm, node_modules, all left behind.
 COPY --from=builder /build/dist /usr/share/nginx/html
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
@@ -448,7 +448,7 @@ problem.
 
 *What is nginx?* A small, very fast web server. Its job here is to hand finished
 HTML, CSS and JavaScript files to browsers. *Everyday parallel:* the person at the
-counter passing over pre-made sandwiches — no cooking, just fast, reliable
+counter passing over pre-made sandwiches, no cooking, just fast, reliable
 handover.
 
 ---
@@ -457,7 +457,7 @@ handover.
 
 **Containers are disposable.** Stop one and everything written inside it vanishes.
 
-That's a feature, not a bug — it's what makes them reproducible. But a database
+That's a feature, not a bug, it's what makes them reproducible. But a database
 that forgets everything on restart is useless.
 
 *Everyday parallel:* a container is a **hotel room**. You use it, you leave, it's
@@ -471,7 +471,7 @@ the container.
 # Docker
 docker run -v microbegraph-data:/var/lib/postgresql/data postgres:16
 
-# Podman on RHEL — note the :Z, explained in section 14
+# Podman on RHEL, note the :Z, explained in section 14
 podman run -v microbegraph-data:/var/lib/postgresql/data:Z postgres:16
 ```
 
@@ -483,7 +483,7 @@ Two kinds, and the distinction matters:
 | **Bind mount** | `./local/path:/path` | Live-editing code during development | A window onto a folder on your own desk |
 
 **In development**, bind-mounting your source code means edits appear inside the
-running container instantly — no rebuild. **In production**, you never bind-mount
+running container instantly, no rebuild. **In production**, you never bind-mount
 code: the whole point is that the image contains a fixed, known version.
 
 ---
@@ -495,7 +495,7 @@ code: the whole point is that the image contains a fixed, known version.
 When compose starts several containers it puts them on a private network where
 **each service is reachable by its service name**.
 
-So the API connects to the database at `postgres:5432` — not an IP address, not
+So the API connects to the database at `postgres:5432`, not an IP address, not
 `localhost`. The name `postgres` is the service's name in the compose file.
 
 *Everyday parallel:* an office internal phone system. You dial "Accounts", not a
@@ -504,7 +504,7 @@ after they move desks.
 
 **Why this is genuinely better than IP addresses:** container IPs change on every
 restart. Names don't. This is why the compose file has a service literally named
-`postgres` — that name *is* the address.
+`postgres`, that name *is* the address.
 
 ### Outside: publishing a port
 
@@ -521,7 +521,7 @@ docker run -p 8501:8501 microbegraph-app
 *Everyday parallel:* the hotel again. Every room has a phone (the internal port).
 Only rooms the front desk will connect a call to are reachable from outside (the
 published port). `-p 9000:8501` means "outside callers dial 9000, connect them to
-the app's 8501" — useful when 8501 is already taken.
+the app's 8501", useful when 8501 is already taken.
 
 **The security point:** only publish what genuinely needs to be reachable. In
 MicrobeGraph's stack, the frontend and API are published; **the database is not**.
@@ -534,7 +534,7 @@ That's a deliberate decision, and it's the default posture you should adopt.
 
 Three rules, in order of importance:
 
-**1. Never bake a secret into an image.** Covered above — layers keep everything,
+**1. Never bake a secret into an image.** Covered above, layers keep everything,
 and images are shareable.
 
 **2. Pass secrets at run time, from a file the container reads.** Compose does
@@ -609,12 +609,12 @@ both, because the database can also restart later, long after startup.
 **Compose** describes every service in one file and runs them together.
 
 *Everyday parallel:* a Containerfile is a recipe for one dish. A compose file is
-the **menu plus the kitchen rota** — what gets made, which station makes it, what
+the **menu plus the kitchen rota**, what gets made, which station makes it, what
 each needs, and in what order.
 
 ```yaml
 # ==============================================================================
-# MicrobeGraph — the whole application, one file
+# MicrobeGraph, the whole application, one file
 #
 # RUN:   docker compose up          (or: podman compose up)
 # STOP:  docker compose down
@@ -628,7 +628,7 @@ services:
   # ---- The database ---------------------------------------------------------
   postgres:
     # Apache AGE ships a Postgres image with the graph extension preinstalled,
-    # so we don't compile anything. Pinned to a version, never "latest" —
+    # so we don't compile anything. Pinned to a version, never "latest",
     # "latest" means "whatever it happens to be today", which is the opposite
     # of reproducible.
     image: apache/age:PG16_latest
@@ -645,7 +645,7 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    # DELIBERATELY NO "ports:" — the database is reachable by the other
+    # DELIBERATELY NO "ports:", the database is reachable by the other
     # services on the internal network and INVISIBLE from outside. Publish it
     # only if you need to connect a desktop SQL client, and only temporarily.
     restart: unless-stopped
@@ -653,10 +653,10 @@ services:
   # ---- The API: the shared service layer ------------------------------------
   api:
     build:
-      context: .
+      context:.
       dockerfile: api/Containerfile
     environment:
-      # "postgres" is the SERVICE NAME above — the internal phone directory
+      # "postgres" is the SERVICE NAME above, the internal phone directory
       DATABASE_URL: postgresql://microbegraph:${POSTGRES_PASSWORD}@postgres:5432/microbegraph
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}      # optional; empty is fine
     ports:
@@ -675,7 +675,7 @@ services:
   # ---- The Streamlit app: the analyst's workbench ---------------------------
   app:
     build:
-      context: .
+      context:.
       dockerfile: Containerfile
     environment:
       MICROBEGRAPH_API_URL: http://api:8000      # by name again
@@ -689,7 +689,7 @@ services:
   # ---- The React frontend: the public product ------------------------------
   frontend:
     build:
-      context: .
+      context:.
       dockerfile: frontend/Containerfile
     ports:
       - "3000:80"          # nginx listens on 80 inside; we publish it as 3000
@@ -700,7 +700,7 @@ services:
 
 # ---- Named volumes ----------------------------------------------------------
 # Declared here, managed by the engine, and NOT deleted when containers are
-# removed — only by an explicit "down -v".
+# removed, only by an explicit "down -v".
 volumes:
   microbegraph-db:
 ```
@@ -754,14 +754,14 @@ is every difference that will actually affect you, honestly listed.
 
 | Topic | Docker | Podman | Does it matter? |
 |---|---|---|---|
-| Build | `docker build` | `podman build` | No — identical |
-| Run | `docker run` | `podman run` | No — identical |
-| Recipe file | `Dockerfile` | `Containerfile` | No — both engines read both names |
-| Compose | `docker compose up` (built in) | `podman compose up` (needs `podman-compose` or `podman-docker`) | **Slightly** — one extra install |
+| Build | `docker build` | `podman build` | No, identical |
+| Run | `docker run` | `podman run` | No, identical |
+| Recipe file | `Dockerfile` | `Containerfile` | No, both engines read both names |
+| Compose | `docker compose up` (built in) | `podman compose up` (needs `podman-compose` or `podman-docker`) | **Slightly**, one extra install |
 | Background service | A root daemon, always running | **No daemon** | Podman is simpler and safer |
 | Privileges | Effectively root | **Rootless by default** | Podman wins on shared machines |
-| Ports below 1024 | Fine | Blocked when rootless | **Yes** — see section 14 |
-| SELinux volumes | N/A | Needs `:Z` on RHEL | **Yes** — see section 14 |
+| Ports below 1024 | Fine | Blocked when rootless | **Yes**, see section 14 |
+| SELinux volumes | N/A | Needs `:Z` on RHEL | **Yes**, see section 14 |
 | Auto-start on boot | `restart: unless-stopped` | Same, plus systemd/Quadlet | Podman integrates better with Linux servers |
 | Licence | Free personally; **paid in larger companies** | **Always free, open source** | Often the deciding factor |
 
@@ -810,11 +810,11 @@ file and enforces which processes may touch which labels. It's on by default and
 it's a genuinely good thing.
 
 *Everyday parallel:* a building where every room has a colour-coded badge reader.
-Your badge opens rooms of your colour. Very effective — and confusing the first
+Your badge opens rooms of your colour. Very effective, and confusing the first
 time you're handed a badge and told a door "should" work.
 
 **The symptom:** you mount a folder into a container and the container gets
-`Permission denied` — even though the file permissions look completely fine. The
+`Permission denied`, even though the file permissions look completely fine. The
 *permissions* are fine; the *SELinux label* is wrong.
 
 **The fix:** append `:Z` to the mount.
@@ -832,7 +832,7 @@ containers. Use capital unless two containers genuinely need the same folder.)*
 
 ### Ports below 1024
 
-Rootless Podman cannot bind ports under 1024 — a Linux rule that reserves them for
+Rootless Podman cannot bind ports under 1024, a Linux rule that reserves them for
 privileged processes.
 
 **Our answer:** don't need them. Every published port in this project is above
@@ -857,12 +857,12 @@ sudo loginctl enable-linger $USER
 ```
 
 *(Newer Podman versions prefer **Quadlet**, a tidier file-based approach. The
-Phase 18 guide will show whichever is current when we get there — this is exactly
+Phase 18 guide will show whichever is current when we get there, this is exactly
 the kind of detail worth re-checking rather than trusting a year-old memory.)*
 
 That last `loginctl` line is easily missed: without it, your user's services stop
 when you log out. *Everyday parallel:* leaving the office and having the lights
-you switched on turn themselves off — fine for lights, not for a server.
+you switched on turn themselves off, fine for lights, not for a server.
 
 ---
 
@@ -874,7 +874,7 @@ them without building anything.
 *Everyday parallel:* a registry is an app store for images. `docker pull` is
 "install".
 
-MicrobeGraph publishes to **GitHub Container Registry (GHCR)** — free for public
+MicrobeGraph publishes to **GitHub Container Registry (GHCR)**, free for public
 repositories and already tied to your GitHub account.
 
 Phase 19 adds a GitHub Actions workflow that, on every push to `master`:
@@ -915,7 +915,7 @@ Applied throughout, each with its reason:
 
 **Rough sizes to expect:** the app image ~450 MB (Python plus scientific libraries
 are simply large), the frontend ~25 MB (multi-stage), the database ~400 MB
-(official image). Total around 900 MB — normal for a stack like this, and a useful
+(official image). Total around 900 MB, normal for a stack like this, and a useful
 number to sanity-check your own build against.
 
 ---
@@ -950,7 +950,7 @@ includes `--server.address=0.0.0.0` (Streamlit) or `--host 0.0.0.0` (uvicorn).
 
 ### `Permission denied` on a mounted folder (RHEL)
 
-SELinux. Add `:Z` to the mount — see [section 14](#14-rhel-8-specifics-selinux-rootless-ports-and-autostart).
+SELinux. Add `:Z` to the mount, see [section 14](#14-rhel-8-specifics-selinux-rootless-ports-and-autostart).
 
 ### API can't reach the database
 
@@ -963,7 +963,7 @@ Three usual causes, in order of likelihood:
 3. Password mismatch between `.env` and what Postgres was first initialised with.
    **Note:** Postgres only reads `POSTGRES_PASSWORD` when creating a *brand-new*
    data directory. Changing it later has no effect unless you also remove the
-   volume — a genuinely confusing behaviour worth knowing about.
+   volume, a genuinely confusing behaviour worth knowing about.
 
 ### Build is slow every single time
 
@@ -976,7 +976,7 @@ Images accumulate:
 
 ```bash
 docker system prune -a        # or: podman system prune -a
-docker volume ls              # check volumes separately — prune -a doesn't touch them
+docker volume ls              # check volumes separately, prune -a doesn't touch them
 ```
 
 ⚠️ Removes unused images and stopped containers. Safe here (everything rebuilds),
@@ -984,7 +984,7 @@ but read the prompt.
 
 ### `exec format error`
 
-Architecture mismatch — an ARM image on an x86 machine or vice versa. Rebuild on
+Architecture mismatch, an ARM image on an x86 machine or vice versa. Rebuild on
 the target, or use `docker buildx` for multi-platform images.
 
 ---
@@ -997,7 +997,7 @@ You've understood this document when you can answer these without scrolling up:
 2. Why does the Containerfile copy `requirements.txt` before the application code?
 3. What is a multi-stage build, and what does it save?
 4. Why does a database need a volume?
-5. Inside compose, how does the API address the database — and why not by IP?
+5. Inside compose, how does the API address the database, and why not by IP?
 6. What does `condition: service_healthy` do that plain `depends_on` doesn't?
 7. Name three things that make one set of files work under both Docker and Podman.
 8. Why must a secret never be baked into an image, even if deleted in a later
@@ -1007,18 +1007,18 @@ You've understood this document when you can answer these without scrolling up:
 <summary>Answers (open after you've tried)</summary>
 
 1. `.venv` seals Python *packages*. A container seals the Python itself, the
-   operating-system libraries beneath it, and the system tools — the whole
+   operating-system libraries beneath it, and the system tools, the whole
    kitchen, not just the ingredients.
 2. Layer caching. Dependencies change rarely, code changes constantly. This order
    means a code edit rebuilds in ~2 seconds instead of ~3 minutes.
 3. Using one image to build and a second, minimal one to run, copying only the
-   finished output across. The frontend goes from ~1.2 GB to ~25 MB — and the
+   finished output across. The frontend goes from ~1.2 GB to ~25 MB, and the
    build tools never reach production.
 4. Containers are disposable; anything written inside vanishes on removal. A
    volume is the suitcase that leaves the hotel room with you.
 5. By service name (`postgres:5432`), like dialling "Accounts" on an office phone
    system. Container IP addresses change on every restart; names don't.
-6. Plain `depends_on` waits for *started*. `service_healthy` waits for *ready* —
+6. Plain `depends_on` waits for *started*. `service_healthy` waits for *ready*,
    the kettle's click, not the switch. Postgres takes seconds to accept
    connections after its container starts.
 7. Name the file `Containerfile`; publish only ports above 1024; add `:Z` to
@@ -1065,7 +1065,7 @@ git switch develop
 
 > **Extra care for this phase:** run `./check-public-safe.sh` *before* building
 > any image, not just before pushing. A `.env` that slipped past `.dockerignore`
-> ends up inside a shareable artifact, which is a worse leak than a Git commit —
+> ends up inside a shareable artifact, which is a worse leak than a Git commit,
 > a commit can be rewritten, but a pulled image is already on someone else's disk.
 
 ---

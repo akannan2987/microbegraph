@@ -1,5 +1,5 @@
 """
-MicrobeGraph — setup verification.
+MicrobeGraph, setup verification.
 
 WHY THIS EXISTS:
     Setup has many steps and a half-finished environment produces confusing
@@ -57,7 +57,7 @@ check(
     "Virtual environment active",
     in_venv,
     "Activate it: source .venv/bin/activate  "
-    "(Windows: .\\.venv\\Scripts\\Activate.ps1). See Step 7.",
+    "(Windows:.\\.venv\\Scripts\\Activate.ps1). See Step 7.",
 )
 
 # --- 3. Required packages import ---------------------------------------
@@ -175,5 +175,5 @@ if failed == 0:
     print("All checks passed. Your workshop is ready.\n")
     sys.exit(0)
 else:
-    print(f"{failed} check(s) failed — see the hints above.\n")
+    print(f"{failed} check(s) failed, see the hints above.\n")
     sys.exit(1)

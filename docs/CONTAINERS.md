@@ -1,11 +1,11 @@
 # Containers: Docker, Podman, or neither
 
 **Prerequisites:** [`01-setup.md`](01-setup.md). Nothing here is needed until
-**Phase 9b** (packaging the app, optional) or **Phase 12** (Airflow) — but read it
+**Phase 9b** (packaging the app, optional) or **Phase 12** (Airflow), but read it
 before then, because the choice you make affects how those phases feel.
 
 **This document is about *choosing and installing a runtime*.** For *building
-MicrobeGraph's own images* — Containerfiles, layers, volumes, networks, compose —
+MicrobeGraph's own images*. Containerfiles, layers, volumes, networks, compose,
 see [`CONTAINERIZATION.md`](CONTAINERIZATION.md). Choose your engine here; build
 with it there.
 
@@ -14,7 +14,7 @@ routes suits your machine, and how to set up whichever you choose. You will also
 learn why "it works on my machine" is a real engineering problem with a real
 solution.
 
-**Time:** 15 minutes reading; 20–40 minutes setup when you reach Phase 12.
+**Time:** 15 minutes reading; 20-40 minutes setup when you reach Phase 12.
 
 > Every term here is also in [`GLOSSARY.md`](GLOSSARY.md).
 
@@ -25,9 +25,9 @@ solution.
 1. [What a container is](#1-what-a-container-is-and-the-problem-it-solves)
 2. [Why this project needs one (and only at Phase 12)](#2-why-this-project-needs-one-and-only-at-phase-12)
 3. [The three routes, compared](#3-the-three-routes-compared)
-4. [Route A — Docker Desktop](#4-route-a--docker-desktop)
-5. [Route B — Podman](#5-route-b--podman-rootless-daemonless-rhel-native)
-6. [Route C — Prefect, no containers at all](#6-route-c--prefect-no-containers-at-all)
+4. [Route A. Docker Desktop](#4-route-a--docker-desktop)
+5. [Route B. Podman](#5-route-b--podman-rootless-daemonless-rhel-native)
+6. [Route C. Prefect, no containers at all](#6-route-c--prefect-no-containers-at-all)
 7. [Which should you pick?](#7-which-should-you-pick)
 8. [Troubleshooting](#8-troubleshooting)
 
@@ -43,7 +43,7 @@ version, a library at a different version, a missing system tool. Hours disappea
 into "it works on my machine."
 
 *Everyday parallel:* you write a recipe that works in your kitchen. A friend tries
-it and it fails — their oven runs hot, their flour is different, they don't own a
+it and it fails, their oven runs hot, their flour is different, they don't own a
 stand mixer. The recipe was never the whole story; the kitchen was part of it.
 
 ### The idea
@@ -53,7 +53,7 @@ A **container** ships the kitchen along with the recipe.
 It's a sealed, lightweight box holding your program *plus* everything it needs to
 run: the right Python, the right libraries, the right system tools, the right
 configuration. That box runs identically on your Windows laptop, your colleague's
-Mac, and a RHEL 8 server — because the box *is* the environment.
+Mac, and a RHEL 8 server, because the box *is* the environment.
 
 **Container vs virtual machine.** A virtual machine ships an entire operating
 system: heavy, slow to start, gigabytes. A container shares the host's operating
@@ -63,14 +63,14 @@ locked room in a shared building.
 
 **Two words you'll see constantly:**
 
-- **Image** — the recipe and ingredients, packaged. A blueprint. Static.
-- **Container** — a running instance of an image. You can start several from one
+- **Image**: the recipe and ingredients, packaged. A blueprint. Static.
+- **Container**: a running instance of an image. You can start several from one
   image, like baking several cakes from one recipe.
 
 ### How this relates to `.venv`
 
 You already met a smaller version of this idea. A virtual environment seals your
-*Python packages*. A container seals *everything* — the OS libraries, the system
+*Python packages*. A container seals *everything*, the OS libraries, the system
 tools, the Python itself. Same instinct, wider scope.
 
 For this project's Python code, `.venv` is enough. Airflow is different: it's not
@@ -86,7 +86,7 @@ requirement:
 
 | Phase | What it is | Which way round |
 |---|---|---|
-| **9b** *(optional)* | Package the Streamlit app as one image | You **build** an image — the gentle version, one service |
+| **9b** *(optional)* | Package the Streamlit app as one image | You **build** an image, the gentle version, one service |
 | **12** | Run Airflow locally via the Astro CLI | You **consume** images someone else built |
 | **18** | The whole stack via `compose.yaml` | You **build and orchestrate** four services together |
 
@@ -95,7 +95,7 @@ forever, so a fresh clone works for someone who has no interest in installing a
 container engine. Everything containerized is an *additional* way to run the
 project.
 
-Phases 1–9 need no containers at all, and that's deliberate — introducing
+Phases 1-9 need no containers at all, and that's deliberate, introducing
 containers before there's a multi-service system to manage would be teaching a
 solution before its problem.
 
@@ -124,7 +124,7 @@ them.
 | **Background daemon** | Yes, always running | **No daemon** | No |
 | **Windows** | ✅ Best supported | ✅ Works (needs WSL2) | ✅ |
 | **macOS** | ✅ Best supported | ✅ Well supported | ✅ |
-| **RHEL 8 / Rocky** | ⚠️ Possible, not native | ✅ **Native — ships with RHEL** | ✅ |
+| **RHEL 8 / Rocky** | ⚠️ Possible, not native | ✅ **Native, ships with RHEL** | ✅ |
 | **Licence cost** | Free for personal use; **paid for larger companies** | **Fully open source, always free** | Open source |
 | **Corporate-friendly** | Often blocked or licensed | Usually permitted | Always |
 | **RAM needed** | ~4 GB | ~4 GB | ~1 GB |
@@ -138,13 +138,13 @@ teach containers.
 
 Docker Desktop is free for personal use, education, and small businesses, but
 requires a paid subscription in larger commercial organisations. This is a common
-reason it's unavailable on work machines — and a large part of why Podman exists
+reason it's unavailable on work machines, and a large part of why Podman exists
 and why Red Hat ships it by default. Worth knowing, because "why can't I install
 Docker at work?" has an answer that isn't technical.
 
 ---
 
-## 4. Route A — Docker Desktop
+## 4. Route A. Docker Desktop
 
 Best on Windows and macOS personal machines. Most tutorials assume it, so search
 results will match what you see.
@@ -154,7 +154,7 @@ results will match what you see.
 <details open>
 <summary><b>🪟 Windows</b></summary>
 
-1. Enable WSL2 (Windows Subsystem for Linux) — open PowerShell **as
+1. Enable WSL2 (Windows Subsystem for Linux), open PowerShell **as
    Administrator**:
    ```powershell
    wsl --install
@@ -172,7 +172,7 @@ results will match what you see.
 <details open>
 <summary><b>🍎 macOS</b></summary>
 
-1. Download from <https://www.docker.com/products/docker-desktop/> — pick **Apple
+1. Download from <https://www.docker.com/products/docker-desktop/>, pick **Apple
    Silicon** for M-series Macs, **Intel** for older ones.
 2. Drag to Applications, launch, grant the permissions it asks for.
 
@@ -181,7 +181,7 @@ results will match what you see.
 <details open>
 <summary><b>🐧 RHEL 8</b></summary>
 
-Docker Desktop is not the natural fit here — RHEL ships Podman instead. Use
+Docker Desktop is not the natural fit here. RHEL ships Podman instead. Use
 **Route B**. If you specifically need Docker Engine, it installs from Docker's own
 repository, but you'll be working against the grain of the distribution.
 
@@ -207,7 +207,7 @@ This message shows that your installation appears to be working correctly.
 
 ---
 
-## 5. Route B — Podman (rootless, daemonless, RHEL-native)
+## 5. Route B. Podman (rootless, daemonless, RHEL-native)
 
 **The strongest choice on RHEL 8, and often the only permitted choice on locked-
 down work machines.** Three reasons:
@@ -216,7 +216,7 @@ down work machines.** Three reasons:
    Podman runs containers as ordinary child processes of your shell. Fewer moving
    parts, smaller attack surface.
 2. **Rootless by default.** Containers run as *you*, not as root. If something in
-   a container misbehaves, it has your permissions — not the machine's. On a
+   a container misbehaves, it has your permissions, not the machine's. On a
    shared VM this matters a great deal.
 3. **No admin rights needed** to run it, and it's already installed on RHEL 8.
 
@@ -307,7 +307,7 @@ podman version 4.9.4
 Hello from Docker!
 ```
 
-*(Yes, the image says "Docker" — it's the standard test image, and Podman running
+*(Yes, the image says "Docker", it's the standard test image, and Podman running
 it is precisely the point: the ecosystem is shared.)*
 
 ### Point the Astro CLI at Podman
@@ -321,7 +321,7 @@ astro config set -g container.binary podman
 On some setups the CLI also wants to know where Podman's socket lives:
 
 ```bash
-# macOS / Windows — find the socket path
+# macOS / Windows, find the socket path
 podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}'
 
 # then export it (add to your shell profile to make it permanent)
@@ -342,12 +342,12 @@ sudo dnf install -y podman-docker    # RHEL: provides a 'docker' command that ca
 ```
 
 This is exactly the kind of small friction that comes with the less-travelled
-path. It's manageable, and worth it for the security and licence benefits — but
+path. It's manageable, and worth it for the security and licence benefits, but
 it's honest to say it exists rather than let you discover it at 11pm.
 
 ---
 
-## 6. Route C — Prefect, no containers at all
+## 6. Route C. Prefect, no containers at all
 
 If containers are blocked, unavailable, or simply more than you want to take on
 right now, **Phase 12 can be done in Prefect instead**, and you lose less than you
@@ -358,7 +358,7 @@ functions, decorate them, and Prefect handles scheduling, dependency order,
 retries, logging, and a monitoring dashboard.
 
 **What you get:** DAGs, dependencies, scheduling, retries, idempotency, failure
-handling, observability — the concepts that actually transfer between
+handling, observability, the concepts that actually transfer between
 orchestrators.
 
 **What you don't get:** container experience, and Airflow's specific vocabulary
@@ -389,13 +389,13 @@ replaceable.
 
 ```mermaid
 flowchart TD
-    A{"Which machine will run<br/>the orchestrator?"} -->|"RHEL 8 / Linux VM"| B["Route B — Podman<br/>native, rootless, no admin rights"]
+    A{"Which machine will run<br/>the orchestrator?"} -->|"RHEL 8 / Linux VM"| B["Route B. Podman<br/>native, rootless, no admin rights"]
     A -->|"Windows or macOS,<br/>personal machine"| C{"Can you install<br/>Docker Desktop?"}
     A -->|"Locked-down<br/>work machine"| D{"Is Podman<br/>permitted?"}
-    C -->|Yes| E["Route A — Docker Desktop<br/>simplest, best documented"]
+    C -->|Yes| E["Route A. Docker Desktop<br/>simplest, best documented"]
     C -->|"No / prefer open source"| B
     D -->|Yes| B
-    D -->|No| F["Route C — Prefect<br/>same concepts, no containers"]
+    D -->|No| F["Route C. Prefect<br/>same concepts, no containers"]
 
     classDef choice fill:#FFF3CD,stroke:#C9A227,color:#4A3B00;
     classDef route fill:#E6F4EA,stroke:#4CAF7D,color:#0B3D2E;
@@ -464,21 +464,21 @@ Container images accumulate. Clean up:
 docker system prune -a      # or: podman system prune -a
 ```
 
-⚠️ Removes all unused images and stopped containers. Safe here — everything is
-rebuildable from the project files — but read the confirmation prompt before
+⚠️ Removes all unused images and stopped containers. Safe here, everything is
+rebuildable from the project files, but read the confirmation prompt before
 agreeing.
 
 ### RHEL 8: rootless containers fail with a permissions error
 
 Usually missing user-namespace ranges. Check `cat /etc/subuid | grep $USER`. If
 empty, see the `usermod` command in [Route B](#5-route-b--podman-rootless-daemonless-rhel-native)
-— it needs an administrator once, then never again.
+it needs an administrator once, then never again.
 
 ### Not enough memory
 
 Airflow wants ~4 GB. Docker Desktop → Settings → Resources → raise the memory
 limit. Podman: `podman machine set --memory 4096` (stop the machine first). On a
-small VM, **Route C (Prefect)** is the right answer — roughly 1 GB.
+small VM, **Route C (Prefect)** is the right answer, roughly 1 GB.
 
 ---
 
@@ -495,7 +495,7 @@ Before Phase 12 you should be able to say:
 
 **What you learned:** the "works on my machine" problem and its solution; images
 versus containers; why Podman's rootless, daemonless design matters on shared and
-restricted machines; that Docker's licence — not its technology — is often why
+restricted machines; that Docker's licence, not its technology, is often why
 it's unavailable at work; and that orchestration concepts transfer between tools,
 so the tool is a less important choice than it first appears.
 
@@ -522,6 +522,6 @@ git switch develop
 
 ---
 
-**Next:** [`CONTAINERIZATION.md`](CONTAINERIZATION.md) — building MicrobeGraph's
+**Next:** [`CONTAINERIZATION.md`](CONTAINERIZATION.md), building MicrobeGraph's
 own images with whichever engine you chose ·
 **Plan:** [`ROADMAP.md`](ROADMAP.md) · **Setup:** [`01-setup.md`](01-setup.md)

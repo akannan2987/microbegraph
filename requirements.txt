@@ -1,4 +1,4 @@
-# MicrobeGraph — core Python dependencies
+# MicrobeGraph, core Python dependencies
 #
 # Install with:  pip install -r requirements.txt
 #
@@ -81,8 +81,8 @@ python-dotenv>=1.0,<2    # reads optional API keys from a .env file
 # ---------------------------------------------------------------------------
 
 # NOTE: the node-embedding libraries (gensim, node2vec) are NOT here.
-# They are the most fragile dependencies in the stack — they contain compiled
-# C code and break first on new Python versions — and nothing before Phase 7
+# They are the most fragile dependencies in the stack, they contain compiled
+# C code and break first on new Python versions, and nothing before Phase 7
 # needs them. They live in requirements-ml.txt, installed only when you reach
 # that phase. Keeping them out means a broken embedding library can never
 # block someone from setting the project up.

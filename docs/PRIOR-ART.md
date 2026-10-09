@@ -1,15 +1,15 @@
 # Prior art: what exists already, and where this project sits
 
-**Prerequisites:** [`00-architecture.md`](00-architecture.md) — you should know what
+**Prerequisites:** [`00-architecture.md`](00-architecture.md), you should know what
 a knowledge graph is and what MicrobeGraph builds. No specialist background
 needed; every tool and term below is explained.
 
 **Learning goal:** you will know what already exists in this field, how
-MicrobeGraph differs, and — just as importantly — **what it does not claim**. You
+MicrobeGraph differs, and, just as importantly, **what it does not claim**. You
 will also understand why naming the related work makes a project *more* credible
 rather than less.
 
-**Time:** 25–30 minutes of reading. Nothing to run.
+**Time:** 25-30 minutes of reading. Nothing to run.
 
 > Every term here is also in [`GLOSSARY.md`](GLOSSARY.md).
 
@@ -40,7 +40,7 @@ making. The term comes from patent law: before an invention can be patented,
 someone checks whether it already exists.
 
 *Everyday example:* before spending a year designing a better umbrella, you spend
-an afternoon finding out what umbrellas already exist. Not to be discouraged — to
+an afternoon finding out what umbrellas already exist. Not to be discouraged, to
 find out which specific problem is still unsolved, and to avoid loudly announcing
 something invented in 1962.
 
@@ -50,13 +50,13 @@ This is counter-intuitive, so it's worth being explicit.
 
 A repository that says *"here is the related work, here is precisely where mine
 differs, and here is what mine is not"* reads as work by someone who knows the
-field. A repository silent about related work reads as someone who didn't look —
+field. A repository silent about related work reads as someone who didn't look,
 and in a specialised area, the people most likely to read it are exactly the
 people who will know.
 
 *Everyday example:* two people describe a restaurant idea. One says "a place that
 sells food". The other says "there are four Italian places on this street; three
-do pizza, one does pasta, none opens for lunch — I'd open for lunch." The second
+do pizza, one does pasta, none opens for lunch. I'd open for lunch." The second
 person has obviously done the work, and their idea is more believable *because*
 they named the competition.
 
@@ -70,9 +70,9 @@ state what isn't claimed. All three, plainly.
 MicrobeGraph sits on top of a mature ecosystem. Here is that ecosystem, from the
 raw biology upward.
 
-### Layer 1 — The curated databases
+### Layer 1. The curated databases
 
-**MIBiG** — *Minimum Information about a Biosynthetic Gene Cluster*. A
+**MIBiG**: *Minimum Information about a Biosynthetic Gene Cluster*. A
 community-curated repository of gene clusters experimentally shown to produce a
 particular molecule. Version 2.0 held 2,021 entries; 3.0 added 661 more with
 re-validation of existing ones; 4.0 continues that work through international
@@ -82,12 +82,12 @@ collaboration.
 contains this production line, and it makes this molecule", each entry signed off
 by a human against published experiments.
 
-**This is MicrobeGraph's backbone.** The project does not compete with MIBiG — it
+**This is MicrobeGraph's backbone.** The project does not compete with MIBiG, it
 consumes it, with attribution.
 
-### Layer 2 — The prediction tools
+### Layer 2. The prediction tools
 
-**antiSMASH** — scans a genome and predicts where the biosynthetic gene clusters
+**antiSMASH**: scans a genome and predicts where the biosynthetic gene clusters
 are. Where MIBiG holds clusters that were *proven*, antiSMASH finds clusters that
 are *probable*, at enormous scale.
 
@@ -95,15 +95,15 @@ are *probable*, at enormous scale.
 and reviewed. antiSMASH is an algorithm scanning satellite images for buildings
 that look like restaurants. Both useful, very different confidence.
 
-### Layer 3 — The analysis tools
+### Layer 3. The analysis tools
 
-**BiG-SCAPE** and **CORASON** — build *similarity networks* of gene clusters:
+**BiG-SCAPE** and **CORASON**, build *similarity networks* of gene clusters:
 which clusters resemble which others, grouped into families. Widely used; a
 typical study might network a thousand clusters from a few dozen genomes and find
 that most have no close match to anything characterised.
 
-**Note what kind of network this is.** The nodes are all the *same type* — gene
-clusters — and the edges mean "these two resemble each other". That is a
+**Note what kind of network this is.** The nodes are all the *same type*, gene
+clusters, and the edges mean "these two resemble each other". That is a
 **similarity network**.
 
 MicrobeGraph is a different shape: nodes of nine *different* types, edges that are
@@ -114,12 +114,12 @@ graph**.
 knowledge graph is a chart of who wrote which song, for which film, in which year.
 Both are networks; they answer completely different questions.
 
-### Layer 4 — Machine learning on clusters
+### Layer 4. Machine learning on clusters
 
 An active, crowded area. Recent work includes transformer models trained on
 22,258 Actinomycete clusters to predict what compound class a cluster produces,
 and deep networks classifying cluster products at fine structural resolution using
-roughly 3,800 cluster–product pairs from MIBiG.
+roughly 3,800 cluster-product pairs from MIBiG.
 
 **Be clear-eyed about this:** applying machine learning to BGC data is not novel.
 Phase 7 of this project is *learning* an established technique on a small graph,
@@ -134,7 +134,7 @@ If you read one thing in this document, read this section.
 **SocialGene** builds large-scale knowledge graphs in Neo4j for comparative
 genomics and natural-product discovery. It links MIBiG clusters to chemical
 structures in NPAtlas, connects genomes to mass-spectrometry features and GNPS
-molecular-networking clusters, and ships precomputed databases — including one
+molecular-networking clusters, and ships precomputed databases, including one
 spanning over 343,000 reference genomes and another holding more than two million
 antiSMASH-predicted clusters.
 
@@ -157,7 +157,7 @@ published, is open source, and is enormously larger.**
    Nothing here competes with that.
 2. **The chain is different at the end.** SocialGene connects clusters to
    *chemistry and analytical measurement*. MicrobeGraph connects them to *disease
-   outcomes in crops* — which is a different question and requires data that isn't
+   outcomes in crops*, which is a different question and requires data that isn't
    in any of these systems (see [section 5](#5-the-gap-where-the-knowledge-stops-being-machine-readable)).
 
 **If you want the state of the art in BGC knowledge graphs, use SocialGene.** This
@@ -173,10 +173,10 @@ Saying that clearly costs nothing and buys a great deal of credibility.
 Building a heterogeneous knowledge graph and using it to suggest untested links is
 **a well-established pattern in biomedicine**, not an invention of this project.
 
-Drug-repurposing knowledge graphs — Hetionet is the best-known early example, with
-several larger successors — integrate genes, compounds, diseases, symptoms and
+Drug-repurposing knowledge graphs. Hetionet is the best-known early example, with
+several larger successors, integrate genes, compounds, diseases, symptoms and
 side effects into one graph, then use path-based and embedding methods to rank
-plausible drug–disease pairs for testing.
+plausible drug-disease pairs for testing.
 
 **MicrobeGraph applies that established pattern to agriculture.** The structure of
 the question is the same:
@@ -189,7 +189,7 @@ the question is the same:
 
 **That transfer is the honest description of the idea:** a proven pattern moved to
 a domain where it is much less common. Applying a known method in a new domain is
-legitimate, useful work — and it is *not* the same as inventing the method.
+legitimate, useful work, and it is *not* the same as inventing the method.
 
 ---
 
@@ -199,11 +199,11 @@ Here is the one place where something is genuinely missing, and it is the reason
 this project exists.
 
 **The biocontrol literature is enormous.** Reviews consolidate which microbial
-lipopeptides and polyketides act against which crop pathogens — *Fusarium*,
-*Botrytis*, *Magnaporthe*, *Colletotrichum*, *Phytophthora*, *Rhizoctonia* — from
+lipopeptides and polyketides act against which crop pathogens, *Fusarium*,
+*Botrytis*, *Magnaporthe*, *Colletotrichum*, *Phytophthora*, *Rhizoctonia*, from
 genera such as *Bacillus*, *Pseudomonas*, *Streptomyces* and *Trichoderma*. The
 economic stakes are well documented: crop losses to disease are routinely
-estimated at 20–40% of global production.
+estimated at 20-40% of global production.
 
 **And essentially none of it is downloadable as structured data.**
 
@@ -218,7 +218,7 @@ knowledge is there. None of it is sortable.
 **This is the gap MicrobeGraph addresses**, and it addresses it in a deliberately
 modest, honest way:
 
-- A small hand-curated CSV — **dozens of rows, not thousands**
+- A small hand-curated CSV, **dozens of rows, not thousands**
 - **A literature citation required on every row**, enforced by the loader
 - Every such edge stamped `evidence_level = curated_literature`, visually distinct
   in the app, and filterable out entirely
@@ -234,31 +234,31 @@ appears.
 
 ## 6. Commercial platforms
 
-Several well-funded companies work on the same underlying problem — finding
+Several well-funded companies work on the same underlying problem, finding
 microbes that protect crops.
 
-- **AgBiome** — its GENESIS platform runs environmental sampling through genomics,
+- **AgBiome**: its GENESIS platform runs environmental sampling through genomics,
   bioinformatics and high-throughput screening to identify useful microbes.
-- **Lavie Bio** — uses computational predictive biology, originally developed for
+- **Lavie Bio**: uses computational predictive biology, originally developed for
   plant breeding, to design microbial products from genetic signals.
-- **Indigo Ag** — a large genomic microbe database matching beneficial microbes to
+- **Indigo Ag**: a large genomic microbe database matching beneficial microbes to
   crops and regions.
-- **Biome Makers** — a soil-microbiome platform built on thousands of soil samples
+- **Biome Makers**: a soil-microbiome platform built on thousands of soil samples
   across many countries, producing disease-risk and soil-health metrics.
-- **IFF Crop Biologicals** — an integrated discovery-to-field pipeline inside a
+- **IFF Crop Biologicals**: an integrated discovery-to-field pipeline inside a
   large ingredients company.
 
 **What their platforms have that this project does not, and never will:**
 
-1. **Physical strain collections** — tens of thousands of isolates, owned.
-2. **Proprietary screening results** — their own assay data on their own strains.
-3. **Field trial data** — the expensive, slow, decisive evidence.
+1. **Physical strain collections**, tens of thousands of isolates, owned.
+2. **Proprietary screening results**, their own assay data on their own strains.
+3. **Field trial data**, the expensive, slow, decisive evidence.
 4. **Regulatory and commercial infrastructure.**
 
 **Their moat is the data, not the graph.** Any competent team can build a
 knowledge graph. Nobody else has their strain library.
 
-**Which points at where public value actually lies.** These platforms are closed —
+**Which points at where public value actually lies.** These platforms are closed,
 you cannot inspect their reasoning, check their sources, or reproduce their
 conclusions. An open, evidence-labelled, reproducible graph is a *different kind
 of object*: not a competitor to a commercial pipeline, but a public, auditable
@@ -274,14 +274,14 @@ proprietary experimental evidence that gives the commercial platforms their valu
 There is no data moat here.
 
 **The more credible direction is the opposite: the machinery, not the facts.**
-Many research organisations have the same underlying problem — scattered internal
+Many research organisations have the same underlying problem, scattered internal
 and public data, no provenance, no way to ask questions that cross several
 sources. What they cannot easily buy is a *system* for building an
 evidence-graph over **their own private data**, with the ontology, entity
 resolution, evidence model and query layer already designed.
 
-In that framing the product is the framework — ingestion contract, ontology,
-resolution ledger, evidence discipline, GraphRAG, MCP server — and the customer
+In that framing the product is the framework, ingestion contract, ontology,
+resolution ledger, evidence discipline, GraphRAG, MCP server, and the customer
 supplies the data. The graph is the product; the facts stay theirs.
 
 **Stated as honestly as possible:** that is a plausible direction, not a plan.
@@ -295,15 +295,15 @@ that field first.
 
 | Question | Best existing answer | Does MicrobeGraph help? |
 |---|---|---|
-| Which clusters exist in this genome? | antiSMASH | No — use antiSMASH |
-| Which clusters are experimentally proven? | MIBiG | No — MicrobeGraph reads MIBiG |
-| Which clusters resemble each other? | BiG-SCAPE | No — different network shape |
-| Mine biosynthetic potential across all of RefSeq | SocialGene | No — SocialGene is far larger |
-| What is this compound's chemistry? | PubChem | No — MicrobeGraph reads PubChem |
-| Which compounds act on this crop pathogen? | **Scattered across papers** | **Yes — this is the gap** |
-| Show the full chain from crop back to microbe, with evidence for every step | **Nothing public** | **Yes — this is the point** |
-| How confident is each link in that chain? | Rarely modelled anywhere | **Yes — evidence level on every edge** |
-| Learn how such a system is built, from zero | Rarely documented | **Yes — the repo is the tutorial** |
+| Which clusters exist in this genome? | antiSMASH | No, use antiSMASH |
+| Which clusters are experimentally proven? | MIBiG | No. MicrobeGraph reads MIBiG |
+| Which clusters resemble each other? | BiG-SCAPE | No, different network shape |
+| Mine biosynthetic potential across all of RefSeq | SocialGene | No. SocialGene is far larger |
+| What is this compound's chemistry? | PubChem | No. MicrobeGraph reads PubChem |
+| Which compounds act on this crop pathogen? | **Scattered across papers** | **Yes, this is the gap** |
+| Show the full chain from crop back to microbe, with evidence for every step | **Nothing public** | **Yes, this is the point** |
+| How confident is each link in that chain? | Rarely modelled anywhere | **Yes, evidence level on every edge** |
+| Learn how such a system is built, from zero | Rarely documented | **Yes, the repo is the tutorial** |
 
 **The pattern:** for every question a mature tool answers well, use that tool. The
 last four rows are where this project contributes.
@@ -317,7 +317,7 @@ Three things. Each is real; none is a scientific breakthrough.
 ### 1. The chain continues past the compound
 
 Every system surveyed above stops at chemistry. MicrobeGraph continues to
-*pathogen* and *crop* — which is only possible because of the curated bridge, and
+*pathogen* and *crop*, which is only possible because of the curated bridge, and
 which is exactly why nobody else's system does it.
 
 **Why that matters practically:** it turns a literature-review-shaped task into a
@@ -328,7 +328,7 @@ one step, is not something the existing tools can do.
 
 Most knowledge graphs record *that* a relationship exists. Recording **how
 strongly it is known**, on every single edge, and making "show me only what is
-actually measured" a checkbox — that is rarer than it should be.
+actually measured" a checkbox, that is rarer than it should be.
 
 Concretely, this project:
 
@@ -347,7 +347,7 @@ The commercial platforms are closed. The academic tools are open but assume you
 already are a bioinformatician.
 
 A system that is simultaneously **open**, **reproducible from raw responses**, and
-**documented so a complete beginner can rebuild every step** is unusual — and that
+**documented so a complete beginner can rebuild every step** is unusual, and that
 combination is a deliberate goal here rather than a by-product.
 
 ---
@@ -369,14 +369,14 @@ Stated plainly, because the boundary matters more than the achievement.
   greenhouse, let alone a field.
 - ❌ **Not production-scale.** Release 1.0 runs on a laptop, by design.
 
-### What it does claim — in one sentence
+### What it does claim, in one sentence
 
 This is the claim to make when you have one line: in a README opener, a summary, a
 conversation. Every clause is defensible, and each is doing work.
 
 > **An open, reproducible knowledge graph that connects curated biosynthetic gene
 > cluster data to crop disease outcomes, with evidence provenance on every
-> relationship — including a transparently hand-curated bridge for the
+> relationship, including a transparently hand-curated bridge for the
 > literature-derived links that no public database provides.**
 
 Read it clause by clause and notice that nothing is decorative:
@@ -384,7 +384,7 @@ Read it clause by clause and notice that nothing is decorative:
 | Clause | Why it's there |
 |---|---|
 | *open, reproducible* | Distinguishes it from the closed commercial platforms |
-| *curated biosynthetic gene cluster data* | Says the source is MIBiG — proven entries, not predictions. Claims no credit for the underlying data |
+| *curated biosynthetic gene cluster data* | Says the source is MIBiG, proven entries, not predictions. Claims no credit for the underlying data |
 | *to crop disease outcomes* | The part no other system reaches. This is the whole contribution |
 | *evidence provenance on every relationship* | The design decision that makes the graph auditable |
 | *transparently hand-curated bridge* | Volunteers the weakest part before anyone has to ask |
@@ -399,9 +399,9 @@ brickwork, and here's where the new join is" is more trustworthy than one who sa
 "I transformed the property." The first one you can walk round and check.
 
 **The longer version**, when there's room for a paragraph: a correct, honest,
-end-to-end workflow — ingestion with provenance, an ontology-governed graph,
+end-to-end workflow, ingestion with provenance, an ontology-governed graph,
 entity resolution with a written ledger, statistically validated analytics,
-machine learning with honest evaluation, and a public application — extending the
+machine learning with honest evaluation, and a public application, extending the
 chain to crop outcomes, with evidence provenance throughout, documented so that
 anyone can reproduce and learn from it.
 
@@ -413,7 +413,7 @@ true claim is worth more than a larger one that doesn't survive a question.
 ## 10. What would make it more novel
 
 If this were to become genuinely new work rather than a well-built integration,
-these are the honest directions — recorded so the ambition is on the record even
+these are the honest directions, recorded so the ambition is on the record even
 where the work isn't done.
 
 | Direction | What it would take | Why it would matter |
@@ -427,7 +427,7 @@ where the work isn't done.
 
 **That last row is worth dwelling on.** Failed tests are rarely published, so every
 graph in this field silently over-represents success. Modelling negative results
-explicitly would be a genuinely uncommon contribution — and it costs nothing but
+explicitly would be a genuinely uncommon contribution, and it costs nothing but
 discipline.
 
 ---
@@ -438,23 +438,23 @@ Everything cited above, so any claim can be checked.
 
 **Databases and tools**
 
-- **MIBiG** — Minimum Information about a Biosynthetic Gene Cluster.
+- **MIBiG**: Minimum Information about a Biosynthetic Gene Cluster.
   <https://mibig.secondarymetabolites.org/> · MIBiG 3.0: *Nucleic Acids Research*
   51(D1):D603 · MIBiG 4.0: <https://doi.org/10.5281/zenodo.14169073> (CC-BY)
-- **antiSMASH** — biosynthetic gene cluster prediction.
+- **antiSMASH**: biosynthetic gene cluster prediction.
   <https://antismash.secondarymetabolites.org/>
-- **BiG-SCAPE / CORASON** — gene cluster similarity networks and phylogenies.
-- **SocialGene** — bespoke large-scale knowledge graphs for comparative genomics
+- **BiG-SCAPE / CORASON**: gene cluster similarity networks and phylogenies.
+- **SocialGene**: bespoke large-scale knowledge graphs for comparative genomics
   and multi-omics natural product discovery.
   <https://pmc.ncbi.nlm.nih.gov/articles/PMC11370487/>
-- **PubChem** — <https://pubchem.ncbi.nlm.nih.gov/> (public domain)
-- **NCBI Taxonomy / Datasets** — <https://www.ncbi.nlm.nih.gov/> (public domain)
-- **UniProt** — <https://www.uniprot.org/>
-- **KEGG** — <https://www.genome.jp/kegg/> (academic use, attribution required)
+- **PubChem**: <https://pubchem.ncbi.nlm.nih.gov/> (public domain)
+- **NCBI Taxonomy / Datasets**: <https://www.ncbi.nlm.nih.gov/> (public domain)
+- **UniProt**: <https://www.uniprot.org/>
+- **KEGG**: <https://www.genome.jp/kegg/> (academic use, attribution required)
 
 **Knowledge-graph methodology**
 
-- **Hetionet** and successor biomedical knowledge graphs — the established pattern
+- **Hetionet** and successor biomedical knowledge graphs, the established pattern
   of heterogeneous graphs plus path-based and embedding methods for candidate
   ranking, which this project applies to agriculture.
 
@@ -471,7 +471,7 @@ Everything cited above, so any claim can be checked.
 
 > **On keeping this current.** This survey reflects the landscape at the time of
 > writing. Fields move. If you find work that overlaps more closely than anything
-> listed here, that is worth an issue and an update — a prior-art document that is
+> listed here, that is worth an issue and an update, a prior-art document that is
 > never revised is a prior-art document nobody should trust.
 
 ---
@@ -491,7 +491,7 @@ You've understood this document when you can answer:
 <summary>Answers (open after you've tried)</summary>
 
 1. Everything already published or built in the same area. Naming it shows you
-   surveyed the field; silence suggests you didn't look — and specialists will
+   surveyed the field; silence suggests you didn't look, and specialists will
    know.
 2. It builds large-scale Neo4j knowledge graphs linking clusters, genomes,
    chemicals and mass-spectrometry data. It is far larger and stronger on the
