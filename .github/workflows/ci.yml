@@ -2,8 +2,9 @@
 # MicrobeGraph, continuous integration (CI)
 #
 # WHAT THIS FILE DOES
-#   Every time you push, GitHub borrows fresh computers, installs the project
-#   from scratch exactly as docs/01-setup.md describes, and runs the checks:
+#   Every time master changes (or you ask for a run by hand), GitHub borrows
+#   fresh computers, installs the project from scratch exactly as
+#   docs/01-setup.md describes, and runs the checks:
 #     * ruff  (style and likely bugs)
 #     * pytest (every promise the code makes)
 #   on Windows, macOS and Linux, with Python 3.11 and 3.12, plus one run
@@ -11,8 +12,8 @@
 #
 # WHY IT MATTERS
 #   Without CI, "runs on Windows, macOS and RHEL 8" really only describes the
-#   one machine you tested on. With CI it is checked on all of them, on every
-#   push, by machines with nothing left over from yesterday.
+#   one machine you tested on. With CI it is checked on all of them, every
+#   time master changes, by machines with nothing left over from yesterday.
 #
 #   Compare a recipe you've only ever cooked in your own kitchen, where you
 #   know which drawer the whisk is in, with one that has been tested in three
@@ -26,6 +27,21 @@
 #   if your access token has the "workflow" permission. If the push is
 #   refused with "refusing to allow a Personal Access Token to create or
 #   update workflow", see docs/01-setup.md, Troubleshooting T13.
+#
+# KEEPING THIS FILE CURRENT
+#   The "uses:" lines borrow two ready-made steps that GitHub publishes:
+#   actions/checkout (fetches the code) and actions/setup-python (installs
+#   Python). The "@v7" picks a major version. Every so often GitHub retires
+#   what an older version runs on, and the run page starts showing yellow
+#   warnings about it. When that happens:
+#     1. Open the releases page of each action on GitHub and note the newest
+#        major version (for example v7 -> v8). Read what changed in it.
+#     2. Change the number here, in both jobs.
+#     3. Push, and check the next run shows green ticks and no warnings.
+#   Commit message: "ci: move checkout and setup-python to vN".
+#   On 2026-10-11 this file moved from checkout@v4 and setup-python@v5 to v7
+#   of both, after the first run warned that the older ones were being
+#   retired. Phase 19 makes GitHub propose these updates automatically.
 # ---------------------------------------------------------------------------
 
 name: tests
@@ -46,14 +62,17 @@ jobs:
   test:
     name: ${{ matrix.os }} / Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20       # a normal run takes 2-3 minutes; anything stuck is stopped
     strategy:
       fail-fast: false        # let every combination finish, so you see the whole picture
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python: ["3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false   # the tests only read the code, so no login is left behind
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
           cache: pip
@@ -70,13 +89,16 @@ jobs:
   rhel8:
     name: RHEL 8 (UBI 8) / Python 3.11
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     # UBI is Red Hat's freely redistributable build of RHEL. Running the tests
     # inside it checks the RHEL 8 promise with RHEL 8's own system libraries.
     container:
       image: registry.access.redhat.com/ubi8/python-311
       options: --user 0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Install the project
         run: |
           python3.11 -m venv /tmp/venv

@@ -4,7 +4,7 @@
 
 ![MicrobeGraph: from a microbe's genes to a crop's disease, with the evidence for every arrow](img/cover_microbegraph.svg)
 
-**Handbook version:** 1.1 · **Last updated:** 2026-10-11 · **Repository state it
+**Handbook version:** 1.2 · **Last updated:** 2026-10-11 · **Repository state it
 describes:** Phase 0 (design and setup) and Phase 1 (MIBiG ingestion) built and
 tested; Phase 2 (more sources) next.
 
@@ -312,6 +312,24 @@ arrows (the counts are explained in
 [`03-ingestion-mibig.md`, Step 8](03-ingestion-mibig.md#12-step-8-run-it-for-real)).
 **Commit message:** `feat: add MIBiG source adapter with evidence locker and provenance log`.
 **Estimated time:** 7-9 hours.
+
+**Looking after the automatic tests.** From this stage on, every change to
+`master` is tested on seven borrowed machines, following
+`.github/workflows/ci.yml`:
+
+![What GitHub does with your code: the trigger, the seven jobs, and the five steps inside each](img/ci_checks.svg)
+
+Between phases, two things can need a moment of attention, and neither means
+your code is broken:
+
+* **No run appears after a push.** Start one by hand from the Actions tab
+  ([`03-ingestion-mibig.md`, *Starting a run by hand*](03-ingestion-mibig.md#starting-a-run-by-hand)).
+* **A finished run lists yellow warnings that an action is being retired.** Move
+  `ci.yml` to the newer version
+  ([*Keeping the workflow current*](03-ingestion-mibig.md#keeping-the-workflow-current)).
+  This happened once already, straight after Phase 1, and the fix was one small
+  commit: `ci: move checkout and setup-python to v7`. From Phase 19, GitHub
+  proposes these updates by itself.
 
 ---
 
@@ -664,6 +682,8 @@ ritual from [Stage 2](#stage-2-version-control-and-the-end-of-phase-ritual).
 | A download fails or a checksum does not match | [`03-ingestion-mibig.md`, section 17](03-ingestion-mibig.md#17-what-could-go-wrong) |
 | A test fails | The test's name says which promise broke; the phase guide's *What could go wrong* table |
 | `$'\r': command not found` from the safety gate (Windows) | [`01-setup.md`, T14](01-setup.md#t14-bash-check-public-safesh-fails-with-r-command-not-found-windows) |
+| The Actions tab shows no run after a push | [`03-ingestion-mibig.md`, *Starting a run by hand*](03-ingestion-mibig.md#starting-a-run-by-hand) |
+| A run lists yellow warnings about Node.js or an action version | [`03-ingestion-mibig.md`, *Keeping the workflow current*](03-ingestion-mibig.md#keeping-the-workflow-current) |
 | The Actions tab is red but your laptop is green | Click the red run, read the failing step; [`03-ingestion-mibig.md`, section 13](03-ingestion-mibig.md#13-step-9-continuous-integration-tests-on-four-systems) |
 | Push refused about a "workflow" | [`01-setup.md`, T13](01-setup.md#t13-push-refused-refusing-to-allow-a-personal-access-token-to-create-or-update-workflow) |
 | Push rejected, or `--ff-only` refuses | [`GIT-WORKFLOW.md`, section 9](GIT-WORKFLOW.md#9-when-something-goes-wrong) |
@@ -729,5 +749,6 @@ mentions it in that same commit, and add a change-log line.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2 | 2026-10-11 | After Phase 1: the test workflow moved to version 7 of `actions/checkout` and `actions/setup-python`, each job now stops after 20 minutes, and the code checkout leaves no login behind. Stage 4 gains "Looking after the automatic tests" with a new picture of what a run does; the troubleshooting map covers a push that starts no run and the version warnings |
 | 1.1 | 2026-10-11 | Corrections from the first full run of Phase 1 on a Phase 0 checkout. `src/microbegraph/__init__.py` is new in Phase 1, not carried over from Phase 0. The unused top-level `sources/` and `figures/` folders are removed with `git rm`. New troubleshooting entry for `ModuleNotFoundError` during `pip install -e .`. The Phase 1 guide's probe output is now a real run against Zenodo, with the archive size as the program prints it (9.5 MB). The real MIBiG 4.0 archive is not gzip-compressed despite its name, so archives are now read by their contents, and a fetch logs the file it filed even if it then can't open it. MIBiG 4.0 writes activity names in two styles; both are now read, curators' comments are kept on the compound as `activity_notes`, and the surfactin test record is a cut-down copy of the real one. The Phase 1 checkpoint now gives the expected counts |
 | 1.0 | 2026-10-10 | First edition: Stages 0-4 complete (design, setup, rulebook, MIBiG ingestion); Stages 5-23 described from the roadmap; journey map, setup loop, branch model, ontology and evidence pictures added |

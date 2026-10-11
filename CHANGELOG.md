@@ -18,6 +18,21 @@ and start a new, empty *Unreleased* above it. The
 
 ## Unreleased (toward 1.0.0)
 
+### After Phase 1: the test workflow
+
+- **Changed** `.github/workflows/ci.yml` to use version 7 of `actions/checkout`
+  and `actions/setup-python`. The first run warned that the versions it used
+  (`checkout@v4`, `setup-python@v5`) are built for Node.js 20, which GitHub is
+  retiring.
+- **Changed** every CI job to stop after 20 minutes, and the code checkout to
+  leave no login behind on the borrowed machine.
+- **Added** a picture of what one test run does (`docs/img/ci_checks.svg`), and
+  instructions for starting a run by hand and for keeping the workflow's actions
+  current (`docs/03-ingestion-mibig.md`, section 13). The first push of Phase 1
+  started no run by itself; it was started by hand and passed on all seven jobs.
+- **Changed** the branch-model picture to say the tests run whenever `master`
+  changes, which is what the workflow does.
+
 ### Phase 1: ingestion, the MIBiG backbone
 
 - **Added** the source-adapter framework: one contract (`probe`, `fetch`, `tidy`)

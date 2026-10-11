@@ -880,6 +880,19 @@ outputs. This project's MCP tools will be read-only by design.
 
 ## Quality, testing, and honesty
 
+**Action (in GitHub Actions)**: a ready-made step that someone publishes for
+workflows to borrow, named by owner, name and major version, like
+`actions/checkout@v7` (fetch the code) or `actions/setup-python@v7` (install
+Python). Borrowing one is like using a standard plug instead of wiring your own.
+The version number matters: GitHub retires old versions from time to time, and
+[`03-ingestion-mibig.md`, section 13](03-ingestion-mibig.md#13-step-9-continuous-integration-tests-on-four-systems)
+shows how to move to a newer one.
+
+**Annotation (on a GitHub run)**: a note GitHub pins to a finished run. A yellow
+**warning** means something still works but should change soon, such as an
+action version being retired. A grey **notice** is information only. Neither is
+a failure: a failed job has a red cross instead.
+
 **Assertion**: a statement in a test that must be true, or the test fails.
 
 **Changelog**: a file (`CHANGELOG.md`) listing what changed in each version,
@@ -889,11 +902,13 @@ GitHub.
 **Checkpoint**: in this tutorial, a verification step: run this, expect that. If
 it doesn't match, stop and fix it before continuing.
 
-**Continuous integration (CI)**: every push automatically installs the project
-on fresh computers and runs the tests. Here that means Windows, macOS, Linux and
-a RHEL 8 container, through **GitHub Actions** (GitHub's free service for
-running such jobs, configured by files in `.github/workflows/`). Think of a
-recipe tested in other people's kitchens as well as your own.
+**Continuous integration (CI)**: every time `master` changes (which your
+end-of-phase push always does), the project is installed automatically on fresh
+computers and the tests are run. Here that means Windows, macOS, Linux and a
+RHEL 8 container, through **GitHub Actions** (GitHub's free service for running
+such jobs, configured by files in `.github/workflows/`). Think of a recipe tested
+in other people's kitchens as well as your own. A run can also be started by
+hand with the **Run workflow** button on the Actions tab.
 
 **Evidence level**: the label on every edge saying what kind of knowledge it is:
 `curated_experimental`, `database_assertion`, `curated_literature`, or

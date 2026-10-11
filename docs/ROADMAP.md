@@ -920,9 +920,12 @@ concepts).
 **What gets built:** the test suite has run on every push across Windows, macOS,
 Linux and RHEL 8 since Phase 1 (continuous integration). This phase adds
 **continuous delivery**: automated multi-platform image builds published to the
-GitHub Container Registry; image vulnerability scanning; automatic proposals when a
-dependency has an update or a security fix; release notes generated from
-`CHANGELOG.md`; and the `v3.0.0` tag.
+GitHub Container Registry; image vulnerability scanning; automatic proposals
+(GitHub's Dependabot, pointed at `develop`) when a Python package or one of the
+actions in the workflow files has an update or a security fix; release notes
+generated from `CHANGELOG.md`; and the `v3.0.0` tag. Until then, the actions are
+kept current by hand, as described in
+[`03-ingestion-mibig.md`, section 13](03-ingestion-mibig.md#13-step-9-continuous-integration-tests-on-four-systems).
 
 **Why last:** you automate the building of images that already exist and are
 known-good. Automating a moving target wastes the effort twice.
@@ -987,6 +990,7 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | | Monthly scheduled refresh with retries and alerts | Phase 12 |
 | | Containers: the app (optional), then the whole stack | Phase 9b, Phase 18 |
 | | Published multi-platform images, vulnerability scanning, dependency updates | Phase 19 |
+| | Test workflow kept on supported action versions | ✅ by hand since Phase 1, automatic from Phase 19 |
 | **Using it** | Public app (Streamlit), then the React product | Phase 9, Phase 15 |
 | | API with documentation, keys, rate limits, logging and a health endpoint | Phase 14 |
 | | AI access: GraphRAG answers, an MCP server | Phase 9, Phase 16 |

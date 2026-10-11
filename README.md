@@ -435,6 +435,7 @@ without an internet connection, and they're made by
 | [Setup, then the loop](docs/img/setup_flow.svg) | the one-time setup and the repeating session ritual | setup, Handbook |
 | [The branch model](docs/img/git_branch_model.svg) | develop, beta and master, and the one push | setup, git workflow |
 | [The journey](docs/img/journey_map.svg) | every phase, its hours and its status | Handbook, roadmap |
+| [What a test run does](docs/img/ci_checks.svg) | the seven machines GitHub tests on, and the five steps on each | Phase 1, Handbook |
 
 | Interactive page (download, then open) | What you can do |
 |---|---|

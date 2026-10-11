@@ -348,6 +348,7 @@ pattern:
 | Changed the gitignore | `chore: ignore R workspace files` |
 | Deleted something unused | `refactor: remove the unused notebooks folder` |
 | Corrected your own earlier mistake | `fix: correct stale phase numbers in the README` |
+| Moved the test workflow to newer action versions | `ci: move checkout and setup-python to v7` |
 
 The last row is worth a second look. Committing a correction to your own work is
 completely normal, and to anyone reading the history it shows care. I find a
@@ -547,6 +548,16 @@ git log --oneline --graph --all -10
 Then `git pull --rebase origin develop` replays your commits on top of theirs.
 **Never** `git push --force` on a shared branch to make an error go away: it
 deletes other people's work.
+
+### The Actions tab shows no run after my push
+
+The tests start when `master` changes, so after the usual push a run should
+appear on the **Actions** tab within a minute or so. If it hasn't after a few
+minutes, start it yourself: click **tests** on the left, then **Run workflow**,
+check the branch says `master`, and confirm. If that button is missing, go to
+**Settings**, then **Actions**, then **General**, and select **Allow all actions
+and reusable workflows**. The details are in
+[`03-ingestion-mibig.md`, section 13](03-ingestion-mibig.md#13-step-9-continuous-integration-tests-on-four-systems).
 
 ### I want to see what I'm about to commit
 

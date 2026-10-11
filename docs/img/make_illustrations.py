@@ -602,8 +602,8 @@ def git_branch_model() -> str:
     parts.append(rect(376, 334, 250, 26, fill=SURFACE, rx=6))
     parts.append(t(501, 352, "git pull --ff-only origin master", size=12, weight=700, fill=INK2,
                    anchor="middle", family=MONO))
-    parts.append(check_mark(660, 394, 9))
-    parts.append(t(676, 399, "GitHub runs the tests on every push (Actions tab)", size=12, fill=INK2))
+    parts.append(check_mark(604, 394, 9))
+    parts.append(t(620, 399, "GitHub runs the tests whenever master changes (Actions tab)", size=12, fill=INK2))
     return svg(1000, 420, "".join(parts), "The three-branch model",
                "Work on local develop; one push updates origin develop, beta and master; "
                "local master is then fast-forwarded from origin master.")
@@ -703,6 +703,82 @@ def journey_map() -> str:
                "status and hour estimates.")
 
 
+def _screen(cx: float, cy: float, c: str) -> str:
+    """A plain computer screen on a stand: any make, any system."""
+    return (rect(cx - 13, cy - 11, 26, 18, stroke=c, sw=2.5, rx=3)
+            + f'<path d="M{cx} {cy + 7} V{cy + 12} M{cx - 7} {cy + 12} H{cx + 7}" stroke="{c}" '
+            f'stroke-width="2.5" fill="none" stroke-linecap="round"/>')
+
+
+def ci_checks() -> str:
+    """What one run on the Actions tab is made of: the trigger, the seven jobs, the five steps."""
+    blue = LAYER["genomics"]
+    parts = [t(32, 46, "What GitHub does with your code", size=22, weight=700),
+             t(32, 70, "Seven fresh computers install MicrobeGraph from nothing and run the same "
+               "checks you run at home.", size=14, fill=INK2)]
+    # what starts a run
+    parts.append(rect(32, 100, 236, 150, fill=PLANE, stroke=HAIR, rx=12))
+    parts.append(t(48, 124, "A RUN STARTS WHEN", size=12, weight=700, fill=MUTED))
+    for k, (what, how) in enumerate([("master changes", "your end-of-phase push"),
+                                     ("you click Run workflow", "on the Actions tab"),
+                                     ("a pull request opens", "someone proposes a change")]):
+        y = 150 + k * 36
+        parts.append(f'<circle cx="54" cy="{y - 4}" r="4" fill="{blue}"/>')
+        parts.append(t(66, y, what, size=13, weight=700))
+        parts.append(t(66, y + 16, how, size=11.5, fill=MUTED))
+    parts.append(line(272, 175, 314, 175, color=blue))
+    # the instructions
+    parts.append(rect(318, 135, 150, 80, fill=SURFACE, stroke=blue, rx=12, sw=2))
+    parts.append(t(393, 168, "ci.yml", size=16, weight=700, anchor="middle", family=MONO))
+    parts.append(t(393, 190, "the instructions", size=12, fill=INK2, anchor="middle"))
+    parts.append(line(472, 175, 498, 175, color=blue))
+    parts.append(t(393, 238, "one copy goes to", size=11.5, fill=MUTED, anchor="middle"))
+    parts.append(t(393, 253, "each of the seven", size=11.5, fill=MUTED, anchor="middle"))
+    # the seven jobs
+    jobs = [("Ubuntu Linux", "3.11"), ("Ubuntu Linux", "3.12"), ("Windows", "3.11"),
+            ("Windows", "3.12"), ("macOS", "3.11"), ("macOS", "3.12")]
+    for k, (system, py) in enumerate(jobs):
+        x, y = 506 + (k % 2) * 237, 96 + (k // 2) * 56
+        parts.append(rect(x, y, 225, 46, fill=SURFACE, stroke=HAIR, rx=10))
+        parts.append(_screen(x + 26, y + 22, INK2))
+        parts.append(t(x + 50, y + 20, system, size=13, weight=700))
+        parts.append(t(x + 50, y + 37, f"Python {py}", size=11.5, fill=MUTED))
+        parts.append(check_mark(x + 203, y + 23, 9))
+    x, y = 506, 264
+    parts.append(rect(x, y, 462, 46, fill=SURFACE, stroke=HAIR, rx=10))
+    parts.append(_screen(x + 26, y + 22, INK2))
+    parts.append(t(x + 50, y + 20, "RHEL 8 (Red Hat's UBI 8 container)", size=13, weight=700))
+    parts.append(t(x + 50, y + 37, "Python 3.11, with RHEL 8's own system libraries", size=11.5, fill=MUTED))
+    parts.append(check_mark(x + 440, y + 23, 9))
+    # inside every job
+    parts.append(t(32, 352, "INSIDE EVERY ONE OF THE SEVEN, IN THIS ORDER", size=12, weight=700, fill=MUTED))
+    steps = [("get the code", "actions/checkout"), ("install Python", "actions/setup-python"),
+             ("install the project", "pip install -e ."), ("style check", "ruff check ."),
+             ("the tests", "pytest")]
+    for k, (what, how) in enumerate(steps):
+        x = 32 + k * 192
+        parts.append(rect(x, 366, 168, 62, fill=SURFACE, stroke=HAIR, rx=10))
+        parts.append(f'<circle cx="{x + 20}" cy="{386}" r="11" fill="{blue}"/>')
+        parts.append(t(x + 20, 390.5, str(k + 1), size=12, weight=700, fill=SURFACE, anchor="middle"))
+        parts.append(t(x + 38, 391, what, size=13, weight=700))
+        parts.append(t(x + 14, 416, how, size=11.5, fill=INK2, family=MONO))
+        if k < len(steps) - 1:
+            parts.append(line(x + 171, 397, x + 189, 397, color=BASE, sw=2))
+    # reading the result
+    parts.append(check_mark(44, 466, 9))
+    parts.append(t(62, 471, "All seven green: the test badge at the top of the README turns green.",
+                   size=13))
+    parts.append(cross_mark(44, 496, 9))
+    parts.append(t(62, 501, "One red: click it, open the step marked with a cross, and read what it says.",
+                   size=13))
+    return svg(1000, 528, "".join(parts), "What GitHub does with your code",
+               "A push to master, the Run workflow button or a pull request starts a run. "
+               "ci.yml sends one copy to each of seven machines: Ubuntu Linux, Windows and "
+               "macOS with Python 3.11 and 3.12, and a RHEL 8 container with Python 3.11. "
+               "Each one gets the code, installs Python and the project, runs ruff and "
+               "then pytest.")
+
+
 FIGURES = {
     "logo_microbegraph.svg": logo,
     "cover_microbegraph.svg": cover,
@@ -715,6 +791,7 @@ FIGURES = {
     "git_branch_model.svg": git_branch_model,
     "setup_flow.svg": setup_flow,
     "journey_map.svg": journey_map,
+    "ci_checks.svg": ci_checks,
 }
 
 

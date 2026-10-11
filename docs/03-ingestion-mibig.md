@@ -942,9 +942,12 @@ three staging files exist.
 
 ## 13. Step 9. Continuous integration: tests on four systems
 
-**Continuous integration (CI)** means that every time you push, a fresh computer
-somewhere else installs the project from scratch and runs the tests. GitHub
-offers this free for public repositories, under the name **GitHub Actions**.
+**Continuous integration (CI)** means that every time the main branch changes, a
+fresh computer somewhere else installs the project from scratch and runs the
+tests. GitHub offers this free for public repositories, under the name
+**GitHub Actions**.
+
+![What GitHub does with your code: the trigger, the seven jobs, and the five steps inside each](img/ci_checks.svg)
 
 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) asks for:
 
@@ -954,11 +957,16 @@ offers this free for public repositories, under the name **GitHub Actions**.
 | `rhel8` | Red Hat's UBI 8 container (the freely redistributable build of RHEL 8) | 3.11 |
 
 Each job does exactly what [`01-setup.md`](01-setup.md) Step 8 tells you to do,
-then runs `ruff check .` and `pytest`.
+then runs `ruff check .` and `pytest`. Two smaller settings are worth knowing
+about. Each job is stopped after 20 minutes (a normal one takes two or three), so
+a stuck machine can't sit there for hours. And the step that fetches the code is
+told not to leave a GitHub login behind on the borrowed machine, because the
+tests only ever read the code.
 
 Why bother? Saying the project "runs on Windows, macOS and RHEL 8" is a claim, and
 without CI it's really a claim about one laptop. With CI it gets checked on all of
-them at every push, by machines that have nothing left over from yesterday.
+them every time `master` changes, by machines that have nothing left over from
+yesterday.
 
 A kitchen comparison helps here. A recipe that has worked in three other people's
 kitchens is more convincing than one only ever made in yours, where you know which
@@ -972,14 +980,63 @@ drawer the whisk is in.
 > If you push over SSH, this doesn't affect you.
 
 After your push (section 19), open your repository on GitHub and click
-**Actions**. One run starts, triggered by the push to `master`, with seven jobs
-inside it (three systems times two Python versions, plus RHEL 8). Why only
-`master`? Because the end-of-phase push sends the *same* commit to all three
-branches, testing it once is enough. Once every job shows a green tick, the claim
-has been checked, and from then on the badge at the top of the README shows the
-latest result.
+**Actions**. A run should appear within a minute or so, triggered by the push to
+`master`, with seven jobs inside it (three systems times two Python versions,
+plus RHEL 8). Why only `master`? Because the end-of-phase push sends the *same*
+commit to all three branches, testing it once is enough. Once every job shows a
+green tick, the claim has been checked, and from then on the badge at the top of
+the README shows the latest result.
 
----
+### Starting a run by hand
+
+When this workflow file was first pushed, no run appeared on its own, and I
+haven't found out why. The workflow has a button for exactly this, so it cost
+two minutes:
+
+1. Open the **Actions** tab.
+2. Click **tests** in the list on the left.
+3. Click **Run workflow** on the right, check that the branch says `master`, and
+   click the green **Run workflow** button.
+
+If there's no **Run workflow** button, or the run fails within seconds, go to
+**Settings**, then **Actions**, then **General**, make sure **Allow all actions
+and reusable workflows** is selected, and click **Save**.
+
+### Reading warnings and notices
+
+Under the jobs, a finished run can list **annotations**: notes GitHub pins to
+the run. A yellow **warning** means something still works but should change
+soon. A grey **notice** is information only. Neither one is a failure; a failure
+looks different, with a red cross on the job itself.
+
+### Keeping the workflow current
+
+`ci.yml` borrows two ready-made steps that GitHub publishes, called **actions**:
+`actions/checkout` fetches the code and `actions/setup-python` installs Python.
+The `@v7` after each name picks a major version.
+
+The first run of this project, on 2026-10-11, passed but showed seven warnings:
+the versions it used then (`checkout@v4` and `setup-python@v5`) were built for a
+version of Node.js (the engine these actions run on) that GitHub is retiring.
+GitHub was still running them on the newer engine for us, so nothing failed, but
+it was a clear sign to move on. Both moved to `@v7`, the newest major version at
+the time.
+
+Phones get the same kind of notice. An older model keeps working on the day its
+maker announces the end of updates, but you know to move before it matters.
+
+When warnings like these appear again:
+
+1. Open each action's releases page on GitHub
+   (`github.com/actions/checkout/releases`, `github.com/actions/setup-python/releases`)
+   and note the newest major version. Read what changed in it.
+2. In `.github/workflows/ci.yml`, change the number after `@` in every place it
+   appears (both jobs).
+3. Commit with `ci: move checkout and setup-python to vN` (with the new number),
+   push, and check that the next run is green with no warnings.
+
+Doing this by hand is fine for now. In Phase 19, GitHub is told to propose
+these updates by itself.
 
 ## 14. Step 10. Pictures, the Handbook and the changelog
 
@@ -1115,6 +1172,8 @@ purpose.
 | A test fails right after you edited code | The edit broke a promise | Read the test's name: it says which promise. Undo or fix |
 | Windows: `.\.venv\Scripts\Activate.ps1 cannot be loaded` | PowerShell script policy | [`01-setup.md`, T4](01-setup.md#t4-powershell-running-scripts-is-disabled-on-this-system) |
 | Push refused: `refusing to allow a Personal Access Token to create or update workflow` | Your token lacks the workflow permission | [`01-setup.md`, T13](01-setup.md#t13-push-refused-refusing-to-allow-a-personal-access-token-to-create-or-update-workflow) |
+| The Actions tab shows no run a few minutes after your push | The push didn't start one (it happened when the workflow file was first pushed) | Start it by hand: section 13, *Starting a run by hand* |
+| A finished run lists yellow warnings about Node.js or an action's version | A borrowed action is being retired | Section 13, *Keeping the workflow current* |
 | GitHub Actions red, your laptop green | Something specific to another system | Click the red run, read the failing step, reproduce it locally if you can; the RHEL 8 job prints the full install log |
 
 ---
