@@ -1,0 +1,184 @@
+{
+  "accession": "BGC0000433",
+  "version": 5,
+  "comment": "TEST FIXTURE. A trimmed copy of MIBiG entry BGC0000433 (version 5, surfactin) exactly as it appears in the MIBiG 4.0 release on Zenodo (record 14169073), made for offline tests. Every field MicrobeGraph reads is copied unchanged from that release, including the way it writes activity names. Two parts it does not read were removed: the gene annotations and the biosynthesis modules. Use the real record for anything other than testing.",
+  "changelog": {
+    "releases": [
+      {
+        "version": "1",
+        "entries": [
+          {
+            "contributors": [
+              "FICEQDRJCNKWHHGNCRVDDP5D"
+            ],
+            "reviewers": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "date": "2015-06-12",
+            "comment": "Submitted"
+          }
+        ],
+        "date": "2015-06-12"
+      },
+      {
+        "version": "2",
+        "entries": [
+          {
+            "contributors": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "reviewers": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "date": "2019-10-16",
+            "comment": "Migrated from v1.4"
+          },
+          {
+            "contributors": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "reviewers": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "date": "2019-10-16",
+            "comment": "Updated compound(s) information (NPAtlas curation)"
+          }
+        ],
+        "date": "2019-10-16"
+      },
+      {
+        "version": "3",
+        "entries": [
+          {
+            "contributors": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "reviewers": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "date": "2022-09-15",
+            "comment": "Corrected NRP module activity"
+          },
+          {
+            "contributors": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "reviewers": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "date": "2022-09-15",
+            "comment": "Remove leading/trailing whitespace in gene identifiers"
+          },
+          {
+            "contributors": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "reviewers": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "date": "2022-09-15",
+            "comment": "Corrected gene identifiers"
+          },
+          {
+            "contributors": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "reviewers": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "date": "2022-09-15",
+            "comment": "Updated bioactivity data"
+          },
+          {
+            "contributors": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "reviewers": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "date": "2022-09-15",
+            "comment": "Updated NRP substrate specificities"
+          }
+        ],
+        "date": "2022-09-15"
+      },
+      {
+        "version": "4",
+        "entries": [
+          {
+            "contributors": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "reviewers": [
+              "AAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "date": "2022-10-07",
+            "comment": "Update chemical activity to schema version 2.11"
+          }
+        ],
+        "date": "2022-10-07"
+      }
+    ]
+  },
+  "quality": "questionable",
+  "status": "active",
+  "completeness": "complete",
+  "loci": [
+    {
+      "accession": "AJ575642.1",
+      "location": {
+        "from": 0,
+        "to": 0
+      },
+      "evidence": [
+        {
+          "method": "Knock-out studies"
+        }
+      ]
+    }
+  ],
+  "biosynthesis": {
+    "classes": [
+      {
+        "class": "NRPS",
+        "subclass": "Type I"
+      }
+    ]
+  },
+  "compounds": [
+    {
+      "name": "surfactin",
+      "evidence": [],
+      "bioactivities": [
+        {
+          "name": {
+            "activity": "antibacterial"
+          },
+          "observed": true,
+          "references": []
+        },
+        {
+          "name": {
+            "activity": "surfactant"
+          },
+          "observed": true,
+          "references": []
+        }
+      ],
+      "structure": "[H][C@@]1(CCC(O)=O)NC(=O)CC(CCCCCCCCCCC)OC(=O)[C@]([H])(CC(C)C)NC(=O)[C@@]([H])(CC(C)C)NC(=O)[C@]([H])(CC(O)=O)NC(=O)[C@@]([H])(NC(=O)[C@@]([H])(CC(C)C)NC(=O)[C@]([H])(CC(C)C)NC1=O)C(C)C",
+      "databaseIds": [
+        "npatlas:NPA018495",
+        "chemspider:391754"
+      ],
+      "mass": 1021.6674859720001,
+      "formula": "C52H91N7O13"
+    }
+  ],
+  "taxonomy": {
+    "name": "Bacillus velezensis FZB42",
+    "ncbiTaxId": 326423
+  },
+  "legacy_references": [
+    "pubmed:14762003"
+  ]
+}

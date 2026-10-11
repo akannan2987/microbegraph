@@ -1,14 +1,16 @@
+[← Handbook](HANDBOOK.md) · [README](../README.md) · [Glossary](GLOSSARY.md) · [Containers](CONTAINERS.md) · [Roadmap](ROADMAP.md)
+
 # Containerization: shipping the whole application in a box
 
 **Prerequisites:** [`CONTAINERS.md`](CONTAINERS.md) (what a container is, and
-choosing a runtime) and [`01-setup.md`](01-setup.md). You do not need to have
-built any phase yet, this document explains the destination.
+choosing a runtime) and [`01-setup.md`](01-setup.md). You don't need to have
+built any phase yet; this document describes where the project ends up.
 
 **Learning goal:** understand what it means to containerize an entire
-application, why it's worth doing, and exactly how MicrobeGraph does it, with
-**one set of files that works identically under Docker and Podman**, on Windows,
-macOS, and RHEL 8. By the end you will be able to explain images, layers,
-volumes, networks, health checks, and compose files to someone else.
+application, why it's worth doing, and exactly how MicrobeGraph does it, using
+one set of files that works the same under Docker and Podman on Windows, macOS
+and RHEL 8. By the end you'll be able to explain images, layers, volumes,
+networks, health checks, and compose files to someone else.
 
 **Time:** 40-50 minutes reading. The build work happens in Phases 9b and 18.
 
@@ -42,55 +44,55 @@ volumes, networks, health checks, and compose files to someone else.
 
 ## 1. The problem, at three sizes
 
-Containerization solves the same problem three times over, at growing scale. It's
-worth seeing all three, because each one motivates a different piece of the
-tooling.
+Containerization solves the same problem at three growing scales. I've described
+all three, because each one explains why a different piece of the tooling
+exists.
 
 ### Size 1, "it works on my machine"
 
-You finish the project. A colleague clones it. It fails: their Python is 3.9,
-they're missing a system library, their operating system puts files somewhere
-else.
+Say you finish the project and a colleague clones it. It fails, because their
+Python is 3.9, they're missing a system library, or their operating system puts
+files somewhere else.
 
-*Everyday parallel:* you write a recipe that works in your kitchen. A friend tries
-it and it fails, their oven runs hot, their flour is different, they don't own a
-stand mixer. The recipe was never the whole story. **The kitchen was part of it.**
+It's the same as a recipe that works in your kitchen and fails in a friend's:
+their oven runs hot, their flour is different, they don't own a stand mixer. The
+recipe was never the whole story, because the kitchen was part of it.
 
-`.venv` fixes part of this, it seals your Python packages. But it doesn't seal
+`.venv` fixes part of this by sealing your Python packages, but it doesn't seal
 the Python itself, the operating system libraries underneath, or the system tools
 your code shells out to.
 
 ### Size 2, "five things have to start in the right order"
 
-By Release 3.0, MicrobeGraph isn't one program. It's a **PostgreSQL database**, a
-**FastAPI service**, a **Streamlit app**, a **React frontend**, and (optionally)
-**Airflow**. Each needs its own setup. The database must be ready before the API
-starts. The API must be reachable before the frontend loads. Each needs to know
-where the others live.
+By Release 3.0, MicrobeGraph is several programs: a PostgreSQL database, a
+FastAPI service, a Streamlit app, a React frontend, and (optionally) Airflow.
+Each needs its own setup. The database must be ready before the API starts, the
+API must be reachable before the frontend loads, and each one needs to know where
+the others live.
 
 Doing that by hand means five terminal windows, a written start-up order, and a
 page of notes that goes stale.
 
-*Everyday parallel:* a restaurant isn't one machine. It's an oven, a fridge, a
-dishwasher, a till, and a coffee machine, each installed separately, each
-depending on plumbing and power that must already be working. Opening a new branch
-by shipping the *fully-fitted kitchen as one unit* is a very different proposition
-from buying five appliances and hoping.
+A restaurant kitchen has the same shape. It runs on an oven, a fridge, a
+dishwasher, a till and a coffee machine, each installed separately and each
+depending on plumbing and power that must already be working. If you're opening
+a new branch, shipping a *fully fitted kitchen as one unit* is a very different
+proposition from buying five appliances and hoping they work together.
 
 ### Size 3, "the same thing must run in three places"
 
-Your laptop. A RHEL 8 server. A cloud host. Same application, three very different
-environments.
+The same application has to run on your laptop, on a RHEL 8 server and on a
+cloud host, which are three very different environments.
 
-*Everyday parallel:* this is the actual, literal shipping container. Before them,
-loading a ship meant hand-stacking barrels, crates and sacks, every cargo
-different, every port needing its own handling. The standard steel box changed
-that: **the crane doesn't care what's inside.** One agreed shape, and any ship,
-truck, or train can carry it.
+Here the everyday example is the real thing: the steel shipping container.
+Before it, loading a ship meant hand-stacking barrels, crates and sacks, with
+every cargo different and every port needing its own handling. The standard box
+changed that. The crane doesn't care what's inside, and because everyone agreed
+on one shape, any ship, truck or train can carry it.
 
-Software containers are named after that, and it's the most useful analogy in the
-whole topic. The container is a standard box. The host doesn't need to know or
-care what's inside it.
+Software containers are named after that, and I find it the most useful analogy
+in the whole topic. The container is a standard box, and the host doesn't need to
+know or care what's inside it.
 
 ---
 
@@ -101,13 +103,14 @@ Concretely, it means producing:
 1. **A recipe file per service**, called a `Containerfile` (or `Dockerfile`;
    identical format, two names). It says: start from this base, install these
    things, copy in this code, run this command.
-2. **An image per service**, the built, packaged result of that recipe. Static,
-   shareable, versioned.
+2. **An image per service**, the built, packaged result of that recipe. Images
+   are static, shareable and versioned.
 3. **A compose file**, one file describing all the services, how they connect,
    what storage they keep, and in what order they start.
 4. **One command that runs everything.**
 
-That last point is the whole payoff. The end state for MicrobeGraph is:
+That last point is what all the work is for. For MicrobeGraph, the end state
+looks like this:
 
 ```bash
 git clone https://github.com/akannan2987/microbegraph.git
@@ -115,17 +118,17 @@ cd microbegraph
 docker compose up          # or: podman compose up
 ```
 
-Two commands and the entire system is running, database, API, app, frontend, on
-a machine with **no Python installed, no R, no PostgreSQL, no configuration**.
-
-That is the difference between "here is my code" and "here is my application."
+After two commands the entire system (database, API, app and frontend) is
+running on a machine with **no Python installed, no R, no PostgreSQL, no
+configuration**. You're handing someone an application they can run, where before
+you were handing them code to set up.
 
 ---
 
 ## 3. The three-step plan
 
-Containers are introduced gradually, and each step is motivated by a problem the
-previous step exposed. Nothing arrives before it's needed.
+I introduce containers gradually, and each step answers a problem the previous
+one exposed, so nothing arrives before you need it.
 
 | Step | Phase | What it covers | Why here |
 |---|---|---|---|
@@ -133,21 +136,21 @@ previous step exposed. Nothing arrives before it's needed.
 | **The whole stack** | **18** | Postgres + API + Streamlit + React + Airflow, via compose | Now that several services exist, learn how they find each other, share storage, and start in order |
 | **Automated builds** | **19** | CI builds and publishes images on every push | Now that images exist, stop building them by hand |
 
-**Phase 12 (Airflow) also uses containers**, but differently: there you *consume*
-images somebody else built. Here you *build your own*. Consuming first, building
-second, is the gentler order.
+Phase 12 (Airflow) also uses containers, but differently: there you *consume*
+images somebody else built, and here you *build your own*. I think consuming
+first and building second is the gentler order.
 
-**Release 1.0 never requires containers.** `.venv` remains a fully supported path
-forever. Containerization is an *additional* way to run the project, never a
-replacement, which keeps a fresh clone runnable by someone who doesn't want to
+**Release 1.0 never requires containers.** `.venv` stays a fully supported path
+for good. Containerization is an *additional* way to run the project and won't
+replace it, which keeps a fresh clone runnable by someone who doesn't want to
 install a container engine at all.
 
 ---
 
 ## 4. Step one: one service in one container (Phase 9b)
 
-The goal: package the Streamlit app so anyone can run it with one command and no
-Python.
+The goal here is to package the Streamlit app so anyone can run it with one
+command and no Python.
 
 ```bash
 # Docker
@@ -159,19 +162,19 @@ podman build -t microbegraph-app .
 podman run -p 8501:8501 microbegraph-app
 ```
 
-Then open `http://localhost:8501`. The app runs. The machine needs no Python, no
-pandas, no NetworkX.
+Then open `http://localhost:8501` and the app is running, on a machine with no
+Python, no pandas and no NetworkX.
 
-**Notice how similar the two engines are.** Podman deliberately mirrors Docker's
-command line, so nearly every Docker tutorial you find works by substituting one
-word. This is not a coincidence, it's Podman's explicit design goal.
+The two engines are almost identical to use. Mirroring Docker's command line is
+one of Podman's explicit design goals, so nearly every Docker tutorial you find
+works by substituting one word.
 
 ---
 
 ## 5. The Containerfile, line by line
 
-Here is the real one, with every line explained. **Read the comments, they're the
-lesson.**
+Here's the real one, with every line explained. Please read the comments,
+because that's where most of the lesson is.
 
 ```dockerfile
 # ==============================================================================
@@ -190,7 +193,7 @@ lesson.**
 # official Python 3.12 image built on Debian "slim", a minimal Linux with
 # Python already installed.
 #
-# EVERYDAY PARALLEL: you don't build a kitchen from raw ore. You start with a
+# Like a kitchen: you don't build one from raw ore. You start with a
 # room that already has plumbing and power, and fit it out from there.
 #
 # WHY "slim": the full Python image is ~1 GB of tools we'd never use. Slim is
@@ -258,7 +261,7 @@ COPY artifacts/ ./artifacts/
 # compromised, root inside a container is a far better starting point for an
 # attacker than an ordinary user.
 #
-# EVERYDAY PARALLEL: a contractor working in your house doesn't need the keys
+# A contractor working in your house doesn't need the keys
 # to every room and the safe combination. Give the minimum access the job
 # needs.
 #
@@ -274,7 +277,7 @@ USER appuser
 # EXPOSE is DOCUMENTATION, not an action. It records that this image listens
 # on 8501. Actually opening it happens with -p at run time (section 9).
 #
-# EVERYDAY PARALLEL: the floor plan marks where the door is. It doesn't
+# Think of a floor plan: it marks where the door is. It doesn't
 # unlock it.
 EXPOSE 8501
 
@@ -309,12 +312,12 @@ CMD ["streamlit", "run", "app/streamlit_app.py", \
 ## 6. Layers and caching: why the order matters
 
 Every instruction in a Containerfile creates a **layer**, a saved snapshot of the
-filesystem after that step. The image is those layers stacked.
+filesystem after that step. The image is those layers stacked on top of each
+other.
 
-*Everyday parallel:* **packing a suitcase.** Shoes at the bottom, then folded
-clothes, then the things you'll want first on top. If you need to swap the item on
-top, you lift one thing. If you need to swap the shoes, you unpack everything above
-them.
+Think of packing a suitcase: shoes at the bottom, then folded clothes, then the
+things you'll want first on top. Swapping the item on top means lifting one thing
+out, but swapping the shoes means unpacking everything above them.
 
 Containers work the same way, and the engine caches every layer. **When you
 rebuild, it reuses layers up to the first thing that changed, and rebuilds
@@ -328,10 +331,11 @@ This is why the Containerfile copies `requirements.txt` and installs packages
 | ✅ requirements first, code last | Only the code layer is invalid | **~2 seconds** |
 | ❌ code first, requirements last | The install layer is invalid; every package reinstalls | **~3 minutes** |
 
-Same image either way. Ninety times the wait. Over a project's life that's hours of
-your time, decided by two lines being in the right order.
+Both orders produce the same image, but the wrong one makes you wait ninety
+times longer. Over a project's life that adds up to hours of your time, all
+depending on whether two lines are in the right order.
 
-**The general rule:** put the things that change *least often* earliest.
+The general rule is to put the things that change *least often* earliest.
 
 ### `.dockerignore`, what not to send
 
@@ -339,7 +343,7 @@ When you run a build, the engine first sends the whole folder to the build
 process. Without filtering, that includes `.venv/` (hundreds of MB), `data/`
 (potentially gigabytes), and `.git/`.
 
-`.dockerignore` excludes them. Both Docker and Podman read it.
+`.dockerignore` keeps them out, and both Docker and Podman read it.
 
 ```gitignore
 # ---------------------------------------------------------------
@@ -394,8 +398,8 @@ figures/
 > ⚠️ **The most important line in that file is `.env`.** An image is a shareable
 > artifact. If you publish one with a secret baked in, that secret is public,
 > and deleting the file in a later layer does **not** remove it, because it's
-> still in the earlier layer. Anyone can extract it. This is one of the most
-> common real-world container security failures.
+> still in the earlier layer where anyone can extract it. It's one of the most
+> common container security failures in practice.
 
 ---
 
@@ -406,9 +410,9 @@ frontend is the clearest case: building it needs Node.js, npm, and hundreds of
 megabytes of packages. Running it needs only the handful of finished files a web
 server hands out.
 
-*Everyday parallel:* baking a cake needs mixing bowls, scales, a stand mixer and a
-messy worktop. **Serving it needs a plate.** You don't deliver the kitchen with the
-cake.
+Baking a cake takes mixing bowls, scales, a stand mixer and a messy worktop, but
+serving it needs only a plate, and you wouldn't deliver the kitchen along with
+the cake.
 
 A **multi-stage build** uses one image to build and a second, minimal image to run,
 copying only the finished result across:
@@ -442,27 +446,27 @@ COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 ```
 
-**The result:** a build image of roughly 1.2 GB produces a final image of roughly
-25 MB. Fifty times smaller, with fifty times less surface area for a security
-problem.
+The result is that a build image of roughly 1.2 GB produces a final image of
+roughly 25 MB, which is fifty times smaller and leaves fifty times less surface
+area for a security problem.
 
-*What is nginx?* A small, very fast web server. Its job here is to hand finished
-HTML, CSS and JavaScript files to browsers. *Everyday parallel:* the person at the
-counter passing over pre-made sandwiches, no cooking, just fast, reliable
-handover.
+*What is nginx?* It's a small, very fast web server, and its job here is to hand
+finished HTML, CSS and JavaScript files to browsers. Picture the person at a
+sandwich counter passing over pre-made sandwiches: there's no cooking, just a
+fast, reliable handover.
 
 ---
 
 ## 8. Volumes: data must outlive the container
 
-**Containers are disposable.** Stop one and everything written inside it vanishes.
+**Containers are disposable.** Remove one and everything written inside it vanishes.
 
-That's a feature, not a bug, it's what makes them reproducible. But a database
-that forgets everything on restart is useless.
+That behaviour is intended, since it's what makes containers reproducible, but a
+database that forgets everything on restart is useless.
 
-*Everyday parallel:* a container is a **hotel room**. You use it, you leave, it's
-cleaned to a standard state for the next guest. Anything you want to keep goes in
-your **suitcase**, which leaves with you.
+A hotel room is a good comparison. You use it, you leave, and it's cleaned back
+to a standard state for the next guest. Anything you want to keep goes in your
+suitcase, which leaves with you.
 
 A **volume** is the suitcase: storage that lives on the host and is mounted into
 the container.
@@ -475,16 +479,17 @@ docker run -v microbegraph-data:/var/lib/postgresql/data postgres:16
 podman run -v microbegraph-data:/var/lib/postgresql/data:Z postgres:16
 ```
 
-Two kinds, and the distinction matters:
+There are two kinds, and the difference matters:
 
 | Kind | Looks like | Use it for | Everyday parallel |
 |---|---|---|---|
 | **Named volume** | `microbegraph-data:/path` | Databases, anything the app owns | A storage locker the engine manages for you |
 | **Bind mount** | `./local/path:/path` | Live-editing code during development | A window onto a folder on your own desk |
 
-**In development**, bind-mounting your source code means edits appear inside the
-running container instantly, no rebuild. **In production**, you never bind-mount
-code: the whole point is that the image contains a fixed, known version.
+In development, bind-mounting your source code means edits appear inside the
+running container instantly, without a rebuild. In production you never
+bind-mount code, because the image is supposed to contain a fixed, known
+version.
 
 ---
 
@@ -495,16 +500,17 @@ code: the whole point is that the image contains a fixed, known version.
 When compose starts several containers it puts them on a private network where
 **each service is reachable by its service name**.
 
-So the API connects to the database at `postgres:5432`, not an IP address, not
-`localhost`. The name `postgres` is the service's name in the compose file.
+So the API connects to the database at `postgres:5432`, rather than at an IP
+address or at `localhost`. The name `postgres` is the service's name in the
+compose file.
 
-*Everyday parallel:* an office internal phone system. You dial "Accounts", not a
-full external number. The system knows where Accounts sits, and it still works
-after they move desks.
+It works like an office's internal phone system. You dial "Accounts" instead of a
+full external number, the system knows where Accounts sits, and the call still
+gets through after they move desks.
 
-**Why this is genuinely better than IP addresses:** container IPs change on every
-restart. Names don't. This is why the compose file has a service literally named
-`postgres`, that name *is* the address.
+Names are better than IP addresses here because container IPs change on every
+restart and names don't. That's why the compose file has a service literally
+named `postgres`: the name works as the address.
 
 ### Outside: publishing a port
 
@@ -518,15 +524,15 @@ docker run -p 8501:8501 microbegraph-app
 #             └── the port on YOUR machine
 ```
 
-*Everyday parallel:* the hotel again. Every room has a phone (the internal port).
-Only rooms the front desk will connect a call to are reachable from outside (the
+Back to the hotel: every room has a phone (the internal port), but only rooms
+the front desk will put a call through to are reachable from outside (the
 published port). `-p 9000:8501` means "outside callers dial 9000, connect them to
-the app's 8501", useful when 8501 is already taken.
+the app's 8501", which is useful when 8501 is already taken.
 
-**The security point:** only publish what genuinely needs to be reachable. In
-MicrobeGraph's stack, the frontend and API are published; **the database is not**.
-It's reachable by the API over the internal network and invisible from outside.
-That's a deliberate decision, and it's the default posture you should adopt.
+For security, only publish what really needs to be reachable. In MicrobeGraph's
+stack the frontend and API are published, but **the database is not**: the API
+reaches it over the internal network, and it's invisible from outside. I made
+that choice on purpose, and I'd suggest it as your default.
 
 ---
 
@@ -534,8 +540,8 @@ That's a deliberate decision, and it's the default posture you should adopt.
 
 Three rules, in order of importance:
 
-**1. Never bake a secret into an image.** Covered above, layers keep everything,
-and images are shareable.
+**1. Never bake a secret into an image.** As covered above, layers keep
+everything, and images are shareable.
 
 **2. Pass secrets at run time, from a file the container reads.** Compose does
 this from `.env`, which is gitignored:
@@ -551,31 +557,31 @@ services:
 The `${...}` values come from `.env` on the host. The image contains only the
 *shape*, never a value.
 
-**3. Provide a `.env.example` with empty placeholders.** Committed, so anyone
-knows what's needed; harmless, because it holds nothing.
+**3. Provide a `.env.example` with empty placeholders.** It's committed, so
+anyone can see what's needed, and it's harmless because it holds no values.
 
-The `:-` fallback on the API key is what makes the AI layer **degrade
-gracefully**: no key means that one feature hides itself and the stack still
-starts. A container that refuses to boot because an optional feature has no key is
+The `:-` fallback on the API key is what lets the AI layer degrade gracefully:
+with no key, that one feature hides itself and the stack still starts. In my
+view, a container that refuses to boot because an optional feature has no key is
 badly designed.
 
 ---
 
 ## 11. Health checks and start order
 
-Here's a trap that catches everyone the first time.
+This trap catches everyone the first time.
 
-You tell compose the API depends on the database. Compose starts the database
-first, then the API. The API immediately crashes: *connection refused*.
+You tell compose the API depends on the database, so compose starts the database
+first and then the API, and the API immediately crashes with *connection
+refused*.
 
-**Why:** the database *container* started in a second. The database *program*
-inside it takes fifteen seconds to be ready for connections. "Started" and "ready"
-are different things.
+The reason is that the database *container* started in a second, while the
+database *program* inside it takes fifteen seconds to be ready for connections.
+"Started" and "ready" are different things.
 
-*Everyday parallel:* you switch the kettle on and immediately pour. Switching on
-isn't boiling. You have to **wait for the click.**
-
-A **health check** is the click:
+It's like switching the kettle on and pouring straight away. A kettle that's
+switched on isn't boiling yet, and you have to wait for the click. A **health
+check** is that click:
 
 ```yaml
 services:
@@ -598,9 +604,9 @@ services:
 `condition: service_healthy` is the line that matters. Without it, `depends_on`
 only waits for *started*, which is almost never what you want.
 
-**Belt and braces:** the API should *also* retry its first connections. Health
-checks handle the normal case; retries handle the abnormal one. Real systems do
-both, because the database can also restart later, long after startup.
+For belt and braces, the API should *also* retry its first connections. Health
+checks handle the normal case and retries handle the abnormal one. Real systems
+do both, because the database can also restart later, long after startup.
 
 ---
 
@@ -608,9 +614,9 @@ both, because the database can also restart later, long after startup.
 
 **Compose** describes every service in one file and runs them together.
 
-*Everyday parallel:* a Containerfile is a recipe for one dish. A compose file is
-the **menu plus the kitchen rota**, what gets made, which station makes it, what
-each needs, and in what order.
+If a Containerfile is a recipe for one dish, a compose file is the menu plus the
+kitchen rota: what gets made, which station makes it, what each needs, and in
+what order.
 
 ```yaml
 # ==============================================================================
@@ -742,15 +748,15 @@ docker compose up -d --build api   # rebuild and restart one service
 docker compose exec api bash       # open a shell INSIDE a running container
 ```
 
-That last one is the debugging workhorse. *Everyday parallel:* instead of guessing
-why the dishwasher isn't working, you open the door and look inside.
+That last one is the debugging workhorse. Rather than guessing why the
+dishwasher isn't working, you open the door and look inside.
 
 ---
 
 ## 13. Docker vs Podman: the differences that actually bite
 
-Podman mirrors Docker's interface closely, so most things are one word apart. Here
-is every difference that will actually affect you, honestly listed.
+Podman mirrors Docker's interface closely, so most things are one word apart.
+The table below lists every difference that will actually affect you.
 
 | Topic | Docker | Podman | Does it matter? |
 |---|---|---|---|
@@ -767,18 +773,19 @@ is every difference that will actually affect you, honestly listed.
 
 ### Making one set of files work with both
 
-Three small decisions, applied throughout this project:
+I made three small decisions and applied them throughout the project:
 
 1. **Name the recipe `Containerfile`.** Both engines read it; the name is
    vendor-neutral.
 2. **Publish only ports above 1024** (8000, 8501, 3000). Never 80 or 443
    directly. Rootless Podman can't bind low ports without extra configuration,
    and there's no reason to need them in development.
-3. **Add `:Z` to volume mounts.** Docker ignores it entirely; Podman on RHEL needs
-   it. One flag, both engines happy.
+3. **Add `:Z` to volume mounts.** Docker ignores it entirely and Podman on RHEL
+   needs it, so the one flag keeps both engines happy.
 
-With those three, `docker compose up` and `podman compose up` do the same thing
-from the same files. **No separate Podman version of anything.**
+With those three in place, `docker compose up` and `podman compose up` do the
+same thing from the same files, and there's no separate Podman version of
+anything.
 
 ### Installing podman-compose
 
@@ -793,29 +800,31 @@ brew install podman-compose
 pip install podman-compose
 ```
 
-Alternatively `sudo dnf install podman-docker` provides a `docker` command that
-calls Podman, so literal `docker compose` commands work unchanged. Slightly
-magical, very convenient.
+Alternatively, `sudo dnf install podman-docker` provides a `docker` command that
+calls Podman, so literal `docker compose` commands work unchanged. It feels
+slightly magical, and it's very convenient.
 
 ---
 
 ## 14. RHEL 8 specifics: SELinux, rootless ports, and autostart
 
-RHEL 8 is where the container gotchas live, so they get their own section.
+Most of the container gotchas show up on RHEL 8, so I've given them their own
+section.
 
 ### SELinux and the `:Z` flag
 
-**What SELinux is:** an extra security layer in Red Hat Linux that labels every
-file and enforces which processes may touch which labels. It's on by default and
-it's a genuinely good thing.
+SELinux is an extra security layer in Red Hat Linux that labels every file and
+enforces which processes may touch which labels. It's on by default, and it's a
+good thing to have.
 
-*Everyday parallel:* a building where every room has a colour-coded badge reader.
-Your badge opens rooms of your colour. Very effective, and confusing the first
+Imagine a building where every room has a colour-coded badge reader, and your
+badge opens rooms of your colour. It's very effective, and confusing the first
 time you're handed a badge and told a door "should" work.
 
-**The symptom:** you mount a folder into a container and the container gets
-`Permission denied`, even though the file permissions look completely fine. The
-*permissions* are fine; the *SELinux label* is wrong.
+You'll know you've hit it when you mount a folder into a container and the
+container gets `Permission denied`, even though the file permissions look
+completely fine. The *permissions* really are fine; it's the *SELinux label*
+that's wrong.
 
 **The fix:** append `:Z` to the mount.
 
@@ -824,18 +833,18 @@ podman run -v ./data:/app/data:Z microbegraph-app
 ```
 
 `:Z` tells Podman to relabel that content so this container can access it. Docker
-ignores the flag harmlessly, so **you can leave it in every mount and both engines
-work**. That's why every volume in this project's compose file carries it.
+ignores the flag harmlessly, so you can leave it in every mount and both engines
+work, which is why every volume in this project's compose file carries it.
 
 *(Capital `:Z` = private to this container. Lowercase `:z` = shared between
-containers. Use capital unless two containers genuinely need the same folder.)*
+containers. Use capital unless two containers really need the same folder.)*
 
 ### Ports below 1024
 
-Rootless Podman cannot bind ports under 1024, a Linux rule that reserves them for
-privileged processes.
+Rootless Podman can't bind ports under 1024, because of a Linux rule that
+reserves them for privileged processes.
 
-**Our answer:** don't need them. Every published port in this project is above
+My answer is to avoid needing them: every published port in this project is above
 1024. If you eventually want port 80 on a server, put a reverse proxy in front
 rather than weakening the rule.
 
@@ -857,49 +866,50 @@ sudo loginctl enable-linger $USER
 ```
 
 *(Newer Podman versions prefer **Quadlet**, a tidier file-based approach. The
-Phase 18 guide will show whichever is current when we get there, this is exactly
-the kind of detail worth re-checking rather than trusting a year-old memory.)*
+Phase 18 guide will show whichever is current when we get there. This is the
+kind of detail I'd rather re-check than trust from a year-old memory.)*
 
-That last `loginctl` line is easily missed: without it, your user's services stop
-when you log out. *Everyday parallel:* leaving the office and having the lights
-you switched on turn themselves off, fine for lights, not for a server.
+That last `loginctl` line is easy to miss. Without it, your user's services stop
+when you log out, a bit like office lights that switch themselves off once you
+leave. That's fine for lights and bad for a server.
 
 ---
 
 ## 15. Step three: publishing images (Phase 19)
 
-Building by hand gets old. **A registry** is a place images live so others can pull
-them without building anything.
+Building by hand gets old. A **registry** is a place where images live so others
+can pull them without building anything. You can think of it as an app store for
+images, where `docker pull` plays the part of "install".
 
-*Everyday parallel:* a registry is an app store for images. `docker pull` is
-"install".
+MicrobeGraph publishes to **GitHub Container Registry (GHCR)**, which is free for
+public repositories and already tied to your GitHub account.
 
-MicrobeGraph publishes to **GitHub Container Registry (GHCR)**, free for public
-repositories and already tied to your GitHub account.
-
-Phase 19 adds a GitHub Actions workflow that, on every push to `master`:
+The test workflow (`.github/workflows/ci.yml`) has run on every push since
+Phase 1. Phase 19 adds a second GitHub Actions workflow that, on every push to
+`master`:
 
 1. Runs the test suite (so a broken image is never published)
 2. Builds each image
 3. Tags them with the version and the commit
 4. Pushes them to `ghcr.io/akannan2987/microbegraph`
 
-After which anyone can run the app with **no clone, no build, no Python**:
+After that, anyone can run the app with no clone, no build and no Python:
 
 ```bash
 docker run -p 8501:8501 ghcr.io/akannan2987/microbegraph-app:latest
 ```
 
-**Multi-platform builds** are worth knowing about: Apple Silicon Macs are ARM,
-most servers are x86. `docker buildx` builds both from one command, so the same
-tag works on either. Without it, a Mac-built image fails on a server with a
+**Multi-platform builds** are worth knowing about. Apple Silicon Macs are ARM and
+most servers are x86, and `docker buildx` builds both from one command, so the
+same tag works on either. Without it, a Mac-built image fails on a server with a
 confusing `exec format error`.
 
 ---
 
 ## 16. Security and size: doing it properly
 
-Applied throughout, each with its reason:
+These practices are applied throughout the project. Here's each one with its
+reason:
 
 | Practice | Why | Where |
 |---|---|---|
@@ -913,10 +923,10 @@ Applied throughout, each with its reason:
 | `.dockerignore` | Faster builds, smaller images, no accidental secrets | Repository root |
 | Image scanning | Finds known vulnerabilities in your base image | `docker scout` / `trivy`, Phase 19 |
 
-**Rough sizes to expect:** the app image ~450 MB (Python plus scientific libraries
-are simply large), the frontend ~25 MB (multi-stage), the database ~400 MB
-(official image). Total around 900 MB, normal for a stack like this, and a useful
-number to sanity-check your own build against.
+As rough sizes, expect the app image to be ~450 MB (Python plus scientific
+libraries are just large), the frontend ~25 MB (multi-stage) and the database
+~400 MB (official image). That's around 900 MB in total, which is normal for a
+stack like this and a useful number to sanity-check your own build against.
 
 ---
 
@@ -924,8 +934,8 @@ number to sanity-check your own build against.
 
 ### "Cannot connect to the Docker daemon"
 
-Docker Desktop isn't running. Start it, wait for the whale to settle. Linux with
-Docker Engine: `sudo systemctl start docker`.
+Docker Desktop isn't running. Start it and wait for the whale to settle. If
+you're on Linux with Docker Engine, run `sudo systemctl start docker`.
 
 ### Podman: "short-name resolution enforced but cannot prompt without a TTY"
 
@@ -944,17 +954,17 @@ docker compose down                 # often it's your own previous run
 
 ### The app starts but the browser shows nothing
 
-Almost always the `0.0.0.0` mistake. A server bound to `localhost` inside a
-container is reachable only from inside that container. Check your start command
-includes `--server.address=0.0.0.0` (Streamlit) or `--host 0.0.0.0` (uvicorn).
+This is almost always the `0.0.0.0` mistake. A server bound to `localhost` inside
+a container is reachable only from inside that container. Check that your start
+command includes `--server.address=0.0.0.0` (Streamlit) or `--host 0.0.0.0` (uvicorn).
 
 ### `Permission denied` on a mounted folder (RHEL)
 
-SELinux. Add `:Z` to the mount, see [section 14](#14-rhel-8-specifics-selinux-rootless-ports-and-autostart).
+That's SELinux. Add `:Z` to the mount (see [section 14](#14-rhel-8-specifics-selinux-rootless-ports-and-autostart)).
 
 ### API can't reach the database
 
-Three usual causes, in order of likelihood:
+There are three usual causes, from most to least likely:
 
 1. Using `localhost` in the connection string. Inside a container `localhost` is
    *that container*. Use the service name: `postgres`.
@@ -962,30 +972,30 @@ Three usual causes, in order of likelihood:
    was ready.
 3. Password mismatch between `.env` and what Postgres was first initialised with.
    **Note:** Postgres only reads `POSTGRES_PASSWORD` when creating a *brand-new*
-   data directory. Changing it later has no effect unless you also remove the
-   volume, a genuinely confusing behaviour worth knowing about.
+   data directory, so changing it later has no effect unless you also remove the
+   volume. That behaviour confuses people, so it's worth knowing about.
 
 ### Build is slow every single time
 
-Your `COPY` order is wrong, or `.dockerignore` is missing. See
+Either your `COPY` order is wrong or `.dockerignore` is missing. See
 [section 6](#6-layers-and-caching-why-the-order-matters).
 
 ### "no space left on device"
 
-Images accumulate:
+Old images pile up. To clear them:
 
 ```bash
 docker system prune -a        # or: podman system prune -a
 docker volume ls              # check volumes separately, prune -a doesn't touch them
 ```
 
-⚠️ Removes unused images and stopped containers. Safe here (everything rebuilds),
-but read the prompt.
+⚠️ This removes unused images and stopped containers. It's safe here (everything
+rebuilds), but read the prompt.
 
 ### `exec format error`
 
-Architecture mismatch, an ARM image on an x86 machine or vice versa. Rebuild on
-the target, or use `docker buildx` for multi-platform images.
+This means an architecture mismatch: an ARM image on an x86 machine or vice
+versa. Rebuild on the target, or use `docker buildx` for multi-platform images.
 
 ---
 
@@ -1007,8 +1017,8 @@ You've understood this document when you can answer these without scrolling up:
 <summary>Answers (open after you've tried)</summary>
 
 1. `.venv` seals Python *packages*. A container seals the Python itself, the
-   operating-system libraries beneath it, and the system tools, the whole
-   kitchen, not just the ingredients.
+   operating-system libraries beneath it, and the system tools. It packs the
+   whole kitchen as well as the ingredients.
 2. Layer caching. Dependencies change rarely, code changes constantly. This order
    means a code edit rebuilds in ~2 seconds instead of ~3 minutes.
 3. Using one image to build and a second, minimal one to run, copying only the
@@ -1018,8 +1028,8 @@ You've understood this document when you can answer these without scrolling up:
    volume is the suitcase that leaves the hotel room with you.
 5. By service name (`postgres:5432`), like dialling "Accounts" on an office phone
    system. Container IP addresses change on every restart; names don't.
-6. Plain `depends_on` waits for *started*. `service_healthy` waits for *ready*,
-   the kettle's click, not the switch. Postgres takes seconds to accept
+6. Plain `depends_on` waits for *started*. `service_healthy` waits for *ready*
+   (the kettle's click rather than the switch). Postgres takes seconds to accept
    connections after its container starts.
 7. Name the file `Containerfile`; publish only ports above 1024; add `:Z` to
    volume mounts (Docker ignores it, Podman on RHEL needs it).
@@ -1038,8 +1048,8 @@ difference between started and ready; compose as the whole-stack description; an
 the specific Docker/Podman differences that actually matter, including SELinux on
 RHEL.
 
-That's a genuinely substantial foundation, and it transfers to every containerized
-system you'll ever meet.
+That's a solid foundation, and it carries over to any containerized system
+you'll work with.
 
 ---
 
@@ -1065,7 +1075,7 @@ git switch develop
 
 > **Extra care for this phase:** run `./check-public-safe.sh` *before* building
 > any image, not just before pushing. A `.env` that slipped past `.dockerignore`
-> ends up inside a shareable artifact, which is a worse leak than a Git commit,
+> ends up inside a shareable artifact, which is a worse leak than a Git commit:
 > a commit can be rewritten, but a pulled image is already on someone else's disk.
 
 ---

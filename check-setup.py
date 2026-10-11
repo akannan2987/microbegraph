@@ -2,9 +2,9 @@
 MicrobeGraph, setup verification.
 
 WHY THIS EXISTS:
-    Setup has many steps and a half-finished environment produces confusing
-    errors three phases later. This checks every piece at once and tells you
-    exactly which step to revisit.
+    Setup has many steps, and a half-finished environment tends to produce
+    confusing errors three phases later. This script checks every piece at
+    once and tells you exactly which step to revisit.
 
 USAGE:
     python check-setup.py
@@ -30,15 +30,16 @@ def check(label: str, passed: bool, hint: str = "") -> None:
 
 # --- 1. Python version -------------------------------------------------
 version = sys.version_info
-# Upper bound matters as much as the lower one: several scientific packages
-# have no pre-built version for a brand-new Python release, so pip tries to
-# compile them from source and fails with C compiler errors. The ecosystem
-# takes 6-12 months to catch up. See Troubleshooting T11.
+# Both bounds matter. The LOWER one: scikit-learn 1.9, which this project
+# needs, no longer supports Python 3.10. The UPPER one: a brand-new Python
+# release is newer than anything this project is tested on, and some
+# scientific packages take months to publish ready-built versions for it
+# (pip then tries to compile them and fails). See Troubleshooting T11.
 check(
     f"Python {version.major}.{version.minor}.{version.micro}",
-    (3, 10) <= version < (3, 14),
-    "Need Python 3.11 or 3.12. "
-    "3.14+ has no builds yet for some packages. See Step 1 / Troubleshooting T11.",
+    (3, 11) <= version < (3, 14),
+    "Need Python 3.11 or 3.12 (3.13 also works for Phases 1-6). "
+    "See Step 1 / Troubleshooting T11.",
 )
 
 # 3.13 works for everything in requirements.txt, but the Phase 7 extras in
@@ -69,8 +70,8 @@ check(
 # "import sklearn"; you install "python-dotenv" but you write "import dotenv".
 # So each entry is (name you install, name you import).
 #
-# EVERYDAY PARALLEL: a shop sells "sparkling mineral water"; at home you just
-# call it "fizzy water". Same thing, two names, depending on where you are.
+# It's like a shop that sells "sparkling mineral water", which at home you
+# just call "fizzy water": one thing with two names, depending on where you are.
 PACKAGES = [
     ("pandas", "pandas"),
     ("numpy", "numpy"),
@@ -95,22 +96,40 @@ for install_name, import_name in PACKAGES:
         check(f"package: {install_name}", False,
               "Run: pip install -r requirements.txt  (with .venv active). See Step 8.")
 
-# ruff is checked differently, and the reason is worth knowing.
+# ruff is checked differently, for a reason that's useful to know.
 #
 # Most packages are LIBRARIES: code you import into your own program.
 # ruff is a TOOL: a standalone program you run from the terminal. It installs
-# a command, not something importable, so "import ruff" fails even when it is
-# perfectly installed. Testing it the wrong way would report a problem that
-# does not exist -- worse than not testing it at all.
+# a command rather than something importable, so "import ruff" fails even
+# when it is installed perfectly well. Testing it that way would report a
+# problem that does not exist, which is worse than not testing it at all.
 #
-# EVERYDAY PARALLEL: you check the flour is in the cupboard by looking in the
-# cupboard, and you check the oven works by turning it on. Different things,
-# different tests.
+# A kitchen comparison: you check the flour by looking in the cupboard, and
+# you check the oven by turning it on. They are different kinds of thing, so
+# they need different tests.
 check(
     "tool: ruff",
     shutil.which("ruff") is not None,
     "Run: pip install -r requirements.txt  (with .venv active). See Step 8.",
 )
+
+# --- 3b. The project's own package -----------------------------------------
+# From Phase 1 on, MicrobeGraph is itself an installed package, so that
+#     python -m microbegraph.fetch
+# works from any folder. "pip install -e ." installs it in EDITABLE mode:
+# Python gets a pointer to src/microbegraph/ instead of a copy, so your edits
+# are live immediately. We check two things: that it imports at all, and that
+# it imports from THIS folder (not from a stale copy somewhere else).
+try:
+    import microbegraph
+    here = Path("src/microbegraph").resolve()
+    found = Path(microbegraph.__file__).resolve().parent
+    check("package: microbegraph (editable install)", found == here,
+          f"It imports from {found}, not from this folder. "
+          "Run: pip install -e .  (with .venv active, from the project folder). See Step 8.")
+except ImportError:
+    check("package: microbegraph (editable install)", False,
+          "Run: pip install -e .  (with .venv active, from the project folder). See Step 8.")
 
 # --- 4. Git available and configured -----------------------------------
 try:
@@ -130,7 +149,7 @@ except (subprocess.CalledProcessError, FileNotFoundError):
 # Only master and develop are REQUIRED locally. The push command
 #     git push origin develop develop:beta develop:master
 # updates remote beta straight from local develop, so a local beta branch is
-# never needed. Keeping one is a matter of taste, not correctness.
+# never needed. Keeping one anyway is purely a matter of taste.
 try:
     local = subprocess.run(["git", "branch"], capture_output=True,
                            text=True).stdout
@@ -148,14 +167,19 @@ except FileNotFoundError:
     pass
 
 # --- 6. Folder structure ------------------------------------------------
-for folder in ["docs", "src/microbegraph", "curation", "artifacts",
-               "app", "tests", "data/raw", "data/processed"]:
+# data/raw and data/processed are NOT checked: data/ is never in Git, so a
+# fresh clone does not have it, and the pipeline creates those folders itself
+# the first time it writes to them (Phase 1 onwards).
+# app/ is not checked either: it arrives with its first file in Phase 8.
+for folder in ["docs", "src/microbegraph", "curation", "artifacts", "tests"]:
     check(f"folder: {folder}", Path(folder).is_dir(),
           f"Create it: mkdir -p {folder}. See Step 6.")
 
 # --- 7. Safety files ----------------------------------------------------
 check("file: .gitignore", Path(".gitignore").is_file(), "See Step 9.")
 check("file: requirements.txt", Path("requirements.txt").is_file(), "See Step 8.")
+check("file: pyproject.toml", Path("pyproject.toml").is_file(),
+      "It arrives in Phase 1 (docs/03-ingestion-mibig.md). See Step 8.")
 check("file: check-public-safe.sh", Path("check-public-safe.sh").is_file(), "See Step 9.")
 
 # --- Report -------------------------------------------------------------

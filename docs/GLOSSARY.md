@@ -1,9 +1,10 @@
+[← Handbook](HANDBOOK.md) · [README](../README.md) · [Architecture](00-architecture.md) · [Roadmap](ROADMAP.md)
+
 # Glossary, every term, in plain words
 
-**The rule for this repository:** every term used anywhere in MicrobeGraph,
-biological or technical, is defined here in plain language, with an everyday
-example wherever one helps. **If a word isn't here, that's a documentation
-bug**, open an issue and it gets added.
+Every term used anywhere in MicrobeGraph, biological or technical, is defined
+here in plain language, with an everyday comparison wherever one helps. **If a
+word isn't here, that's a documentation bug**: open an issue and I'll add it.
 
 Terms are grouped by where you first meet them, so you can read a section before
 its phase and skim the rest. Within each section they're alphabetical.
@@ -31,106 +32,113 @@ its phase and skim the rest. Within each section they're alphabetical.
 
 ## Biology and agriculture
 
-**Bacterium** (plural *bacteria*), a single-celled living thing far too small
-to see. Most are harmless, many are useful, a few cause disease. *Bacillus
-subtilis*, common in soil, is one of the useful ones and appears throughout this
-project.
+**Bacterium** (plural *bacteria*): a single-celled living thing far too small to
+see. Most are harmless and many are useful, though a few cause disease.
+*Bacillus subtilis*, common in soil, is one of the useful ones and appears
+throughout this project.
 
-**Biocontrol**: using a living organism to control a pest or disease, instead
-of a synthetic chemical. *Everyday example:* releasing ladybirds to eat aphids
-rather than spraying. MicrobeGraph is about the microbial version.
+**Biocontrol**: using a living organism to control a pest or disease instead of
+a synthetic chemical, the way a gardener might release ladybirds to eat aphids
+rather than spray them. MicrobeGraph is about the microbial version.
 
 **Biological (crop protection)**: a crop-protection product based on a living
-organism or a natural molecule, as opposed to a synthetic pesticide. The
+organism or a natural molecule, as opposed to a synthetic pesticide. This is the
 commercial field this project's domain belongs to.
 
 **Biosynthetic gene cluster (BGC)**: a run of neighbouring genes in a microbe's
-DNA that together build one specific molecule. *Everyday example:* if the genome
-is a cookbook, a BGC is several consecutive pages that together describe one
-complicated recipe. Abbreviated BGC throughout.
+DNA that together build one specific molecule. If the genome is a cookbook, a
+BGC is several consecutive pages describing one complicated recipe. Abbreviated
+BGC throughout.
 
-**Compound**: see *Metabolite*. Used interchangeably here; "compound" is the
-chemistry word, "metabolite" the biology word.
+**Compound**: see *Metabolite*. The two words are used interchangeably here;
+"compound" is the chemistry word and "metabolite" the biology word.
 
-**Crop**: a cultivated plant grown for food or material. In this project, the
-end of the chain: who ultimately suffers from the disease.
+**Crop**: a cultivated plant grown for food or material. In this project it sits
+at the end of the chain, as the one who ultimately suffers from the disease.
 
-**Fungus** (plural *fungi*), a kingdom of life including moulds, yeasts, and
+**EC number**: Enzyme Commission number, the standard code describing what
+reaction an enzyme performs. You can think of it as a job title chosen from a
+fixed vocabulary.
+
+**Enzyme**: a protein that speeds up one specific chemical reaction, rather like
+a specialised machine on a production line that does one step, very fast, over
+and over.
+
+**Fungus** (plural *fungi*): a kingdom of life including moulds, yeasts and
 mushrooms. Some fungi attack crops; others protect them.
 
 **Gene**: one instruction in an organism's DNA, usually the recipe for one
 protein.
 
-**Genome**: the complete set of an organism's DNA. *Everyday example:* the
-entire cookbook, not one recipe.
+**Genome**: the complete set of an organism's DNA. In the cookbook comparison,
+it's the entire book rather than any one recipe.
 
 **Grey mould**: a common name for the disease caused by the fungus *Botrytis
-cinerea*, which rots soft fruit including strawberries and grapes. Used as the
-running example throughout the docs.
+cinerea*, which rots soft fruit including strawberries and grapes. The docs use
+it as their running example throughout.
 
 **Kingdom**: a very broad grouping of life: Bacteria, Fungi, Plants, Animals.
-The top rung of the taxonomy ladder used here.
+Kingdom is the top rung of the taxonomy ladder used here.
 
 **Lipopeptide**: a class of molecules that are part fat, part protein-fragment.
 Many are soapy, which is how they damage the membranes of other microbes.
 Surfactin is one.
 
-**Metabolite**: a small chemical an organism makes and often releases.
-*Everyday example:* if the microbe is a factory, metabolites are its products.
-Some products happen to be poisonous to plant diseases, which is the whole
-premise of this project.
+**Metabolite**: a small chemical an organism makes and often releases. Picture
+the microbe as a factory and its metabolites as the products. Some of those
+products happen to be poisonous to plant diseases, and this project is built on
+that premise.
 
-**Microbe**: any organism too small to see: bacteria, fungi, yeasts. The
-umbrella term.
+**Microbe**: the umbrella term for any organism too small to see, including
+bacteria, fungi and yeasts.
+
+**Monoisotopic mass**: a molecule's mass counting each element by its most
+common isotope (carbon-12, hydrogen-1...). This is the value a mass spectrometer
+measures for the main peak. Surfactin's is 1021.667; its average molecular
+weight, which mixes in the heavier isotopes, is about 1022.3.
+
+**Multi-omics integration**: combining several kinds of biological measurement
+(genomics, proteomics, metabolomics) into a single analysis, rather than looking
+at each in isolation. The difficulty is that each layer has different units,
+scales and identifiers, and that is exactly why the ontology and entity
+resolution phases exist.
 
 **Pathogen**: an organism that causes disease. In this project, specifically a
 *plant* pathogen, something that attacks crops.
 
 **Pathway (biochemical)**: a chain of chemical reactions a cell performs in
-sequence. *Everyday example:* a production line with named stations, where each
-station's output feeds the next.
+sequence. Think of a production line with named stations, where each station's
+output feeds the next.
 
 **Protein**: a molecular machine built from an organism's genetic instructions.
-*Everyday example:* if the genome is a cookbook and a gene is a recipe, the
-protein is the finished dish that then does a job. In this project, the enzymes
-encoded by a gene cluster.
-
-**Enzyme**: a protein that speeds up one specific chemical reaction. *Everyday
-example:* a specialised machine on a production line, it does one step, very
-fast, over and over.
-
-**EC number**: Enzyme Commission number, the standard code describing what
-reaction an enzyme performs. Like a job title with a fixed vocabulary.
+To carry on with the cookbook: if the genome is the book and a gene is a recipe,
+the protein is the finished dish, which then goes off and does a job. In this
+project the proteins that matter are the enzymes encoded by a gene cluster.
 
 **Proteomics**: the study of the full set of proteins in a sample. One of the
 three molecular layers this project joins together.
 
-**Multi-omics integration**: combining several kinds of biological measurement
-(genomics, proteomics, metabolomics) into a single analysis, rather than looking at
-each in isolation. Hard because each layer has different units, scales, and
-identifiers, which is precisely why the ontology and entity resolution phases
-exist.
-
 **Secondary metabolite**: a molecule an organism makes that isn't needed for
-basic survival, but gives it an advantage, a weapon, a signal, a defence. Most
-antibiotics are secondary metabolites. Also called a *specialised metabolite* or
-*natural product*.
+basic survival but gives it an advantage, such as a weapon, a signal or a
+defence. Most antibiotics are secondary metabolites. Also called a *specialised
+metabolite* or *natural product*.
 
 **Siderophore**: a molecule a microbe releases to grab iron from its
-surroundings. Since iron is scarce and everyone needs it, a good siderophore is
-a way of starving your competitors. A common biocontrol mechanism.
+surroundings. Iron is scarce and everyone needs it, so a good siderophore is a
+way of starving your competitors. Siderophores are a common biocontrol
+mechanism.
 
 **Species / genus / family**: rungs on the ladder that classifies life, from
 specific to general. *Bacillus subtilis* is a species; *Bacillus* is its genus.
-*Everyday example:* street → city → region → country.
+A postal address climbs the same way: street → city → region → country.
 
-**Strain**: one specific isolate within a species. *Everyday example:* if
-"species" is a car model, a strain is one particular car with its own history
-and quirks. Two strains of the same species can behave quite differently.
+**Strain**: one specific isolate within a species. If "species" is a car model,
+a strain is one particular car with its own history and quirks, and two strains
+of the same species can behave quite differently.
 
-**Surfactin**: a lipopeptide made by *Bacillus* bacteria. Used as the running
-example in these docs because it's real, well-studied, and appears in every
-source database this project touches.
+**Surfactin**: a lipopeptide made by *Bacillus* bacteria. I use it as the
+running example in these docs because it's real and well studied, and it appears
+in every source database this project touches.
 
 **Taxonomy**: the system for naming and classifying organisms, and the
 hierarchy it produces.
@@ -142,78 +150,79 @@ hierarchy it produces.
 ## Graphs and knowledge
 
 **Betweenness centrality**: a measure of how often a node sits *on the shortest
-route between other nodes*. The "bridge" score. *Everyday example:* a junction
-that isn't busy itself but breaks half the city's journeys if it closes. Often
-more interesting than raw popularity.
+route between other nodes*, which makes it a kind of "bridge" score. A road
+junction can be quiet itself and still break half the city's journeys if it
+closes; that junction has high betweenness. This often tells you more than raw
+popularity does.
 
 **Centrality**: any measure of how important a node is within a graph. There
 are several kinds because "important" means different things.
 
-**Community detection**: automatically finding clumps of nodes more connected
-to each other than to the rest. *Everyday example:* in a social network, your
-school friends and your colleagues form visible clusters without anyone
-labelling them.
+**Community detection**: automatically finding clumps of nodes that are more
+connected to each other than to the rest. Your own social network has them:
+school friends and colleagues form visible clusters without anyone labelling
+them.
 
-**CURIE** ("Compact URI", say *curie*), an identifier written as
-`prefix:localid`, e.g. `ncbitaxon:326423`. The prefix says whose
-numbering system the number belongs to. *Everyday example:* the country code on
-a phone number.
+**CURIE** ("Compact URI", pronounced *curie*): an identifier written as
+`prefix:localid`, e.g. `ncbitaxon:326423`. The prefix says whose numbering
+system the number belongs to, much as the country code on a phone number does.
 
-**Degree**: how many arrows touch a node. Its "popularity" score.
+**Cypher**: the query language for graph databases, doing for graphs what SQL
+does for tables. Its patterns look like little drawings: `(a)-[:PRODUCES]->(b)`.
+It arrives in Release 2.0, together with Apache AGE.
+
+**Degree**: how many arrows touch a node, which you can read as its "popularity"
+score.
 
 **Directed graph (DiGraph)**: a graph where arrows have a direction. *A
 produces B* is not the same statement as *B produces A*. MicrobeGraph is
 directed throughout.
 
 **Edge**: a connection between two nodes, with a direction and a name
-(*produces*, *inhibits*). Also called a *relationship* or *link*. One arrow on
-the map.
-
-**Entity resolution**: deciding that several records refer to the same
-real-world thing and merging them into one node. *Everyday example:* realising
-"Robert Smith", "Bob Smith", and "R. Smith (work)" are one person.
-
-**Graph**: information stored as dots connected by arrows. Nothing to do with
-bar charts. *Everyday example:* a transport map; a social network.
-
-**GraphRAG**: answering a question by first *walking a knowledge graph* to
-collect relevant facts, then giving those facts to a language model to phrase the
-answer. See also *RAG*.
+(*produces*, *inhibits*). Also called a *relationship* or *link*. On the map,
+it's one arrow.
 
 **Embedding**: turning a node's position in a graph into a list of numbers, so
 that nodes with similar connection patterns get similar numbers. Once every node
-is a vector, ordinary machine learning applies. *Everyday example:* describing a
-person by which social circles they move in, then finding people with similar
-descriptions.
+is a vector, ordinary machine learning applies. Describing a person by the
+social circles they move in, then looking for people with similar descriptions,
+works on the same principle.
+
+**Entity resolution**: deciding that several records refer to the same
+real-world thing and merging them into one node, as when you realise that
+"Robert Smith", "Bob Smith" and "R. Smith (work)" are one person.
+
+**Graph**: information stored as dots connected by arrows (nothing to do with
+bar charts). A transport map is a graph, and so is a social network.
+
+**GraphRAG**: answering a question by first *walking a knowledge graph* to
+collect relevant facts, then giving those facts to a language model to phrase
+the answer. See also *RAG*.
+
+**Hop**: one step along one arrow. A "three-hop path" crosses three arrows.
+
+**Knowledge graph**: a graph whose nodes are real-world concepts and whose edges
+are meaningful relationships between them, usually with provenance attached.
+MicrobeGraph is one.
+
+**Link prediction**: scoring arrows that *don't* exist yet, to guess which ones
+probably should. Social networks do this when they suggest "People you may
+know". In this project the output is always a hypothesis, never a finding.
+
+**Node**: one thing in a graph: a microbe, a compound, a crop. Also called a
+*vertex*. One dot on the map.
 
 **node2vec**: the specific method this project uses to compute embeddings. It
 takes many random walks through the graph and learns numbers that predict what a
 node's neighbours tend to be.
 
-**Cypher**: the query language for graph databases, as SQL is for tables. Its
-patterns look like little drawings: `(a)-[:PRODUCES]->(b)`. Introduced with Apache
-AGE in Release 2.0.
+**Ontology**: a written agreement about what kinds of things exist in your world
+and what relationships are allowed between them. A family tree has one built in:
+it allows *parent-of* and *married-to*, but not *borrowed-a-lawnmower-from*. An
+ontology is that kind of decision, made explicitly.
 
-**Hop**: one step along one arrow. A "three-hop path" crosses three arrows.
-
-**Knowledge graph**: a graph whose nodes are real-world concepts and whose
-edges are meaningful relationships between them, usually with provenance
-attached. What this project builds.
-
-**Link prediction**: scoring arrows that *don't* exist yet, to guess which ones
-probably should. *Everyday example:* "People you may know". In this project the
-output is always a hypothesis, never a finding.
-
-**Node**: one thing in a graph: a microbe, a compound, a crop. Also called a
-*vertex*. One dot on the map.
-
-**Ontology**: a written agreement about what kinds of things exist in your
-world and what relationships are allowed between them. *Everyday example:* a
-family tree allows *parent-of* and *married-to*, but not
-*borrowed-a-lawnmower-from*, the ontology is that decision, made explicitly.
-
-**Path**: a sequence of arrows leading from one node to another. The core
-output of this project: an evidence chain.
+**Path**: a sequence of arrows leading from one node to another. Paths are the
+core output of this project, because each one is an evidence chain.
 
 **Property**: a piece of information attached to a node or edge, e.g. a
 compound's molecular weight.
@@ -228,19 +237,19 @@ graph equivalent of "fastest route".
 
 ## Computers, terminals, and files
 
-**CSV** ("comma-separated values"), a plain-text table where columns are
-separated by commas. Openable by Excel, by any text editor, and by every
-programming language. Deliberately used here for the graph files, because a file
-you can open in a text editor is a file you can debug.
+**CSV** ("comma-separated values"): a plain-text table where columns are
+separated by commas. Excel, any text editor and every programming language can
+open one. I chose CSV for the graph files on purpose: when you can open a file
+in a text editor, you can debug it.
 
 **Directory**: another word for folder.
 
 **Executable bit**: a file permission on macOS/Linux marking a file as "allowed
 to run as a program". Set with `chmod +x`. Windows doesn't use it.
 
-**JSON** ("JavaScript Object Notation"), a text format for structured data,
-using `{ }` for records and `[ ]` for lists. The format most web services reply
-in. *Everyday example:* a nested bullet list a computer can read reliably.
+**JSON** ("JavaScript Object Notation"): a text format for structured data,
+using `{ }` for records and `[ ]` for lists. Most web services reply in it.
+Think of it as a nested bullet list that a computer can read reliably.
 
 **PATH**: a list of folders your computer searches when you type a command
 name. If a program isn't on the PATH, typing its name gets "command not found"
@@ -248,8 +257,8 @@ even though it's installed.
 
 **Path (file)**: the address of a file, e.g. `data/raw/provenance.csv`. A
 *relative* path starts from where you are; an *absolute* path starts from the
-root of the disk. **Always prefer relative paths in a shared project**, an
-absolute path that works on your machine breaks on everyone else's.
+root of the disk. **Always prefer relative paths in a shared project**, because
+an absolute path that works on your machine breaks on everyone else's.
 
 **Terminal**: a window where you type text commands instead of clicking. Also
 called shell, console, or command line.
@@ -261,115 +270,139 @@ it.
 
 ## Python and programming
 
+**Abstract base class**: a template class that lists the functions every
+subclass *must* provide, without providing them itself. Python refuses to create
+an object that forgets one. MicrobeGraph's `Source` is one: every data source
+must have `probe`, `fetch` and `tidy`.
+
 **Argument**: a value you hand to a function. In `round(3.7)`, `3.7` is the
 argument.
 
-**Function**: a named, reusable block of instructions. *Everyday example:* a
-recipe you can follow whenever you want that dish, rather than re-deriving it
-each time.
+**Editable install** (`pip install -e .`): installing your own project into the
+virtual environment as a *pointer* to its source folder rather than a copy, so
+every edit is live immediately. Compare a library card that says "shelf 4" with
+a photocopy of the book.
+
+**Exit code**: a number a program hands back when it finishes. `0` means
+success; anything else means a problem. People rarely see it, but schedulers
+like Airflow read it to decide whether to retry.
+
+**Function**: a named, reusable block of instructions, like a recipe you can
+follow whenever you want that dish instead of working it out again each time.
 
 **Import**: bringing code from another file or package into the one you're
 writing. `import pandas` means "give me the pandas toolkit".
 
 **Library / package**: code someone else wrote and published so you don't have
-to write it yourself. *Everyday example:* buying flour instead of growing wheat.
+to write it yourself. Using one is like buying flour instead of growing wheat.
 
 **Module**: one Python file containing code you can import.
 
-**pandas**: the standard Python library for working with tables. *Everyday
-example:* programmable Excel that never gets tired and never mis-clicks.
+**pandas**: the standard Python library for working with tables. If you know
+Excel, imagine a programmable version that never gets tired and never
+mis-clicks.
 
-**pip**: Python's package installer. The command that fetches and installs
+**pip**: Python's package installer, the command that fetches and installs
 libraries.
 
-**Python**: the programming language this project is written in. Chosen for
-readability and because every library needed already exists in it.
+**pyproject.toml**: the standard file describing a Python project: its name,
+where its code lives, and how its tools (pytest, ruff) are set up. If the
+project is a box, this is the label on it.
+
+**Python**: the programming language this project is written in. I chose it for
+readability, and because every library the project needs already exists in it.
 
 **requirements.txt**: a text file listing exactly which packages the project
-needs. The project's *receipt*, it lets anyone rebuild an identical toolbox.
+needs. It acts as the project's *receipt*: with it, anyone can rebuild an
+identical toolbox.
 
 **Script**: a file of code you run from start to finish, as opposed to a
 library you import.
 
+**Slug**: a name turned into identifier-safe text: lowercase, letters and
+digits, words joined by hyphens. `Bacillomycin D` becomes `bacillomycin-d`.
+
 **Variable**: a name attached to a value, so you can refer to it later.
 
 **Virtual environment (`venv`)**: a folder holding a private copy of Python and
-its libraries, belonging to one project only. *Everyday example:* your own
-kitchen cupboard in a shared kitchen, so nobody else's substitutions break your
-recipe. Must be *activated* in each new terminal session.
+its libraries, belonging to one project only. Picture your own cupboard in a
+shared kitchen, where nobody else's substitutions can break your recipe. It must
+be *activated* in each new terminal session.
 
 ---
 
 ## R and its ecosystem
 
-**CRAN** ("Comprehensive R Archive Network"), the official home of R and its
-packages, run by the R Foundation. *Everyday example:* the app store for R, except
-run by a non-profit and free.
+**CRAN** ("Comprehensive R Archive Network"): the official home of R and its
+packages, run by the R Foundation. Think of it as R's app store, except that a
+non-profit runs it and everything is free.
 
 **DBI**: the standard R interface for talking to any database. You use the same
-commands whether the database underneath is DuckDB, PostgreSQL or something else.
-*Everyday example:* a universal remote, one set of buttons, many devices.
+commands whether the database underneath is DuckDB, PostgreSQL or something
+else, the way a universal remote gives you one set of buttons for many devices.
 
 **ggplot2**: R's main plotting library, known for publication-quality static
 figures. It builds a chart in layers: data, then how values map to position and
 colour, then what marks to draw.
 
-**igraph**: a library for building and analysing graphs. Exists for both R and
-Python. This project uses the R version to independently cross-check the Python
-results.
+**igraph**: a library for building and analysing graphs. It exists for both R
+and Python, and this project uses the R version to cross-check the Python
+results independently.
 
 **Positron**: a newer IDE from the makers of RStudio, built on the same
-foundation as VS Code, supporting R and Python in one window. An option for
-bilingual projects like this one.
+foundation as VS Code, supporting R and Python in one window. It's worth
+considering for bilingual projects like this one.
 
 **R**: a programming language designed by statisticians for statistics. Where
-Python is a general language that grew statistics libraries, R started there.
-*Everyday example:* a Swiss Army knife has a screwdriver and it works; a
-screwdriver is still better at screws.
+Python is a general language that grew statistics libraries, R started there. A
+Swiss Army knife has a screwdriver and it works, but a proper screwdriver is
+still better at screws.
+
+**`.RData`**: a saved snapshot of your entire R workspace. R offers to write one
+when you quit and reload it when you start. **Turn both off.** It makes scripts
+appear to work when they only work on your machine, because an object is still
+sitting in memory from last time: a recipe that only works because there's
+already stock in your fridge that isn't on the ingredients list.
+
+**Reactive programming**: a style where outputs recompute automatically when the
+inputs they depend on change, and *only* those outputs. Shiny is built on this
+model. *Everyday example:* a spreadsheet; change cell B2 and only the formulas
+referencing B2 update.
+
+**`renv`**: R's per-project package library, the exact counterpart of Python's
+`.venv`. `renv.lock` plays the role of `requirements.lock.txt`. Unlike `.venv`,
+it activates automatically when you open the project.
 
 **`.Rproj`**: a small file marking a folder as an RStudio project. Opening it
 sets the working directory correctly, which prevents the most common R beginner
 error: scripts that only run if you happen to be in the right folder.
 
-**`.RData`**: a saved snapshot of your entire R workspace. R offers to write one
-when you quit and reload it when you start. **Turn both off.** It makes scripts
-appear to work when they only work on your machine, because an object is still
-sitting in memory from last time. *Everyday example:* a recipe that works only
-because there's already stock in your fridge that isn't in the ingredients list.
-
-**`renv`**: R's per-project package library, the exact counterpart of Python's
-`.venv`. `renv.lock` plays the role of `requirements.lock.txt`. Unlike `.venv`, it
-activates automatically when you open the project.
-
-**Reactive programming**: a style where outputs recompute automatically when the
-inputs they depend on change, and *only* those outputs. The model behind Shiny.
-*Everyday example:* a spreadsheet, change cell B2 and only the formulas
-referencing B2 update.
-
 **Rscript**: the command that runs an R script from the terminal, R's equivalent
-of `python script.py`. What makes R scripts automatable, with no IDE involved.
+of `python script.py`. That's what makes R scripts automatable, with no IDE
+involved.
 
-**RStudio**: the application most people write R in. Free and open source.
-Remember it is *not* R: R is the engine, RStudio is the dashboard, the same
-relationship as Python and VS Code.
+**RStudio**: the free, open-source application most people write R in. Keep in
+mind that it is *not* R: R is the engine and RStudio the dashboard, the same
+relationship Python has with VS Code.
 
-**Shiny**: R's equivalent of Streamlit: turns R code into a web app with controls
-and charts. Splits every app into `ui` (what the page looks like) and `server`
-(what it does). *Everyday example:* a restaurant with a printed menu and a
-kitchen, versus a food truck where you watch your order being made. Shiny is the
-restaurant, Streamlit the food truck.
+**Shiny**: R's equivalent of Streamlit: it turns R code into a web app with
+controls and charts, and splits every app into `ui` (what the page looks like)
+and `server` (what it does). If Shiny is a restaurant with a printed menu and a
+kitchen, Streamlit is a food truck where you watch your order being made.
+
+**The pipe (`|>`)**: passes a result into the next function so code reads left
+to right instead of inside out. `edges |> filter(...) |> count(...)` reads as
+"take edges, then filter, then count". Python's method chaining is the same
+idea.
 
 **tidyverse**: a family of R packages sharing a common style, including `dplyr`
 (data manipulation), `ggplot2` (plots), `readr` (reading files) and `tidyr`
 (reshaping). Learning one makes the others easier.
 
-**The pipe (`|>`)**: passes a result into the next function so code reads left to
-right instead of inside out. `edges |> filter(...) |> count(...)` reads as "take
-edges, then filter, then count". Python's method chaining is the same idea.
-
-**Vector**: R's basic unit: an ordered list of values. Even a single number is a
-vector of one, which is why R prints `[1] 2` rather than `2`. *(And R counts from
-1, not 0, the single most common stumble for anyone arriving from Python.)*
+**Vector**: R's basic unit, an ordered list of values. Even a single number is a
+vector of one, which is why R prints `[1] 2` rather than `2`. *(R also counts
+from 1, not 0, which is the single most common stumble for anyone arriving from
+Python.)*
 
 ---
 
@@ -383,14 +416,15 @@ work).
 up to talk to the original.
 
 **Commit**: one saved snapshot of your project, with a message explaining what
-changed. *Everyday example:* clicking "save a named version" in a document.
+changed. Clicking "save a named version" in a document is the nearest everyday
+equivalent.
 
-**Fast-forward**: updating a branch by simply moving its pointer along an
-existing line, with nothing to merge. The clean case. `--ff-only` means "only do
-it if it's this clean; otherwise stop and tell me".
+**Fast-forward**: updating a branch by moving its pointer along an existing
+line, with nothing to merge. This is the clean case, and `--ff-only` means "only
+do it if it's this clean; otherwise stop and tell me".
 
-**Git**: the program on your computer that records snapshots of your project.
-*Everyday example:* a save-game system for your work.
+**Git**: the program on your computer that records snapshots of your project, a
+save-game system for your work.
 
 **GitHub**: a website that stores copies of Git repositories online. Git and
 GitHub are different things; you can use Git without GitHub.
@@ -402,7 +436,7 @@ rebuildable data, huge folders.
 your GitHub copy.
 
 **Personal Access Token (PAT)**: a long, generated password used by programs
-instead of your account password. Can be scoped narrowly and revoked
+instead of your account password. It can be scoped narrowly and revoked
 individually.
 
 **Pull**: fetch changes from the remote and apply them to your local branch.
@@ -415,11 +449,11 @@ individually.
 history.
 
 **SSH key**: a matched pair of files proving your identity without sending a
-password. *Everyday example:* a physical key (private, yours) and the lock it
+password. The pair works like a physical key (private, yours) and the lock it
 fits (public, given to GitHub).
 
 **Staging**: marking changes for inclusion in the next commit. *Everyday
-example:* putting items in a shopping basket, nothing's bought yet.
+example:* putting items in a shopping basket, where nothing's bought yet.
 
 **Tag**: a permanent label on a specific commit, used to mark releases (`v1.0`).
 
@@ -435,12 +469,13 @@ example:* putting items in a shopping basket, nothing's bought yet.
 loader. "This value must be unique" is a constraint.
 
 **Database**: a program whose job is to store information in an organised way
-and answer questions about it quickly. *Everyday example:* a library with a
-catalogue and a fast librarian, versus a pile of books in a garage.
+and answer questions about it quickly. Compare a library with a catalogue and a
+fast librarian to a pile of books in a garage.
 
-**DuckDB**: the database used here. A complete analytics database that lives in
-a single file on your laptop: no server, no account, no cost. Also the standard
-local stand-in for cloud warehouses, so the SQL you write transfers directly.
+**DuckDB**: the database used here, a complete analytics database that lives in
+a single file on your laptop, with no server, no account and no cost. DuckDB is
+also the standard local stand-in for cloud warehouses, so the SQL you write
+transfers directly.
 
 **Foreign key**: a column whose values must exist in another table. In our
 graph, every `source_id` in `edges.csv` must exist in `nodes.csv`.
@@ -454,91 +489,143 @@ equivalent of following one arrow.
 **Query**: a question asked of a database, usually written in SQL.
 
 **Read-only**: able to look but not change. The app's SQL console is read-only
-*by construction*, meaning it's enforced in code, not promised in the docs.
+*by construction*, meaning the code enforces it rather than the docs promising
+it.
 
 **Row**: one record in a table; one thing.
 
 **Schema**: the structure of a database: which tables exist, which columns they
 have, which rules apply.
 
-**SQL** (say "sequel" or "ess-cue-ell"), the language for asking databases
-questions. Reads close to English: `SELECT name FROM compounds WHERE activity =
-'antifungal'`. Invented in the 1970s and still everywhere.
+**SQL** (pronounced "sequel" or "ess-cue-ell"): the language for asking
+databases questions. It reads close to English:
+`SELECT name FROM compounds WHERE activity = 'antifungal'`. It was invented in
+the 1970s and is still everywhere.
 
-**Table**: a grid of rows and columns. Excellent at counting and filtering; bad
-at chains of unknown length, which is why this project also builds a graph.
+**Table**: a grid of rows and columns. Tables are excellent at counting and
+filtering but bad at chains of unknown length, which is why this project also
+builds a graph.
 
 ---
 
 ## Getting data from the internet
 
-**API** ("Application Programming Interface"), a way for one program to ask
-another program for data, designed for machines rather than humans. *Everyday
-example:* a restaurant's takeaway hatch, a defined way to place an order and
-collect it, without wandering into the kitchen.
+**API** ("Application Programming Interface"): a way for one program to ask
+another program for data, designed for machines rather than humans. A
+restaurant's takeaway hatch is a good picture of one: a defined way to place an
+order and collect it, without wandering into the kitchen.
 
-**API key**: a string identifying who is making requests, so a service can
-apply limits fairly. Sometimes optional (a courtesy that raises your rate
-limit), sometimes required. **Always a secret.**
+**API key**: a string identifying who is making requests, so a service can apply
+limits fairly. Sometimes it's optional (a courtesy that raises your rate limit)
+and sometimes required. **It is always a secret.**
+
+**Archive (tarball)**: many files bundled into one. A `.tar.gz` file is normally
+bundled with `tar` and then compressed with `gzip`. MIBiG 4.0 arrives as one, and
+this project reads the files straight out of it without unpacking. A suitcase
+packed with vacuum bags is the same idea: one thing to carry, with everything
+inside intact. The name is only a label, though: MIBiG 4.0's `.tar.gz` turned out
+not to be gzip-compressed at all, so the code works out the compression from the
+file's first bytes instead of trusting the name.
+
+**Checksum**: a short fingerprint calculated from every byte of a file; change
+one byte and the fingerprint changes completely. Publishers list it beside a
+download so you can prove you received exactly their file. **MD5** and
+**SHA-256** are two common kinds; SHA-256 is longer and stronger. Checking one
+is like counting a parcel's contents against its packing slip. See
+[`img/checksum_fingerprint.svg`](img/checksum_fingerprint.svg).
+
+**DOI** (Digital Object Identifier): a permanent link to a published thing (a
+paper or a dataset), written like `10.1093/nar/gkae1115`. It keeps working even
+when websites move, so a citation with a DOI can always be found again.
 
 **Endpoint**: one specific address within an API that answers one kind of
 question.
 
-**Evidence locker**: this project's name for `data/raw/`: the untouched
-original responses from every source, kept forever. *Everyday example:* the
-original receipts behind a tax return.
+**Evidence locker**: this project's name for `data/raw/`, the untouched original
+responses from every source, kept forever. They play the same part as the
+original receipts kept behind a tax return.
 
 **HTTP**: the protocol web browsers and programs use to request things from
 servers.
 
-**Ingestion**: the act of getting data into your system. The first pipeline
+**Ingestion**: the act of getting data into your system, and the first pipeline
 stage.
+
+**`.part` file**: a download in progress, saved under a temporary name and
+renamed only once it is complete and verified, so a dropped connection never
+leaves a half-file that looks finished.
 
 **Provenance**: the recorded origin of a piece of information: where it came
 from, when, and under what terms. Written to `data/raw/provenance.csv` on every
 fetch.
 
-**Rate limit**: a cap on how many requests you may make per second. Exceeding
-it gets you blocked. Respecting it is basic politeness to a free service.
+**Rate limit**: a cap on how many requests you may make per second. Exceed it
+and you get blocked; respecting it is basic politeness to a free service.
 
 **Retry with backoff**: when a request fails, waiting a moment and trying
 again, waiting longer each time. *Everyday example:* the phone is engaged; you
 don't redial forty times a second.
 
+**Source adapter**: the small piece of code that connects one data source to the
+project, by providing the three functions of the **contract**: `probe()` (what
+is out there?), `fetch()` (bring it home, untouched) and `tidy()` (make it fit
+the rulebook). If the contract is a wall socket, each adapter is the plug on an
+appliance. See [`03-ingestion-mibig.md`](03-ingestion-mibig.md).
+
+**Staging table**: one source's data, already reshaped into the project's
+standard columns but not yet merged with the others. Written by `tidy()` to
+`data/processed/staging/`. dbt (Phase 10) uses the same word for the same idea.
+
 **Status code**: a number a server returns describing the outcome. 200 = fine.
 404 = not found. 403 = refused. 429 = you're going too fast. 500 = the server
 broke.
 
+**Timeout**: how long a program waits for an answer before giving up. Without
+one, a silent server can make a program hang forever.
+
 **User agent**: a short line a program sends identifying itself. Sending a
-polite, honest one (naming the project and a contact) is expected etiquette when
-using public scientific APIs.
+polite, truthful one (naming the project and a contact) is expected etiquette
+when using public scientific APIs.
 
 ---
 
 ## The data sources used here
 
 **KEGG**: a database mapping compounds to the biochemical pathways they take
-part in. Free for academic use, requires attribution, must not be bulk-scraped.
+part in. Free for academic use, it requires attribution and must not be
+bulk-scraped.
 
 **MIBiG**: *Minimum Information about a Biosynthetic Gene Cluster*. A
 community-curated public repository of gene clusters that have been
-experimentally shown to produce a particular molecule. Published under CC-BY on
-Zenodo with a permanent DOI. **This project's backbone**, because it supplies
-the organism → cluster → compound arrows.
+experimentally shown to produce a particular molecule, published under CC-BY on
+Zenodo with a permanent DOI. It's **this project's backbone**, because it
+supplies the organism → cluster → compound arrows.
 
-**NCBI**: the US National Center for Biotechnology Information. Runs Taxonomy
-(the classification of life) and Datasets (genome records), among much else.
-Public domain.
+**MIBiG quality grade**: MIBiG's own rating of each entry: `high`, `medium`,
+`low` or `questionable`. MicrobeGraph carries it through as the `confidence` of
+every arrow from that entry (0.95, 0.85, 0.70, 0.50).
+
+**NCBI**: the US National Center for Biotechnology Information. It runs Taxonomy
+(the classification of life) and Datasets (genome records), among much else, and
+its data is public domain.
+
+**Negative result**: a test that looked for something and did not find it. MIBiG
+records some bioactivities as `"observed": false`. MicrobeGraph counts them but
+never turns them into a `HAS_ACTIVITY` arrow, which would say the opposite.
 
 **PubChem**: the US National Institutes of Health's chemistry database. Given a
-compound name it returns a stable numeric ID (a CID), a formula, a weight, and a
-synonym list. Free, no account. Its synonym lists are the raw material for
-entity resolution here.
+compound name it returns a stable numeric ID (a CID), a formula, a weight and a
+synonym list. Access is free and needs no account. Its synonym lists are the raw
+material for entity resolution here.
 
 **The curated bridge**: this project's own small, hand-assembled CSV linking
 compounds to pathogens to crops, because no public database publishes those
-links as a downloadable table. Every row carries a citation; every edge is
-labelled `curated_literature`; the whole layer can be filtered out.
+links as a downloadable table. Every row carries a citation and every edge is
+labelled `curated_literature`, and the whole layer can be filtered out.
+
+**Zenodo**: a free, permanent archive for research outputs, run by CERN. Each
+upload gets a DOI and a checksum for every file. MIBiG publishes its releases
+there.
 
 ---
 
@@ -548,45 +635,46 @@ labelled `curated_literature`; the whole layer can be filtered out.
 average.
 
 **Confidence**: in this project, a 0-1 number a source adapter attaches to an
-edge. Used for ranking, never for hiding.
+edge. The project uses it to rank edges, never to hide them.
 
 **Deduplicate**: remove repeated records that describe the same thing.
 
 **Hypothesis**: a proposed explanation worth testing, not yet a finding. Every
 predicted link in this project is a hypothesis, and is labelled as one.
 
-**Null model**: a deliberately random version of your data, used as a
-comparison. Any network has *some* clustering, so "we found three communities"
-means nothing until you know what a random network of the same size and shape
-would have produced. *Everyday example:* judging whether a coin is biased needs
-you to know what a fair coin looks like over the same number of throws.
+**Normalise (text)**: put text into a consistent form before comparing:
+lowercase, trimmed, punctuation stripped. It stops `Surfactin ` and `surfactin`
+from being treated as different things.
+
+**Null model**: a random version of your data, built on purpose as a comparison.
+Any network has *some* clustering, so "we found three communities" means nothing
+until you know what a random network of the same size and shape would have
+produced. You'd reason the same way about a coin: before calling it biased, you
+need to know what a fair coin looks like over the same number of throws.
 
 **Permutation test**: shuffling your data many times, keeping certain properties
 fixed, and asking how often the shuffled version is as extreme as the real one.
-If the real result beats 999 of 1,000 shuffles, chance is an unlikely explanation.
-*Everyday example:* dealing the same cards thousands of times to see how often a
-hand as good as yours turns up.
-
-**Normalise (text)**: put text into a consistent form before comparing:
-lowercase, trimmed, punctuation stripped. Prevents `Surfactin ` and `surfactin`
-from being treated as different things.
+If the real result beats 999 of 1,000 shuffles, chance is an unlikely
+explanation. Card players will recognise the idea: deal the same cards thousands
+of times and see how often a hand as good as yours turns up.
 
 ---
 
 ## Apps and deployment
 
 **Backend**: the part of software that does the work, out of the user's sight.
-*Everyday example:* a restaurant kitchen.
+If the app were a restaurant, this would be the kitchen.
 
 **Deployment**: putting your app somewhere on the internet so other people can
 use it.
 
-**Frontend**: the part the user sees and touches. *Everyday example:* the
-dining room and the menu.
+**Frontend**: the part the user sees and touches. In the same restaurant, it's
+the dining room and the menu.
 
 **Graceful degradation**: designing so that when an optional piece is missing,
-that one feature disappears quietly and everything else still works. Applied
-here to the AI layer: no API key means no chatbot, not a broken app.
+that one feature disappears quietly and everything else still works. This
+project applies it to the AI layer: with no API key there's no chatbot, but the
+app isn't broken.
 
 **Localhost**: your own computer, acting as a server for you only. When an app
 prints `http://localhost:8501`, that page exists on your machine and nobody else
@@ -595,194 +683,195 @@ can reach it.
 **Secret**: any value that must never be published: API keys, tokens,
 passwords. Kept in `.env` or `secrets.toml`, both gitignored.
 
-**Streamlit**: a Python library that turns a plain script into a web app with
-buttons and charts, without web development. *Everyday example:* an automatic
-gearbox, less control than manual, driving today rather than in three months.
+**Streamlit**: a Python library that turns an ordinary script into a web app
+with buttons and charts, without any web development. In car terms, Streamlit is
+an automatic gearbox: less control than a manual, but you're driving today
+rather than in three months.
 
 ---
 
 ## Containers, orchestration, and the modern data stack
 
-**Airflow**: an orchestrator: it runs pipeline steps in the right order, on a
-schedule, with retries and alerts. *Everyday example:* an alarm clock combined
+**Airflow**: an orchestrator. It runs pipeline steps in the right order, on a
+schedule, with retries and alerts. You can picture it as an alarm clock combined
 with a checklist that knows which tasks must finish before others can start.
 
-**Apache AGE**: a PostgreSQL extension that adds graph storage and Cypher queries
-to an ordinary Postgres database. Lets this project get graph-database skills
-without running a second server.
+**Apache AGE**: a PostgreSQL extension that adds graph storage and Cypher
+queries to an ordinary Postgres database. It lets this project cover
+graph-database skills without running a second server.
 
 **Astro CLI**: a free command-line tool that runs Apache Airflow locally in
-containers. Works with Docker or Podman.
+containers. It works with Docker or Podman.
 
 **Backfill**: re-running a scheduled pipeline for dates in the past, usually
 after fixing a bug.
 
-**Container**: a sealed, lightweight box holding a program plus everything it
-needs to run, so it behaves identically on any machine. *Everyday example:* a
-recipe shipped together with the kitchen. See [`CONTAINERS.md`](CONTAINERS.md).
-
-**Containerfile / Dockerfile**: the text file describing how to build an image.
-The two names are the same format; Podman prefers the first, Docker the second.
-
-**Base image**: the image your image is built on top of. *Everyday example:* you
-don't build a kitchen from raw ore; you start with a room that already has
-plumbing and power.
+**Base image**: the image your image is built on top of. Nobody builds a kitchen
+from raw ore; you start with a room that already has plumbing and power, and the
+base image is that room.
 
 **Bind mount**: attaching a folder from your own machine into a container, so
-edits appear inside instantly. Used in development; never for code in production.
+edits appear inside instantly. Bind mounts are for development, never for code
+in production.
 
 **Compose**: a file describing several services, how they connect, what storage
-they keep, and in what order they start, plus the command that runs them all.
-*Everyday example:* a Containerfile is a recipe for one dish; a compose file is
-the menu plus the kitchen rota.
+they keep and in what order they start, plus the command that runs them all. If
+a Containerfile is the recipe for one dish, a compose file is the menu plus the
+kitchen rota.
+
+**Container**: a sealed, lightweight box holding a program plus everything it
+needs to run, so it behaves identically on any machine. Imagine a recipe shipped
+together with its kitchen. See [`CONTAINERS.md`](CONTAINERS.md).
 
 **Containerfile / Dockerfile**: the text file describing how to build an image.
-Same format, two names; both engines read both. This project uses `Containerfile`
+The two names are the same format, and both engines read both, although Podman
+prefers the first name and Docker the second. This project uses `Containerfile`
 because it is the vendor-neutral name.
 
-**DAG** ("Directed Acyclic Graph"), in orchestration, the map of which tasks
-depend on which. *Directed* because dependencies point one way; *acyclic* because
-a task can't ultimately depend on itself.
+**DAG** ("Directed Acyclic Graph"): in orchestration, the map of which tasks
+depend on which. It's *directed* because dependencies point one way, and
+*acyclic* because a task can't ultimately depend on itself.
 
 **Databricks**: a cloud platform for large-scale data processing built on Spark.
-Used in this project for one genuinely compute-heavy job (mining paper abstracts)
-and honestly flagged as the weakest-fit tool in the plan.
+This project uses it for one job that really is compute-heavy (mining paper
+abstracts), and I've flagged it as the weakest-fit tool in the plan.
 
 **dbt**: a tool that turns a folder of SQL files into a tested, documented,
 version-controlled transformation pipeline. It works out which model depends on
 which, runs them in order, and tests the results.
 
-**Docker**: the best-known container platform. Free for personal use; requires a
-paid subscription in larger companies, which is often why it's unavailable on work
-machines.
+**Docker**: the best-known container platform. Free for personal use, it
+requires a paid subscription in larger companies, which is often why it's
+unavailable on work machines.
 
-**ELT / ETL**: Extract, Load, Transform (or Extract, Transform, Load). Whether
-you clean the data before or after loading it into the warehouse. Modern practice
-usually loads first and transforms in SQL, which is dbt's whole premise.
+**ELT / ETL**: Extract, Load, Transform (or Extract, Transform, Load). The
+difference is whether you clean the data before or after loading it into the
+warehouse. Modern practice usually loads first and transforms in SQL, and dbt is
+built on that premise.
 
-**FastAPI**: a Python framework for building web APIs. Generates interactive
+**FastAPI**: a Python framework for building web APIs. It generates interactive
 documentation automatically and validates every request against declared types.
 
 **Health check**: a command run periodically inside a container to answer "is
 this service actually *working*?", which is a different question from "is the
-process running?". *Everyday example:* waiting for the kettle's click, not just
-for the switch to be on.
+process running?". With a kettle, you'd wait for the click rather than trusting
+that the switch is on.
 
 **Idempotent**: safe to run more than once with the same result. A pipeline step
-that appends rows every run is *not* idempotent; one that replaces a day's data is.
-Essential for retries to be safe.
+that appends rows every run is *not* idempotent; one that replaces a day's data
+is. Retries are only safe when steps are idempotent.
 
-**Image**: the packaged blueprint a container is started from. Static, where a
-container is running.
+**Image**: the packaged blueprint a container is started from. An image is
+static, whereas a container is running.
+
+**Lakehouse**: a storage design combining a cheap data lake with warehouse-style
+querying. Databricks is built around this idea.
 
 **Layer**: a saved snapshot of the filesystem after one Containerfile
 instruction. Images are layers stacked, and the engine caches them, which is why
-instruction order changes rebuild times dramatically. *Everyday example:* packing
-a suitcase; changing the item on top is easy, changing the shoes at the bottom
-means unpacking everything.
-
-**Lakehouse**: a storage design combining a cheap data lake with warehouse-style
-querying. The concept behind Databricks.
+instruction order changes rebuild times dramatically. Packing a suitcase works
+the same way: changing the item on top is easy, but changing the shoes at the
+bottom means unpacking everything.
 
 **Multi-stage build**: using one image to *build* and a second, minimal one to
 *run*, copying only the finished output across. *Everyday example:* baking needs
-mixing bowls and a messy worktop; serving needs a plate. You don't deliver the
-kitchen with the cake.
+mixing bowls and a messy worktop, while serving needs a plate, and you don't
+deliver the kitchen with the cake.
 
 **Named volume**: storage managed by the container engine that survives a
-container being deleted. *Everyday example:* a container is a hotel room, cleaned
-between guests; the volume is your suitcase, which leaves with you.
+container being deleted. If the container is a hotel room, cleaned between
+guests, the volume is your suitcase, which leaves with you.
 
 **nginx**: a small, very fast web server. Here it hands finished HTML, CSS and
 JavaScript files to browsers.
 
 **Orchestration**: running the steps of a pipeline in the right order, on
-schedule, handling failures. The problem Airflow and Prefect solve.
+schedule, handling failures. This is the problem Airflow and Prefect solve.
 
 **pgvector**: a PostgreSQL extension adding vector similarity search, used here
 to store embeddings for the RAG layer.
 
 **Podman**: a container engine that runs without a background daemon and without
-root privileges. Red Hat's default on RHEL, and usually the right choice on shared
-or locked-down machines.
+root privileges. Red Hat's default on RHEL, and usually the right choice on
+shared or locked-down machines.
 
-**Prefect**: a Python orchestration library that needs no containers. The
-container-free route through this project's orchestration phase.
+**Prefect**: a Python orchestration library that needs no containers, which
+makes it the container-free route through this project's orchestration phase.
+
+**Publishing a port**: making a port inside a container reachable from your
+machine, with `-p outside:inside`, much as a hotel front desk connects an
+outside call to a room's phone. Anything not published stays invisible from
+outside, which is why this project's database has no published port.
 
 **React**: a JavaScript library for building user interfaces from reusable
 components.
 
+**Registry**: a place images are stored so others can download them, a sort of
+app store for images. This project publishes to GitHub Container Registry
+(GHCR).
+
 **REST API**: a convention for how programs ask each other for things over the
 web, using URLs and HTTP verbs.
-
-**Publishing a port**: making a port inside a container reachable from your
-machine, with `-p outside:inside`. *Everyday example:* the hotel front desk
-connecting an outside call to a room's phone. Anything not published stays
-invisible from outside, which is why this project's database has no published
-port.
-
-**Registry**: a place images are stored so others can download them. *Everyday
-example:* an app store for images. This project publishes to GitHub Container
-Registry (GHCR).
 
 **Rootless**: running containers as an ordinary user rather than as root. If
 something misbehaves it has your permissions, not the machine's.
 
 **SELinux**: an extra security layer in Red Hat Linux that labels every file and
-controls which processes may touch which labels. *Everyday example:* a building
-where every room has a colour-coded badge reader. It causes the classic RHEL
-container symptom: `Permission denied` on a mounted folder despite correct file
-permissions. Fixed by adding `:Z` to the mount.
+controls which processes may touch which labels. Picture a building where every
+room has a colour-coded badge reader. It causes the classic RHEL container
+symptom, `Permission denied` on a mounted folder despite correct file
+permissions, and the fix is to add `:Z` to the mount.
 
 **Service discovery**: how containers find each other. Under compose, each
-service is reachable by its **name** (`postgres:5432`) rather than an IP address,
-which changes on every restart. *Everyday example:* dialling "Accounts" on an
-office phone system instead of a full external number.
+service is reachable by its **name** (`postgres:5432`) rather than an IP
+address, which changes on every restart. In an office, you'd dial "Accounts" on
+the phone system instead of a full external number.
 
-**Snowflake**: a cloud data warehouse that separates storage from compute. Used
-here as a portability demonstration, not because the data volume needs it.
+**Snowflake**: a cloud data warehouse that separates storage from compute. It's
+used here to demonstrate portability; the data volume doesn't need it.
 
 **Spark**: a framework for processing data across many machines at once.
 
-**TypeScript**: JavaScript with types added. *Everyday example:* seatbelts,
-they catch the mistake of passing a number where text was expected while you're
+**TypeScript**: JavaScript with types added. Types work like seatbelts: they
+catch the mistake of passing a number where text was expected while you're
 typing, rather than in front of a user.
 
 **Warehouse (data)**: a database built for analytical questions over large
 volumes, as opposed to running an application.
 
-**WSL2**: Windows Subsystem for Linux: a real Linux kernel inside Windows.
-Containers need it, since containers are Linux technology.
+**WSL2**: Windows Subsystem for Linux, a real Linux kernel inside Windows.
+Containers need it, because containers are Linux technology.
 
 ---
 
 ## AI and language models
 
 **Agent**: an AI that *takes actions* rather than only answering: it plans
-steps, calls tools, checks results, and loops until the task is done. *Chatbot
-vs agent:* a chatbot tells you which query would answer your question; an agent
-runs it, reads the result, and decides what to do next.
+steps, calls tools, checks results, and loops until the task is done. The
+difference from a chatbot is easiest to see with a query: a chatbot tells you
+which query would answer your question, while an agent runs it, reads the result
+and decides what to do next.
 
 **Context**: the information given to a language model along with your question.
-The whole point of RAG is controlling what goes in here.
+RAG exists to control what goes in here.
 
 **Hallucination**: when a language model produces a confident, fluent, entirely
-invented answer. The reason a scientific project must ground answers in real,
-retrieved facts rather than the model's memory.
+invented answer. Hallucination is the reason a scientific project must ground
+answers in real, retrieved facts rather than the model's memory.
 
-**Large language model (LLM)**: the technology behind chat assistants. Excellent
-at language, unreliable at specific facts on its own.
+**Large language model (LLM)**: the technology behind chat assistants. It's
+excellent at language and, on its own, unreliable at specific facts.
 
 **MCP (Model Context Protocol)**: an open standard letting an AI assistant plug
-into an external tool or data source. *Everyday example:* USB, one agreed shape,
-so any device works with any computer.
+into an external tool or data source. It plays the role USB plays for hardware:
+one agreed shape, so any device works with any computer.
 
 **Prompt**: the instructions and question given to a language model.
 
 **RAG (Retrieval-Augmented Generation)**: fetching the relevant real information
 *first*, handing it to the model, and instructing it to answer only from what it
-was given. *Everyday example:* handing a well-read friend the exact page from the
-manual instead of asking them from memory.
+was given. It's like handing a well-read friend the exact page from the manual
+instead of asking them to answer from memory.
 
 **Tool (in AI)**: a function an AI is allowed to call, with defined inputs and
 outputs. This project's MCP tools will be read-only by design.
@@ -793,21 +882,43 @@ outputs. This project's MCP tools will be read-only by design.
 
 **Assertion**: a statement in a test that must be true, or the test fails.
 
+**Changelog**: a file (`CHANGELOG.md`) listing what changed in each version,
+newest first, in plain language. Its sections become the release notes on
+GitHub.
+
 **Checkpoint**: in this tutorial, a verification step: run this, expect that. If
-it doesn't match, stop and fix before continuing.
+it doesn't match, stop and fix it before continuing.
+
+**Continuous integration (CI)**: every push automatically installs the project
+on fresh computers and runs the tests. Here that means Windows, macOS, Linux and
+a RHEL 8 container, through **GitHub Actions** (GitHub's free service for
+running such jobs, configured by files in `.github/workflows/`). Think of a
+recipe tested in other people's kitchens as well as your own.
 
 **Evidence level**: the label on every edge saying what kind of knowledge it is:
 `curated_experimental`, `database_assertion`, `curated_literature`, or
-`inferred`. See [`02-ontology-and-data-model.md`](02-ontology-and-data-model.md).
+`inferred`. See
+[`02-ontology-and-data-model.md`](02-ontology-and-data-model.md).
 
-**Fixture**: a small, controlled piece of test data. **Must be built from the
-same code or schema as the real thing, never from memory**, a fixture that has
-drifted from reality produces tests that pass while the system fails.
+**Fake server (test double)**: a stand-in that answers like a real server but
+from a script in memory, so tests run offline, fast, and the same every time.
+MicrobeGraph's is `FakeSession` in `tests/conftest.py`.
+
+**Fixture**: a small, controlled piece of test data. **It must be built from the
+same code or schema as the real thing, never from memory**: a fixture that has
+drifted from reality produces tests that pass while the system fails. Where you
+can, cut it down from a real record. Phase 1 learned this twice: the real MIBiG
+archive turned out not to be gzip-compressed, and it wrote activity names in a
+style the hand-made test record didn't use. Both times, every test had passed.
+
+**Handbook**: [`HANDBOOK.md`](HANDBOOK.md), the one document to read first: the
+whole build, day 0 to the finished product, in order, linking to every guide.
+Updated in the same commit as any change it describes.
 
 **Ledger**: a written record of what a step did: what was merged, removed, or
 changed, and why. The resolution ledger and the provenance log are both ledgers.
-*Everyday example:* a bank statement, not the money, but the account of what
-happened to it.
+A bank statement is one in this sense; it records what happened to the money
+rather than holding the money itself.
 
 **Pipeline**: a series of stages where each one's output is the next one's
 input, flowing one way. *Everyday example:* beans → grinder → espresso machine →
@@ -816,11 +927,12 @@ cup. Each stage has one job and can be tested alone.
 **pytest**: the tool that runs this project's automated tests.
 
 **Reproducibility**: the property that someone else, on a different machine, can
-run your work and get the same result. The reason for `requirements.txt`, the
-evidence locker, and the provenance log.
+run your work and get the same result. That's why this project has
+`requirements.txt`, the evidence locker and the provenance log.
 
 **Test (unit test)**: a small automated check proving one function does what you
-claim. *Everyday example:* tasting the sauce before serving, rather than hoping.
+claim. A cook tastes the sauce before serving instead of hoping; a test does the
+same for code.
 
 **Validation**: checking data against rules before accepting it. This project's
 loader *refuses* invalid rows rather than warning about them, because warnings
@@ -828,4 +940,4 @@ get ignored.
 
 ---
 
-*Missing a term? That's a documentation bug, please open an issue.*
+*Missing a term? Please open an issue; I treat that as a documentation bug.*

@@ -5,7 +5,7 @@
 #
 # WHY THESE ARE SEPARATE:
 #   These packages contain compiled C code, which makes them the most fragile
-#   part of the stack, they are always the first to break on a new Python
+#   part of the stack. They are always the first to break on a new Python
 #   release, because someone has to rebuild and test them for it. Nothing in
 #   Phases 1-6 uses them.
 #
@@ -13,9 +13,9 @@
 #   project up and complete six phases, even during the months after a new
 #   Python version appears when these libraries have not caught up yet.
 #
-#   This is a general lesson worth taking away: separate the dependencies you
-#   need to START from the dependencies you need for one LATER feature. It
-#   makes a project far easier for other people to pick up.
+#   It's a habit I'd recommend in general: keep the dependencies you need to
+#   START apart from the ones that a single LATER feature needs. It makes a
+#   project much easier for other people to pick up.
 #
 # Version ranges are explained at the top of requirements.txt.
 

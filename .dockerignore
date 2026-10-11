@@ -6,7 +6,7 @@
 #   the build process. Without filtering, that means .venv/ (hundreds of
 #   MB), data/ (potentially gigabytes), and .git/, all copied for nothing.
 #
-#   It is also a SECURITY file. A secret that reaches an image is baked
+#   It matters for SECURITY too. A secret that reaches an image is baked
 #   into a layer, and deleting it in a later layer does NOT remove it.
 #   Anything inside a published image is effectively public.
 #
@@ -52,14 +52,14 @@ notebooks/
 figures/
 tests/
 
-# R working files, the library is huge and rebuildable from renv.lock.
+# R working files: the library is huge and rebuildable from renv.lock.
 renv/library/
 renv/staging/
 .RData
 .Rhistory
 .Rproj.user/
 
-# Private scratch space, never enters an image either.
+# Private scratch space, which never goes into an image either.
 .dev/
 
 # Editor and operating-system clutter

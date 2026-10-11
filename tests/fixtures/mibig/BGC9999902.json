@@ -1,0 +1,35 @@
+{
+  "accession": "BGC9999902",
+  "version": 2,
+  "comment": "TEST FIXTURE. A synthetic retired record. MicrobeGraph must skip it, because MIBiG has withdrawn it.",
+  "changelog": {
+    "releases": [
+      {
+        "version": "next",
+        "date": null,
+        "entries": [
+          {
+            "contributors": ["AAAAAAAAAAAAAAAAAAAAAAAA"],
+            "reviewers": ["BBBBBBBBBBBBBBBBBBBBBBBB"],
+            "date": "2026-10-10",
+            "comment": "Synthetic test record."
+          }
+        ]
+      }
+    ]
+  },
+  "quality": "low",
+  "status": "retired",
+  "retirement_reasons": ["Test fixture: withdrawn entry."],
+  "completeness": "partial",
+  "loci": [
+    {
+      "accession": "AJ575642.1",
+      "location": {"from": 1, "to": 2},
+      "evidence": [{"method": "Homology-based prediction", "references": ["doi:10.0000/fixture.4"]}]
+    }
+  ],
+  "biosynthesis": {"classes": [{"class": "terpene", "subclass": "Sesquiterpene"}]},
+  "compounds": [{"name": "retiredin", "evidence": [{"method": "NMR", "references": ["doi:10.0000/fixture.4"]}]}],
+  "taxonomy": {"name": "Testibacter fixturensis T2", "ncbiTaxId": 999999902}
+}

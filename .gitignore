@@ -2,7 +2,7 @@
 # MicrobeGraph, what Git must never publish
 # ---------------------------------------------------------------
 
-# Secrets. API keys, tokens, anything private. NEVER commit these.
+# Secrets: API keys, tokens, anything private. NEVER commit these.
 .env
 .env.*
 !.env.example
@@ -10,14 +10,14 @@
 *.pem
 *.key
 
-# The virtual environment, rebuildable from requirements.txt,
-# large, and machine-specific. Never commit it.
+# The virtual environment is large and machine-specific, and it can be
+# rebuilt from requirements.txt, so never commit it.
 .venv/
 venv/
 env/
 
-# Data, rebuilt by the pipeline. Keeping it out of Git is the proof
-# the pipeline works, and keeps the repository small.
+# Data, rebuilt by the pipeline. Keeping it out of Git keeps the repository
+# small and shows that the pipeline really can rebuild it.
 data/
 *.duckdb
 *.duckdb.wal
@@ -42,7 +42,7 @@ desktop.ini
 
 # --- R -----------------------------------------------------------
 # The installed package library: large, machine-specific, and fully
-# rebuildable from renv.lock. Exactly like .venv/ for Python.
+# rebuildable from renv.lock: the R counterpart of .venv/ for Python.
 renv/library/
 renv/staging/
 renv/python/

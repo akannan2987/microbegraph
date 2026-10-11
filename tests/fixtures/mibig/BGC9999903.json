@@ -1,0 +1,34 @@
+{
+  "accession": "BGC9999903",
+  "version": 1,
+  "comment": "TEST FIXTURE. A synthetic record invented for tests; it describes no real organism, cluster or compound. Its only evidence is a homology-based prediction, so MicrobeGraph must label its HARBORS and PRODUCES arrows database_assertion, not curated_experimental. The 10.0000 DOI prefix belongs to no publisher.",
+  "changelog": {
+    "releases": [
+      {
+        "version": "next",
+        "date": null,
+        "entries": [
+          {
+            "contributors": ["AAAAAAAAAAAAAAAAAAAAAAAA"],
+            "reviewers": ["BBBBBBBBBBBBBBBBBBBBBBBB"],
+            "date": "2026-10-10",
+            "comment": "Synthetic test record."
+          }
+        ]
+      }
+    ]
+  },
+  "quality": "low",
+  "status": "active",
+  "completeness": "unknown",
+  "loci": [
+    {
+      "accession": "AJ575642.1",
+      "location": {"from": 1, "to": 2},
+      "evidence": [{"method": "Homology-based prediction", "references": ["doi:10.0000/fixture.5"]}]
+    }
+  ],
+  "biosynthesis": {"classes": [{"class": "other", "subclass": "cyclitol"}]},
+  "compounds": [{"name": "predictamycin", "evidence": [{"method": "Mass spectrometry", "references": ["doi:10.0000/fixture.5"]}]}],
+  "taxonomy": {"name": "Testibacter fixturensis T3", "ncbiTaxId": 999999903}
+}

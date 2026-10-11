@@ -3,8 +3,9 @@
 # Install with:  pip install -r requirements.txt
 #
 # PYTHON VERSION: 3.11 or 3.12.
-#   3.10 and 3.13 also run everything here, but the Phase 7 extras in
+#   3.13 also runs everything here, but the Phase 7 extras in
 #   requirements-ml.txt have no build for 3.13 yet.
+#   3.10 is too old: scikit-learn 1.9 needs 3.11 or newer.
 #   Python 3.14 is NOT supported: several packages have no pre-built version
 #   for it, so pip tries to compile from source and fails.
 #   See docs/01-setup.md -> Troubleshooting T11.
@@ -18,14 +19,15 @@
 #   The UPPER bound stops a future major release from silently changing
 #   behaviour underneath the code.
 #
-#   Why the upper bound matters: these projects follow "semantic versioning",
-#   where the FIRST number changes only when something deliberately breaks.
+#   The upper bound matters because these projects follow "semantic
+#   versioning", where the FIRST number changes only when a release breaks
+#   something on purpose.
 #   pandas 2 -> 3 is allowed to remove functions and change defaults; 2.2 -> 2.9
 #   is not. So an upper bound at the next major version is the line between
 #   "safe improvements" and "we make no promises".
 #
-#   EVERYDAY PARALLEL: a recipe saying "any medium onion" is fine. Saying "any
-#   vegetable" is not. The bounds describe the range where the recipe still works.
+#   A recipe can say "any medium onion" and still work, but it can't say "any
+#   vegetable". The bounds describe the range where the recipe still works.
 #
 #   Ranges are used here rather than exact pins so the project keeps receiving
 #   security and bug fixes. For byte-for-byte reproducibility, see
@@ -52,7 +54,7 @@ plotly>=5.22,<8          # interactive charts you can hover and zoom
 pyvis>=0.3.2,<0.4        # interactive network views in the browser
 
 # --- Machine learning (Phase 7) ---
-scikit-learn>=1.9,<2     # models + honest evaluation (cross-validation, metrics)
+scikit-learn>=1.9,<2     # models + careful evaluation (cross-validation, metrics)
 
 # --- The app ---
 streamlit>=1.36,<2       # turns a Python script into a web app
@@ -67,9 +69,9 @@ python-dotenv>=1.0,<2    # reads optional API keys from a .env file
 # ---------------------------------------------------------------------------
 # IF YOU ADD A PACKAGE HERE, ADD IT TO check-setup.py TOO.
 #   Otherwise the setup check quietly verifies fewer things than it claims,
-#   and a green result stops meaning what you think it means. A verification
-#   script that has drifted from reality is worse than no script at all,
-#   because it produces confident false reassurance.
+#   and a green result stops meaning what you think it means. A check script
+#   that has drifted from reality is worse than none, because it reassures
+#   you about things it no longer checks.
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -77,12 +79,12 @@ python-dotenv>=1.0,<2    # reads optional API keys from a .env file
 #   Before version 1.0, the rules are different: the SECOND number is the one
 #   allowed to break things. So pyvis is capped at <0.4 rather than <1, because
 #   0.3 -> 0.4 could change behaviour the way 3 -> 4 would elsewhere.
-#   Reading a version number correctly is a small skill that saves real time.
+#   It's a small detail, but reading version numbers correctly saves time.
 # ---------------------------------------------------------------------------
 
 # NOTE: the node-embedding libraries (gensim, node2vec) are NOT here.
-# They are the most fragile dependencies in the stack, they contain compiled
+# They are the most fragile dependencies in the stack: they contain compiled
 # C code and break first on new Python versions, and nothing before Phase 7
-# needs them. They live in requirements-ml.txt, installed only when you reach
-# that phase. Keeping them out means a broken embedding library can never
-# block someone from setting the project up.
+# needs them. They live in requirements-ml.txt, which you install only when
+# you reach that phase, so a broken embedding library can never stop someone
+# from setting the project up.

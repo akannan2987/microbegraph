@@ -1,3 +1,5 @@
+[← Handbook](HANDBOOK.md) · [README](../README.md) · [Glossary](GLOSSARY.md) · [Setup](01-setup.md) · [Roadmap](ROADMAP.md)
+
 # Git Workflow: commit messages and the flow, every time
 
 **Prerequisites:** [`01-setup.md`](01-setup.md), the repository cloned, three
@@ -8,8 +10,8 @@ project, which commit message to write, in what order to run the commands, and
 what to do when something goes wrong. You will also understand *why* each step is
 there, so you can adapt it rather than copy it blindly.
 
-**How to use this document:** keep it open in a tab. Find the row for what you
-just did, take the message, run the flow. That's it.
+**How to use this document:** keep it open in a tab. After each change, find the
+row that matches what you did, copy its commit message and run the flow.
 
 > Every term here is also in [`GLOSSARY.md`](GLOSSARY.md).
 
@@ -33,8 +35,7 @@ just did, take the message, run the flow. That's it.
 
 ## 1. The flow, in one block
 
-**This is the whole thing.** Every change to this project ends with exactly these
-commands.
+Every change to this project ends with exactly these commands, in this order.
 
 ```bash
 # 1. Make sure you're on the working branch
@@ -64,26 +65,23 @@ git pull --ff-only origin master
 git switch develop
 ```
 
-Seven steps. You will have them memorised by about the third phase.
-
-*Everyday parallel:* the routine for leaving the house, keys, wallet, phone,
-lock the door. You don't think about it after a while, and the one time you skip
-a step is the one time it matters.
+That's seven steps, and you'll have them memorised by about the third phase.
+They turn into something like your routine for leaving the house (keys, wallet,
+phone, lock the door): after a while you stop thinking about it, and the one
+time you skip a step is the one time it matters.
 
 ---
 
 ## 2. What each line actually does
 
-Understanding this means you can adapt the flow instead of being stuck when
-something differs.
+Once you understand each line, you can adapt the flow when something is
+different instead of getting stuck.
 
 ### `git switch develop`
 
-Moves you to the `develop` branch. **All work happens here**, `master` is the
-published version and you never edit it directly.
-
-*Everyday parallel:* opening your working draft rather than the printed copy on
-the shelf.
+This moves you to the `develop` branch. **All work happens here.** `master` is
+the published version, and you never edit it directly. It's like opening your
+working draft rather than the printed copy on the shelf.
 
 If you were already on `develop`, Git says "Already on 'develop'" and does
 nothing. Running it anyway costs nothing and prevents the classic mistake of
@@ -91,16 +89,16 @@ committing to the wrong branch.
 
 ### `git add -A`
 
-**Staging**: choosing what goes into the next snapshot. `-A` means "everything
-that changed, including new and deleted files."
+This is **staging**, which means choosing what goes into the next snapshot. `-A`
+means "everything that changed, including new and deleted files."
 
-*Everyday parallel:* putting items in a shopping basket. Nothing is bought yet;
-you're deciding what's included in this trip.
+Think of putting items in a shopping basket: nothing is bought yet, you're only
+deciding what this trip includes.
 
 ### `./check-public-safe.sh`
 
-The safety gate. Checks that no secret, no database, no huge folder is about to
-be published. **Must print `SAFE TO PUSH`.**
+This is the safety gate. It checks that no secret, database or huge folder is
+about to be published, and it **must print `SAFE TO PUSH`**.
 
 If it doesn't, it names the problem. Take the offending file back out of the
 basket and fix it:
@@ -111,19 +109,19 @@ git restore --staged path/to/file      # unstage, file stays on disk
 
 ### `pytest -q`
 
-Runs the automated tests. `-q` means "quiet", just the summary line. Nothing to
-run before Phase 1, so skip it until then.
-
-*Everyday parallel:* tasting the sauce before serving.
+This runs the automated tests, and `-q` means "quiet" (you only see the summary
+line). There's nothing to run before Phase 1, so skip it until then. It's the
+equivalent of tasting the sauce before you serve it.
 
 ### `git commit -m "..."`
 
-Takes everything in the basket and saves it permanently as one snapshot, with your
-message attached. This is a **local** action, nothing has left your machine yet.
+This takes everything in the basket and saves it permanently as one snapshot,
+with your message attached. It's a **local** action: nothing has left your
+machine yet.
 
 ### `git push origin develop develop:beta develop:master`
 
-Sends the commit to GitHub, updating **three branches from one command**:
+This sends the commit to GitHub and updates three branches with one command:
 
 | Piece | Meaning |
 |---|---|
@@ -142,7 +140,7 @@ Success looks like three lines at the end:
    b9c3295..d9f81cd  develop -> master
 ```
 
-Same commit hash on all three. They are in lock-step.
+All three show the same commit hash, which means they're in lock-step.
 
 ### The `master` sync-back
 
@@ -152,23 +150,24 @@ git pull --ff-only origin master
 git switch develop
 ```
 
-The push updated **GitHub's** `master`. Your **laptop's** `master` doesn't know
-yet. Without this, local `master` drifts further behind every phase until one day
-it confuses you badly.
+The push updated **GitHub's** `master`, but your **laptop's** `master` doesn't
+know that yet. Without these three lines, local `master` drifts further behind
+with every phase until one day it confuses you badly.
 
 `--ff-only` means *"update only if it's a clean fast-forward, otherwise stop and
 tell me."* Since you never commit to local `master`, it is always clean, and Git
 just moves the pointer forward.
 
-*Everyday parallel:* you posted the updated document to two colleagues. This is
-you updating your own filing cabinet so your copy matches what you sent.
+Imagine you've posted an updated document to two colleagues. This step is you
+updating your own filing cabinet so that your copy matches what you sent.
 
 ---
 
 ## 3. Why the order matters
 
-Two orderings in that block are deliberate, and both were mistakes I made and
-corrected. Worth knowing so you don't reintroduce them.
+Two orderings in that block are there on purpose. Both were mistakes I made and
+then corrected, so they're worth understanding before you're tempted to
+reintroduce them.
 
 ### Stage *before* the safety gate
 
@@ -176,9 +175,8 @@ The gate inspects what Git is **tracking** (`git ls-files`). A brand-new file th
 has never been staged is invisible to Git, and therefore invisible to the gate.
 
 Run the check before staging and you are inspecting the *previous* state of the
-repository, not the one you're about to publish.
-
-*Everyday parallel:* checking your bag before you've finished packing it.
+repository, not the one you're about to publish. That's like checking your bag
+before you've finished packing it.
 
 ### Commit *after* the gate and the tests
 
@@ -186,7 +184,7 @@ If the gate fails or a test breaks, you want to fix it **before** it becomes par
 of the permanent history. A commit is not easily undone once pushed, and a secret
 committed once stays in the history forever, even if the next commit deletes it.
 
-*Everyday parallel:* proofread before you send, not after.
+It's the same rule as with an email: you proofread before you press send.
 
 ---
 
@@ -195,8 +193,8 @@ committed once stays in the history forever, even if the next commit deletes it.
 A commit message is a note to your future self, who will not remember what you
 did or why.
 
-*Everyday parallel:* labelling a box when you move house. "Kitchen, pans and
-baking trays" versus "Stuff". Both take three seconds to write. Only one saves you
+When you move house, you can label a box "Kitchen, pans and baking trays" or
+just "Stuff". Both take three seconds to write, but only the first one saves you
 an hour later.
 
 ### The format
@@ -205,7 +203,7 @@ an hour later.
 type: short description in the present tense
 ```
 
-**The types**, and when each applies:
+These are the types, and when each one applies:
 
 | Type | Use it when you | Example |
 |---|---|---|
@@ -217,10 +215,11 @@ type: short description in the present tense
 | `chore` | Housekeeping, config, dependencies | `chore: pin dependency upper bounds` |
 | `perf` | Make something faster | `perf: index node_id before the join` |
 | `style` | Formatting only, no logic change | `style: apply ruff formatting` |
+| `ci` | Change the automated test or build setup (`.github/workflows/`) | `ci: run the tests in a RHEL 8 container too` |
 
-This convention is widely used and not invented here. Its real value is that
-*scanning* the history becomes fast, you can see at a glance whether a stretch of
-work was features, fixes, or documentation.
+I didn't invent this convention; it's widely used. Its main value is that
+*scanning* the history becomes fast: you can see at a glance whether a stretch of
+work was features, fixes or documentation.
 
 ### The rules
 
@@ -229,7 +228,8 @@ work was features, fixes, or documentation.
 2. **Under about 70 characters.** Git tools truncate longer ones.
 3. **Say what and why, not how.** The *how* is visible in the diff; the *why*
    exists nowhere else.
-4. **No full stop at the end.** Convention, and it looks tidier in a list.
+4. **No full stop at the end.** That's the convention, and it looks tidier in a
+   list.
 
 ### Good and bad
 
@@ -237,14 +237,14 @@ work was features, fixes, or documentation.
 |---|---|---|
 | `update` | `docs: clarify why raw responses are never edited` | Says what and why |
 | `fixed stuff` | `fix: stage before running the safety gate` | Specific and searchable |
-| `WIP` | `feat: add MIBiG probe (fetch to follow)` | Honest and still informative |
+| `WIP` | `feat: add MIBiG probe (fetch to follow)` | Admits it's unfinished and still says what it is |
 | `asdf` | anything | Your future self will not thank you |
 | `changes to the file that handles the ingestion of MIBiG records including the parser and the tests` | `feat: add MIBiG adapter with parser and tests` | Fits, scans, says the same thing |
 
 ### When one line isn't enough
 
-Occasionally a change deserves a paragraph. Use `git commit` with no `-m`. Git
-opens an editor. Write the summary line, a blank line, then the detail:
+Occasionally a change deserves a paragraph. Run `git commit` with no `-m` and Git
+opens an editor, where you write the summary line, a blank line, then the detail:
 
 ```
 fix: reject uncited curated edges at load time
@@ -266,8 +266,9 @@ entirely: `git config --global core.editor "code --wait"` uses VS Code instead.)
 
 ## 5. The message for every phase
 
-Each phase in the roadmap has one natural commit at the end. Use these, they're
-already written to tell a coherent story when read top to bottom.
+Each phase in the roadmap ends with one natural commit. You can use these
+messages as they are; I wrote them so the history reads as a coherent story from
+top to bottom.
 
 ### Phase 0, design
 
@@ -285,8 +286,9 @@ already written to tell a coherent story when read top to bottom.
 
 | # | Phase | Commit message |
 |---|---|---|
-| 1 | Ingestion: MIBiG | `feat: add MIBiG source adapter with evidence locker and provenance log` |
+| 1 | Ingestion: MIBiG | `feat: add MIBiG source adapter with evidence locker and provenance log` (with a second `-m` for the description; see [`03-ingestion-mibig.md`, section 19](03-ingestion-mibig.md#19-committing-this-phase)) |
 | 2 | PubChem · NCBI · KEGG | `feat: add PubChem, NCBI Taxonomy and KEGG adapters` |
+| 2 | The cited curated bridge | `feat: add the cited compound-pathogen-crop bridge` |
 | 3 | UniProt proteins | `feat: add UniProt adapter and the protein layer` |
 | 4 | Entity resolution & build | `feat: add entity resolution, resolution ledger, and graph build` |
 | 5 | Graph analytics | `feat: add path finding, centrality, and community detection` |
@@ -306,6 +308,7 @@ already written to tell a coherent story when read top to bottom.
 | 11 | PostgreSQL + AGE + pgvector | `feat: add PostgreSQL backend with Apache AGE and pgvector` |
 | 12 | Airflow | `feat: orchestrate the pipeline with Airflow` |
 | 13 | Snowflake | `feat: add Snowflake as an alternative dbt target` |
+|  | Release | `chore: release v2.0.0` |
 
 ### Release 3.0, the product
 
@@ -316,8 +319,8 @@ already written to tell a coherent story when read top to bottom.
 | 16 | MCP server | `feat: add an MCP server over the graph` |
 | 17 | Databricks | `feat: add literature mining with human review` |
 | 18 | Containerize the stack | `feat: containerize the full stack with compose` |
-| 19 | CI/CD | `ci: build, test, and publish images on every push` |
-|  | Release | `chore: release v2.0.0` |
+| 19 | Published images, CD | `ci: publish multi-platform images and automate releases` |
+|  | Release | `chore: release v3.0.0` |
 
 *(`ci` is a type used specifically for continuous-integration configuration.)*
 
@@ -325,8 +328,8 @@ already written to tell a coherent story when read top to bottom.
 
 ## 6. Messages for the changes in between
 
-Most commits are not "I finished a phase." Here is the pattern for everything
-else.
+Most commits won't mark the end of a phase. For everything else, follow this
+pattern:
 
 | What you did | Commit message |
 |---|---|
@@ -346,28 +349,28 @@ else.
 | Deleted something unused | `refactor: remove the unused notebooks folder` |
 | Corrected your own earlier mistake | `fix: correct stale phase numbers in the README` |
 
-**Notice the last one.** Committing a correction to your own work is completely
-normal and reads as care, not carelessness. A history with visible fixes is more
-credible than one that pretends nothing was ever wrong.
+The last row is worth a second look. Committing a correction to your own work is
+completely normal, and to anyone reading the history it shows care. I find a
+history with visible fixes more credible than one that pretends nothing was ever
+wrong.
 
 ---
 
 ## 7. One change, one commit
 
-**The principle:** each commit should be one logical change that could be
-described in one sentence.
+**Each commit should be one logical change, something you could describe in one
+sentence.**
 
-*Everyday parallel:* saving a document after finishing a section, rather than
-once at the end of the week. If something goes wrong you lose one section, not a
-week, and you can see when each section was written.
+It's like saving a document each time you finish a section instead of once at
+the end of the week. If something goes wrong you lose one section rather than a
+week's work, and you can see when each section was written.
 
 ### Why it matters practically
 
-- **Undoing.** If commit 5 broke something, you can undo commit 5 alone. If
-  commits 1-5 were one giant commit, you undo everything.
-- **Finding.** `git log --oneline` becomes a readable table of contents.
-- **Understanding.** Six months later, `git blame` tells you *why* a line exists,
-  because the message explains it.
+If commit 5 broke something, you can undo commit 5 alone; if commits 1-5 were
+one giant commit, you'd have to undo everything. Small commits also make
+`git log --oneline` read like a table of contents. And six months later,
+`git blame` tells you *why* a line exists, because the message explains it.
 
 ### A worked example
 
@@ -393,8 +396,8 @@ git add -A
 git commit -m "docs: fix stale phase numbers and add missing glossary terms"
 ```
 
-Note that you **push once at the end**, not after each commit. Commits are local;
-the push sends all of them together.
+You **push once at the end**, not after each commit. Commits are local, and the
+push sends all of them together.
 
 ### When one file belongs in two commits
 
@@ -408,9 +411,9 @@ git add -p README.md
 Git shows each chunk of changes and asks: stage it? `y` for yes, `n` for no, `?`
 for the full list of options.
 
-This is a genuinely useful tool, and also a fiddly one. **When in doubt, just make
-one commit.** A slightly coarse history is far better than no commit because you
-got tangled in staging.
+It's a useful tool, but a fiddly one. **When in doubt, make one commit.** A
+slightly coarse history is far better than no commit at all because you got
+tangled up in staging.
 
 ---
 
@@ -418,42 +421,55 @@ got tangled in staging.
 
 A **tag** is a permanent label on a specific commit, marking a version.
 
-*Everyday parallel:* a bookmark in a long book. The pages keep turning; the
-bookmark stays where you put it.
+Think of a bookmark in a long book: the pages keep turning, and the bookmark
+stays where you put it.
 
-Only used when you finish a release:
+You only use tags when you finish a release:
 
 ```bash
-git tag -a v1.0.0 -m "Release 1.0, knowledge graph, validation, ML, and app"
+git tag -a v1.0.0 -m "Release 1.0, the science"
 git push origin develop develop:beta develop:master --tags
 ```
 
+The three release tags, and where each is cut:
+
+| Tag | Cut at the end of | Message |
+|---|---|---|
+| `v1.0.0` | Phase 9 | `"Release 1.0, the science"` |
+| `v2.0.0` | Phase 13 | `"Release 2.0, the platform"` |
+| `v3.0.0` | Phase 19 | `"Release 3.0, the product"` |
+
+Between releases, fixes get patch tags (`v1.0.1`) and small new capabilities minor
+tags (`v1.1.0`), as the table below explains. Before tagging, rename the
+*Unreleased* section of [`CHANGELOG.md`](../CHANGELOG.md) to the version and date;
+that section becomes the release notes on GitHub.
+
 - `-a` makes an *annotated* tag, which stores who made it and when. Always use
   `-a` for releases.
-- `--tags` sends tags too, they are **not** pushed by default, which surprises
-  everyone once.
+- `--tags` sends the tags as well. They are **not** pushed by default, which
+  catches almost everyone out once.
 
 **Version numbers** follow semantic versioning, the same scheme your
 `requirements.txt` bounds rely on:
 
 | Change | Example | When |
 |---|---|---|
-| **Major** | `1.0.0 → 2.0.0` | Something deliberately breaks or the project changes shape |
+| **Major** | `1.0.0 → 2.0.0` | A breaking change made on purpose, or the project changes shape |
 | **Minor** | `1.0.0 → 1.1.0` | New capability, nothing broken |
 | **Patch** | `1.0.0 → 1.0.1` | Bug fix only |
 
-On GitHub, tags become **Releases**, a page per version with notes. That's where
+On GitHub, tags become **Releases**, one page per version, and that's where the
 release notes live.
 
 ---
 
 ## 9. When something goes wrong
 
-Every one of these has happened to everyone. None is a disaster.
+All of these happen to everyone sooner or later, and none of them is a disaster.
 
 ### I committed to `master` by mistake
 
-The commit is on the wrong branch. Move it:
+The commit is on the wrong branch, so move it:
 
 ```bash
 git log --oneline -1                  # note the hash, e.g. a1b2c3d
@@ -466,7 +482,7 @@ git switch develop
 ```
 
 ⚠️ `--hard` discards changes permanently. It's safe here because you just copied
-the commit to `develop`, check `git log` on `develop` first if unsure.
+the commit to `develop` (if you're unsure, check `git log` on `develop` first).
 
 ### My commit message is wrong (not pushed yet)
 
@@ -481,8 +497,8 @@ may already have.
 
 ### My commit message is wrong (already pushed)
 
-Leave it. A slightly wrong message is a small thing; rewriting published history
-is a large one. Write a clearer message next time.
+Leave it alone. A slightly wrong message is a small thing, whereas rewriting
+published history is a large one. Write a clearer message next time.
 
 ### I forgot to include a file
 
@@ -508,8 +524,8 @@ git restore --staged path/to/file     # take it out of the basket
 ```
 
 Then add the right pattern to `.gitignore` and re-run the gate. **Never commit
-past a failing gate**, that check exists precisely for the mistake that cannot be
-undone.
+past a failing gate.** The check exists for exactly the kind of mistake that
+can't be undone.
 
 ### `git push` was rejected
 
@@ -529,7 +545,7 @@ git log --oneline --graph --all -10
 ```
 
 Then `git pull --rebase origin develop` replays your commits on top of theirs.
-**Never** `git push --force` on a shared branch to make an error go away, it
+**Never** `git push --force` on a shared branch to make an error go away: it
 deletes other people's work.
 
 ### I want to see what I'm about to commit
@@ -549,18 +565,18 @@ chance to notice a stray debug line.
 git restore .             # discard all unstaged changes
 ```
 
-⚠️ Permanent. Only when you're sure.
+⚠️ This is permanent, so only do it when you're sure.
 
 ---
 
 ## 10. The quick reference card
 
-Copy this into a note. It's everything you need day to day.
+Copy this into a note; it has everything you need day to day.
 
 ```bash
 # ---- STARTING A SESSION ----
 cd ~/projects/microbegraph
-source .venv/bin/activate            # Windows:.\.venv\Scripts\Activate.ps1
+source .venv/bin/activate            # Windows: .\.venv\Scripts\Activate.ps1
 git switch develop
 
 # ---- WHILE WORKING ----
@@ -570,8 +586,9 @@ git diff                             # what exactly changed
 # ---- ENDING A SESSION ----
 git switch develop
 git add -A
-./check-public-safe.sh               # must say SAFE TO PUSH
 pytest -q                            # from Phase 1 onward
+ruff check .                         # from Phase 1 onward
+./check-public-safe.sh               # must say SAFE TO PUSH
 git commit -m "type: what changed and why"
 git push origin develop develop:beta develop:master
 
@@ -606,11 +623,11 @@ You've understood this document when you can answer without scrolling up:
 1. The gate inspects what Git is *tracking*. An unstaged new file is invisible to
    Git and therefore to the gate, so checking first inspects the previous state.
 2. `develop` updates remote develop; `develop:beta` pushes local develop into
-   remote beta; `develop:master` pushes local develop into remote master. Three
-   branches, one command.
+   remote beta; `develop:master` pushes local develop into remote master. So one
+   command updates all three branches.
 3. The push updated GitHub's master, not your laptop's. Without the sync, local
    master drifts further behind every phase.
-4. `chore`, housekeeping and dependencies.
+4. `chore`, the type for housekeeping and dependencies.
 5. `git diff` shows changes you haven't staged; `git diff --staged` shows what the
    commit will actually contain. The second is the one to check before committing.
 6. `git cherry-pick` the commit onto develop, then `git reset --hard

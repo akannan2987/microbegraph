@@ -1,0 +1,60 @@
+{
+  "accession": "BGC9999901",
+  "version": 1,
+  "comment": "TEST FIXTURE. A synthetic record invented for tests; it describes no real organism, cluster or compound. It covers the cases the real surfactin record does not: medium quality, a hybrid cluster, two compounds, a compound shared with another cluster, a recorded negative bioactivity, cited bioactivities, activity names written as plain text (MIBiG 4.0 uses this style as well as the object style in the surfactin record), one activity object carrying a curator's comment, a compound class, synonyms, a PubChem identifier and a Greek letter in a name. The 10.0000 DOI prefix belongs to no publisher.",
+  "changelog": {
+    "releases": [
+      {
+        "version": "next",
+        "date": null,
+        "entries": [
+          {
+            "contributors": ["AAAAAAAAAAAAAAAAAAAAAAAA"],
+            "reviewers": ["BBBBBBBBBBBBBBBBBBBBBBBB"],
+            "date": "2026-10-10",
+            "comment": "Synthetic test record."
+          }
+        ]
+      }
+    ]
+  },
+  "quality": "medium",
+  "status": "active",
+  "completeness": "complete",
+  "loci": [
+    {
+      "accession": "AJ575642.1",
+      "location": {"from": 1, "to": 2},
+      "evidence": [{"method": "Knock-out studies", "references": ["doi:10.0000/fixture.1"]}]
+    }
+  ],
+  "biosynthesis": {
+    "classes": [
+      {"class": "NRPS", "subclass": "Type I"},
+      {"class": "PKS", "subclass": "Type I"}
+    ]
+  },
+  "compounds": [
+    {
+      "name": "surfactin",
+      "evidence": [{"method": "NMR", "references": ["doi:10.0000/fixture.1"]}],
+      "bioactivities": [
+        {"name": "Antibacterial", "observed": true, "references": ["doi:10.0000/fixture.2"]}
+      ]
+    },
+    {
+      "name": "δ-testamide",
+      "evidence": [{"method": "Mass spectrometry", "references": ["doi:10.0000/fixture.1"]}],
+      "synonyms": ["delta-testamide", "testamide D"],
+      "classes": ["Peptide alkaloid"],
+      "bioactivities": [
+        {"name": {"activity": "antifungal", "comment": "Slows a test fungus in a plate assay"}, "observed": true, "references": ["doi:10.0000/fixture.3"]},
+        {"name": "cytotoxic", "observed": false, "references": ["doi:10.0000/fixture.3"]}
+      ],
+      "databaseIds": ["pubchem:999999901"],
+      "mass": 500.25,
+      "formula": "C25H36N2O8"
+    }
+  ],
+  "taxonomy": {"name": "Testibacter fixturensis T1", "ncbiTaxId": 999999901}
+}

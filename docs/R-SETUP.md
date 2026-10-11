@@ -1,20 +1,22 @@
+[← Handbook](HANDBOOK.md) · [README](../README.md) · [Glossary](GLOSSARY.md) · [Setup](01-setup.md) · [Roadmap](ROADMAP.md)
+
 # R Setup: R, RStudio, and working alongside Python
 
-**Prerequisites:** [`01-setup.md`](01-setup.md) complete, you have the repository
-cloned, Git configured, and a Python environment working. No R experience is
-assumed.
+**Prerequisites:** [`01-setup.md`](01-setup.md) complete, which means the
+repository is cloned, Git is configured and a Python environment is working. You
+don't need any R experience.
 
-**Learning goal:** you will have R and RStudio installed, a sealed R package
-environment (`renv`) for this project, and a clear understanding of how R and
-Python coexist in one repository without either getting in the other's way. You
-will also read the project's DuckDB database from R and see the same facts your
-Python code produced.
+**Learning goal:** by the end you'll have R and RStudio installed and a sealed
+R package environment (`renv`) for this project, and you'll understand how R and
+Python can share one repository without getting in each other's way. You'll also
+read the project's DuckDB database from R and see the same facts your Python code
+produced.
 
 **Time:** 40-60 minutes, once per machine.
 
 **When you need this:** before **Phase 6** (statistical validation). Everything
-before that is Python-only, so you can safely defer this document, but reading
-it early is useful, because the "one database, two languages" idea shapes how the
+before that is Python-only, so you can safely put this document off. I'd still
+read it early, because the "one database, two languages" idea shapes how the
 project is designed.
 
 > Every term here is also in [`GLOSSARY.md`](GLOSSARY.md).
@@ -25,13 +27,13 @@ project is designed.
 
 1. [Why R at all, when the project is already in Python?](#1-why-r-at-all-when-the-project-is-already-in-python)
 2. [R and RStudio are two different things](#2-r-and-rstudio-are-two-different-things)
-3. [Step 1. Install R](#3-step-1--install-r)
-4. [Step 2. Install RStudio](#4-step-2--install-rstudio)
-5. [Step 3. The project file (`.Rproj`)](#5-step-3--the-project-file-rproj)
-6. [Step 4, `renv`: R's sealed toolbox](#6-step-4--renv-rs-sealed-toolbox)
-7. [Step 5. Install the project's R packages](#7-step-5--install-the-projects-r-packages)
-8. [Step 6. Keep R's clutter out of Git](#8-step-6--keep-rs-clutter-out-of-git)
-9. [Step 7. Read the project database from R](#9-step-7--read-the-project-database-from-r)
+3. [Step 1. Install R](#3-step-1-install-r)
+4. [Step 2. Install RStudio](#4-step-2-install-rstudio)
+5. [Step 3. The project file (`.Rproj`)](#5-step-3-the-project-file-rproj)
+6. [Step 4, `renv`: R's sealed toolbox](#6-step-4-renv-rs-sealed-toolbox)
+7. [Step 5. Install the project's R packages](#7-step-5-install-the-projects-r-packages)
+8. [Step 6. Keep R's clutter out of Git](#8-step-6-keep-rs-clutter-out-of-git)
+9. [Step 7. Read the project database from R](#9-step-7-read-the-project-database-from-r)
 10. [Using RStudio and VS Code together](#10-using-rstudio-and-vs-code-together)
 11. [Running R from the terminal](#11-running-r-from-the-terminal)
 12. [The R/Python dictionary](#12-the-rpython-dictionary)
@@ -43,35 +45,33 @@ project is designed.
 
 ## 1. Why R at all, when the project is already in Python?
 
-A fair question, and "because I know R" isn't a good enough answer for a public
-repository. Here is the honest case.
+It's a fair question, and "because I know R" isn't a good enough answer for a
+public repository. These are my actual reasons.
 
 ### Reason 1. R is the language statisticians built
 
 Python is a general-purpose language that grew excellent statistics libraries. R
-was designed *by statisticians, for statistics*, from the beginning. For the one
-thing Phase 6 does, asking **"could this pattern have arisen by chance?"**. R's
-tooling is more direct, better documented, and closer to how the question is
-posed in the literature.
+was designed *by statisticians, for statistics*, from the beginning. Phase 6 does
+one thing, asking **"could this pattern have arisen by chance?"**, and for that
+question R's tooling is more direct, better documented, and closer to how the
+question is posed in the literature.
 
-*Everyday parallel:* a Swiss Army knife has a screwdriver, and it works. A
-screwdriver is still better at screws. Neither observation is an insult to the
-other tool.
+A Swiss Army knife has a screwdriver, and it works, but a proper screwdriver is
+still better at screws. That says nothing bad about either tool.
 
 ### Reason 2. Two implementations agreeing is evidence
 
 Phase 6 computes centrality in R with `igraph` and compares it against the Python
-`networkx` result. If two independently written libraries, in two languages, by
+`networkx` result. When two libraries written independently, in two languages, by
 two different teams, produce the same numbers, that is **real evidence your
-pipeline is correct**.
+pipeline is correct**. If they disagree, you've found a bug you would otherwise
+have shipped.
 
-If they disagree, you've found a bug you would otherwise have shipped.
+It's the same trick as checking a bill by adding up the column twice, once top
+to bottom and once bottom to top: the same total, reached by a different route.
 
-*Everyday parallel:* checking a bill by adding the column twice, once top to
-bottom, once bottom to top. Same numbers, different route.
-
-This is not busywork. Cross-implementation validation is a genuine technique, and
-most portfolio projects skip it entirely.
+It can look like busywork, but cross-implementation validation is an established
+technique, even though most projects of this kind skip it entirely.
 
 ### Reason 3. One database, two languages
 
@@ -83,58 +83,61 @@ con <- DBI::dbConnect(duckdb::duckdb(), "data/processed/microbegraph.duckdb")
 edges <- DBI::dbGetQuery(con, "SELECT * FROM edges")
 ```
 
-No export step. No CSV shuffling. No format conversion. The same file, read by a
-different language.
+There's no export step, no CSV shuffling and no format conversion: R reads the
+same file your Python code wrote.
 
-**This is worth pausing on**, because it's a real architectural idea: when your
-data lives in a shared, open format, the choice of language stops being a lock-in
-decision and becomes a per-task decision. Use Python for the pipeline, R for the
-statistics, SQL for the aggregation, over one set of facts.
-
-*Everyday parallel:* a shared kitchen where everyone reads from the same recipe
-book, regardless of which knife they prefer.
+This is worth pausing on, because there's a real architectural idea behind it.
+When your data lives in a shared, open format, the choice of language stops being
+a lock-in decision and becomes a per-task one. In this project that means Python
+for the pipeline, R for the statistics and SQL for the aggregation, all working
+over one set of facts. (Picture a shared kitchen where everyone cooks from the
+same recipe book, whichever knife they happen to prefer.)
 
 ### Reason 4, `ggplot2`
 
-For static, publication-quality figures, `ggplot2` is unusually good. The
-teaching figures in `docs/img/` come from it.
+`ggplot2` is unusually good at static, publication-quality figures, and the
+statistical figures from Phase 6 onward come from it. (The teaching diagrams in
+`docs/img/` are drawn by a small Python script, `docs/img/make_illustrations.py`,
+because they are pictures of ideas rather than of data.)
 
 ### And the honest counterpoint
 
-R adds a second language, a second package manager, and a second thing that can
-break. That is a real cost. It's justified here because the reasons above are
-specific, a statistical technique, a validation strategy, and a plotting library
-rather than "more languages is better." **If you removed R, the project would
-be measurably weaker in one identifiable way: it would have no null-model
-validation.** That's the test any second language should have to pass.
+R adds a second language, a second package manager and a second thing that can
+break, and that is a real cost. I think it's justified here because the reasons
+above are specific (a statistical technique, a validation strategy and a plotting
+library) rather than a vague sense that "more languages is better." If you
+removed R, the project would be measurably weaker in one identifiable way: **it
+would have no null-model validation.** I'd hold any second language to that same
+test.
 
 ---
 
 ## 2. R and RStudio are two different things
 
-This confuses nearly everyone once, so let's be explicit.
+Nearly everyone mixes these two up at some point, so here they are side by
+side.
 
 | | What it is | Analogy |
 |---|---|---|
 | **R** | The language and the engine that runs the code | The car's engine |
 | **RStudio** | An application for writing and running R comfortably | The dashboard, seats, and steering wheel |
 
-**Install R first, then RStudio.** RStudio has no engine of its own, without R
-it will start and immediately complain that it can't find one.
+**Install R first, then RStudio.** RStudio has no engine of its own: without R,
+it starts up and immediately complains that it can't find one.
 
-Compare with what you already know: **Python** is the engine, **VS Code** is the
-dashboard. Exactly the same relationship.
+You've met this relationship before. Python is the engine and VS Code is the
+dashboard, in exactly the same way.
 
 ### A third option worth knowing about
 
 **Positron** is a newer IDE from the same company that makes RStudio. It's built
-on the same foundation as VS Code and supports **R and Python side by side in one
-window**. For a project like this one, genuinely bilingual, it's an appealing
-option.
+on the same foundation as VS Code and supports R and Python side by side in one
+window, which makes it appealing for a bilingual project like this one.
 
-This guide uses **RStudio**, because it's the most widely used, best documented,
-and what you'll find in every R tutorial. If you'd rather try Positron later,
-nothing in this project depends on the choice: they all edit the same files.
+This guide uses RStudio because it's the most widely used and best documented,
+and it's what you'll find in every R tutorial. If you'd like to try Positron
+later, nothing in this project depends on the choice; they all edit the same
+files.
 
 ---
 
@@ -150,10 +153,10 @@ you'll see the name often.
 1. Go to <https://cran.r-project.org/bin/windows/base/>
 2. Click the **Download R for Windows** link at the top.
 3. Run the installer, accepting the defaults.
-4. Optionally also install **Rtools** from
-   <https://cran.r-project.org/bin/windows/Rtools/>, needed only if a package
-   has to be compiled from source. Skip it for now; install it if you later hit
-   an error asking for it.
+4. Optionally, also install **Rtools** from
+   <https://cran.r-project.org/bin/windows/Rtools/>. You only need it when a
+   package has to be compiled from source, so skip it for now and install it if
+   you later hit an error asking for it.
 
 </details>
 
@@ -182,7 +185,7 @@ sudo dnf install -y R
 ```
 
 If `dnf` reports that R isn't found, enable the CodeReady Builder repository
-first, some of R's dependencies live there:
+first, because some of R's dependencies live there:
 
 ```bash
 sudo subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
@@ -203,20 +206,21 @@ R version 4.4.2 (2024-10-31) -- "Pile of Leaves"
 Copyright (C) 2024 The R Foundation for Statistical Computing
 ```
 
-✅ **Checkpoint.** A version number appears. **4.0 or newer** is fine; 4.3+ is
-ideal.
+✅ **Checkpoint.** You should see a version number. **4.0 or newer** is fine, and
+4.3+ is ideal.
 
-*(Yes, R releases have names. That one's from a Peanuts strip. All of them are.)*
+*(Yes, R releases have names, and every one of them, that one included, comes
+from a Peanuts strip.)*
 
 ---
 
 ## 4. Step 2. Install RStudio
 
-RStudio Desktop is **free and open source** (AGPL licence). There is a paid
-commercial edition with support, which you do not need.
+RStudio Desktop is free and open source (AGPL licence). There's also a paid
+commercial edition with support, which you don't need.
 
 1. Go to <https://posit.co/download/rstudio-desktop/>
-2. The page detects your system and offers the right download. Take it.
+2. The page detects your system and offers the right download; take that one.
 3. Install as normal for your platform:
    - **Windows**: run the `.exe`, accept defaults
    - **macOS**: drag to Applications
@@ -227,26 +231,27 @@ commercial edition with support, which you do not need.
 4. Launch RStudio.
 
 > ⚠️ **macOS version note.** Current RStudio requires **macOS 14 or newer**. On an
-> older macOS, the download page offers earlier RStudio versions that still work,
-> scroll to the older-versions section rather than forcing the newest.
+> older macOS, scroll down to the older-versions section of the download page,
+> which offers earlier RStudio versions that still work, rather than forcing the
+> newest.
 
 > **On a headless Linux VM** with no desktop, install **RStudio Server** instead
 > (`rstudio-server-rhel-*.rpm` from posit.co/download/rstudio-server/). It runs in
-> your browser at port 8787. Also free and open source.
+> your browser at port 8787 and is also free and open source.
 
 ### What you're looking at
 
-RStudio opens with four panes. Learn these four names and you can follow any R
+RStudio opens with four panes. Once you know their names, you can follow any R
 tutorial:
 
 | Pane | What it is |
 |---|---|
-| **Console** (bottom-left) | Type R here and it runs immediately. Like a conversation. |
-| **Source** (top-left) | Where you write and save scripts. Like a document. |
-| **Environment** (top-right) | Every object currently in memory, genuinely useful, and something VS Code shows less readily |
+| **Console** (bottom-left) | Type R here and it runs immediately, a bit like a conversation. |
+| **Source** (top-left) | Where you write and save scripts, as you would a document. |
+| **Environment** (top-right) | Every object currently in memory. Very useful, and something VS Code shows less readily |
 | **Files / Plots / Packages / Help** (bottom-right) | Your folder, your charts, installed packages, documentation |
 
-Try it, type this into the **Console** and press Enter:
+Try it now: type this into the **Console** and press Enter:
 
 ```r
 1 + 1
@@ -255,49 +260,49 @@ Try it, type this into the **Console** and press Enter:
 [1] 2
 ```
 
-✅ **Checkpoint.** You see `[1] 2`. R is running.
+✅ **Checkpoint.** If you see `[1] 2`, R is running.
 
 *(The `[1]` is R telling you this is the first element of the result. R thinks in
-vectors, lists of values, so even a single number is a list of one. It looks odd
-at first and stops being noticeable within a day.)*
+vectors (lists of values), so even a single number is a list of one. It looks odd
+at first, and within a day you'll stop noticing it.)*
 
 ---
 
 ## 5. Step 3. The project file (`.Rproj`)
 
 An **RStudio project** is a small file that tells RStudio "this folder is a
-project." Opening it sets the working directory correctly, keeps your open tabs
-between sessions, and, most importantly, stops the single most common R
+project." Opening it sets the working directory correctly and keeps your open
+tabs between sessions. Most importantly, it stops the single most common R
 beginner error: *scripts that only work if you happen to be in the right folder.*
 
-*Everyday parallel:* a labelled folder on your desk versus loose papers. The
-label doesn't change the contents; it stops you looking in the wrong place.
+It's the difference between a labelled folder on your desk and a pile of loose
+papers. The label doesn't change what's inside; it just stops you looking in the
+wrong place.
 
-**Create it:**
+To create it:
 
 1. In RStudio: **File → New Project → Existing Directory**
 2. Browse to your `microbegraph` folder
-3. **Create Project**
+3. Click **Create Project**
 
 RStudio creates `microbegraph.Rproj` and reopens in that project. From now on,
-open the project, not individual files, and paths like
+open the project rather than individual files, and paths like
 `data/processed/microbegraph.duckdb` will always resolve from the repository
-root, on every machine.
+root on every machine.
 
-**Commit this file.** It's tiny, it's plain text, and it means anyone cloning your
-repository gets the same behaviour.
+**Commit this file.** It's a tiny plain-text file, and committing it means anyone
+who clones your repository gets the same behaviour.
 
 ---
 
 ## 6. Step 4, `renv`: R's sealed toolbox
 
-You already know this idea. In Python it's `.venv`; in R it's **`renv`**. Same
-problem, same solution, different name.
+You've met this idea already. In Python it's `.venv`, and in R it's **`renv`**:
+the same problem and the same solution under a different name.
 
-**The problem:** R packages install system-wide by default. Project A needs
-`igraph` 1.5, project B needs 2.0, and installing one breaks the other.
-
-**The solution:** a per-project library, plus a lockfile recording exact versions.
+The problem is that R packages install system-wide by default. If project A needs
+`igraph` 1.5 and project B needs 2.0, installing one breaks the other. The
+solution is a per-project library, plus a lockfile that records exact versions.
 
 | Python | R | Job |
 |---|---|---|
@@ -308,18 +313,18 @@ problem, same solution, different name.
 | `pip install` | `renv::install()` | Add a package |
 | `pip freeze >` | `renv::snapshot()` | Record exact versions |
 
-Notice the fourth row: **R does not need an explicit activation step.** Opening
-the `.Rproj` file activates `renv` automatically. One fewer thing to forget than
-Python's `.venv`, a genuine small win.
+Look at the fourth row: **R does not need an explicit activation step.** Opening
+the `.Rproj` file activates `renv` automatically, which leaves you one fewer thing
+to forget than Python's `.venv` does. It's a small convenience, and I like it.
 
-**Set it up.** In the RStudio **Console**:
+To set it up, run this in the RStudio **Console**:
 
 ```r
 install.packages("renv")
 ```
 
-You may be asked to choose a CRAN mirror, pick any; they're copies of the same
-thing. Then:
+You may be asked to choose a CRAN mirror. Pick any of them; they're all copies of
+the same thing. Then run:
 
 ```r
 renv::init()
@@ -355,10 +360,10 @@ renv::install(c(
 ))
 ```
 
-This takes a few minutes the first time. Some packages compile from source, which
-is normal in R and shows a lot of scrolling output.
+The first time, this takes a few minutes. Some packages compile from source,
+which is normal in R and produces a lot of scrolling output.
 
-**Then record exactly what you got:**
+Then record exactly what you got:
 
 ```r
 renv::snapshot()
@@ -376,8 +381,8 @@ The following package(s) will be updated in the lockfile:
 Do you want to proceed? [Y/n]:
 ```
 
-Type `y` and Enter. `renv.lock` now holds exact versions, the R equivalent of
-your `requirements.lock.txt`. **Commit it.**
+Type `y` and press Enter. `renv.lock` now holds the exact versions, doing the
+job your `requirements.lock.txt` does on the Python side. **Commit it.**
 
 ### Verify
 
@@ -392,9 +397,9 @@ cat("R packages loaded OK\n")
 R packages loaded OK
 ```
 
-*(`library()` messages about objects being "masked" are normal, not errors. They
-mean two packages define a function with the same name and R is telling you which
-one wins.)*
+*(Messages from `library()` about objects being "masked" are normal and aren't
+errors. They mean two packages define a function with the same name, and R is
+telling you which one wins.)*
 
 ✅ **Checkpoint.** The message prints with no error above it.
 
@@ -402,9 +407,9 @@ one wins.)*
 
 ## 8. Step 6. Keep R's clutter out of Git
 
-R generates working files that must not be published, most importantly
-`renv/library/`, which is hundreds of megabytes of installed packages, and
-`.RData`, which silently saves your entire workspace including any data you had
+R generates working files that must not be published. The two that matter most
+are `renv/library/`, which holds hundreds of megabytes of installed packages, and
+`.RData`, which silently saves your entire workspace, including any data you had
 loaded.
 
 Add this block to your `.gitignore`:
@@ -438,22 +443,22 @@ renv/sandbox/
 ```
 
 > **The `.RData` trap is worth understanding.** By default R offers to save your
-> workspace when you quit, and to reload it when you start. That sounds helpful
-> and is actively harmful: your script starts working because an object is
-> already in memory from last time, and then fails for everyone else. Turn it off
-> in RStudio: **Tools → Global Options → General → uncheck "Restore .RData into
+> workspace when you quit and to reload it when you start. That sounds helpful,
+> but it's actively harmful: your script starts working because an object is
+> already in memory from last time, and then it fails for everyone else. Turn it
+> off in RStudio: **Tools → Global Options → General → uncheck "Restore .RData into
 > workspace at startup"**, and set "Save workspace to .RData on exit" to
 > **Never**.
 >
-> *Everyday parallel:* a recipe that works only because there's already a pot of
-> stock in your fridge that isn't in the ingredients list.
+> It's like a recipe that only works because there's already a pot of stock in
+> your fridge, and the stock isn't on the ingredients list.
 
 ---
 
 ## 9. Step 7. Read the project database from R
 
-This is the moment the two languages meet. *(It needs the database to exist, so
-it works from Phase 4 onward, come back then if you're reading ahead.)*
+This is where the two languages meet. *(It needs the database to exist, so it
+only works from Phase 4 onward. If you're reading ahead, come back then.)*
 
 Create `R/explore.R`:
 
@@ -513,7 +518,7 @@ Run it from the RStudio Console:
 source("R/explore.R")
 ```
 
-Expected shape of the output:
+The output should have roughly this shape:
 
 ```
 Tables in the database:
@@ -528,33 +533,31 @@ Edges by type and evidence level:
 Loaded 1247 nodes and 3891 edges into R.
 ```
 
-✅ **Checkpoint.** R prints tables that your Python pipeline created. **The two
-languages are now working on the same data.**
+✅ **Checkpoint.** R prints tables that your Python pipeline created, which means
+the two languages are now working on the same data.
 
 ---
 
 ## 10. Using RStudio and VS Code together
 
-The key realisation: **neither program owns your project.** Both are editors
-pointed at the same folder on disk. Git doesn't know or care which one saved a
-file.
+The thing to realise is that **neither program owns your project.** Both are
+editors pointed at the same folder on disk, and Git doesn't know or care which
+one saved a file. You already work this way when you open a spreadsheet in Excel
+and a document in Word from the same folder: two tools and two files, but one
+filing cabinet.
 
-*Everyday parallel:* opening a spreadsheet in Excel and a document in Word from
-the same folder. Different tools, different files, one filing cabinet.
-
-**A practical division of labour:**
+Here's a practical way to divide the work:
 
 | Tool | Best for |
 |---|---|
 | **RStudio** | R scripts, the Environment pane, plots, `renv`, R help |
 | **VS Code** | Python, Markdown docs, YAML, the terminal, Git operations |
 
-**Both open at once is completely fine.** The only rule worth following: **don't
-have the same file open and unsaved in both.** Whichever saves last wins, and you
-lose the other's changes silently.
-
-*Everyday parallel:* two people editing the same paper document. Fine if you're
-on different pages, messy on the same one.
+Having both open at once is completely fine. There's only one rule worth
+following: **don't have the same file open and unsaved in both.** Whichever saves
+last wins, and you lose the other's changes silently. Two people editing the same
+paper document run into the same thing: it's fine while they're on different
+pages and messy once they're on the same one.
 
 ### If you'd rather use R inside VS Code
 
@@ -567,36 +570,37 @@ You can, and for a bilingual project it's tempting:
    ```
 3. Restart VS Code. You now get R syntax highlighting, completion, and a console.
 
-**Honest comparison:** VS Code's R support is good and improving, but RStudio's
-Environment pane, plot history, and integrated help are still better for
-*interactive statistical work*, the exploratory back-and-forth where you run a
-line, look at the result, and adjust. That's exactly what Phase 6 involves.
+How do they compare? VS Code's R support is good and improving, but RStudio's
+Environment pane, plot history and integrated help are still better for
+*interactive statistical work*: the exploratory back-and-forth where you run a
+line, look at the result and adjust. That's exactly what Phase 6 involves.
 
-**My suggestion:** use VS Code for Python and documentation, RStudio for the R
-work. Try Positron if you'd like one window for both. There is no wrong answer
-here, and switching later costs nothing.
+My suggestion is VS Code for Python and documentation and RStudio for the R work,
+or Positron if you'd like one window for both. There's no wrong answer, and
+switching later costs nothing.
 
 ### Git works identically from either
 
 RStudio has a **Git** pane (top-right, once the project is in a repository) with
-buttons for stage, commit, push. It's the same Git, doing the same thing.
+buttons to stage, commit and push. Behind the buttons it's the same Git doing the
+same thing.
 
-**However, this project's push command has three targets:**
+This project's push command, though, has three targets:
 
 ```bash
 git push origin develop develop:beta develop:master
 ```
 
-RStudio's push button can't express that. **Use the terminal for pushes**, and
-the buttons for staging and reviewing changes if you prefer clicking. RStudio has
-a built-in terminal (**Tools → Terminal → New Terminal**) so you don't have to
-leave the window.
+RStudio's push button can't express that, so **use the terminal for pushes**.
+If you prefer clicking, the buttons are fine for staging and reviewing changes.
+RStudio has a built-in terminal (**Tools → Terminal → New Terminal**), so you
+don't have to leave the window.
 
 ---
 
 ## 11. Running R from the terminal
 
-You don't need RStudio open to run R. This matters for automation. Phase 12's
+You don't need RStudio open to run R, which matters for automation: Phase 12's
 orchestrator runs R scripts with no human present.
 
 ```bash
@@ -611,14 +615,15 @@ R
 ```
 
 `Rscript` is R's equivalent of running `python script.py`. Every R script in this
-project is written to work this way, no RStudio required, which is what makes
-them automatable.
+project is written to run this way without RStudio, and that's what makes them
+automatable.
 
 ---
 
 ## 12. The R/Python dictionary
 
-Coming from Python, this table is the fastest way in. Keep it open beside you.
+If you're coming from Python, this table is the fastest way in. It's worth
+keeping open beside you.
 
 | Task | Python | R |
 |---|---|---|
@@ -638,23 +643,24 @@ Coming from Python, this table is the fastest way in. Keep it open beside you.
 | Comment | `#` | `#` |
 | Index of first element | `0` | **`1`** ⚠️ |
 
-**Two differences that will catch you out:**
+Two differences will catch you out:
 
-1. **R counts from 1, not 0.** `x[1]` is the first element. Every off-by-one bug
-   you've ever had, in mirror image. There's no trick, you just adjust.
-2. **`<-` for assignment.** `=` works too, but R code in the wild uses `<-`, so
-   reading other people's code is easier if you use it. RStudio has a shortcut:
+1. **R counts from 1, not 0.** `x[1]` is the first element, so expect every
+   off-by-one bug you've ever had to come back in mirror image. There's no trick
+   to it; you just adjust.
+2. **`<-` for assignment.** `=` works too, but R code in the wild uses `<-`, and
+   reading other people's code is easier if you use it yourself. RStudio has a shortcut:
    <kbd>Alt</kbd>/<kbd>Option</kbd> + <kbd>-</kbd>.
 
-**The pipe (`|>`)** is worth knowing early, it passes a result into the next
+The pipe (`|>`) is worth learning early. It passes a result into the next
 function, so you read left to right instead of inside out:
 
 ```r
 edges |> filter(evidence_level == "inferred") |> count(edge_type)
 ```
 
-Read as: *take edges, then keep the inferred ones, then count by edge type.*
-Python's method chaining (`df.query(...).groupby(...)`) is the same idea.
+Read it as *take edges, then keep the inferred ones, then count by edge type.*
+Python's method chaining (`df.query(...).groupby(...)`) works on the same idea.
 
 ---
 
@@ -668,7 +674,7 @@ R version → Change** and point it at your installation.
 
 ### `renv::init()` fails or hangs
 
-Usually a CRAN mirror problem. Set one explicitly:
+This is usually a problem with the CRAN mirror. Set one explicitly:
 
 ```r
 options(repos = c(CRAN = "https://cloud.r-project.org"))
@@ -685,22 +691,22 @@ R compiles more packages from source than Python does, so it needs build tools:
 
 ### `duckdb` fails to install
 
-It's a large package that compiles a database engine. Ensure build tools are
-present (above), then retry. If it still fails, the CSV route works as a fallback
-every table can be exported by Python and read with `readr::read_csv()`. Slower
-and less elegant, but nothing is blocked.
+It's a large package that compiles a database engine. Make sure the build tools
+above are present, then retry. If it still fails, fall back to the CSV route:
+every table can be exported by Python and read with `readr::read_csv()`. It's
+slower and less elegant, but nothing is blocked.
 
 ### Scripts work in RStudio but fail with `Rscript`
 
-Almost always a path problem. RStudio sets the working directory to the project
-root; a plain terminal uses wherever you happen to be. Run `Rscript` from the
+This is almost always a path problem. RStudio sets the working directory to the
+project root, whereas a terminal uses wherever you happen to be. Run `Rscript` from the
 repository root, and always use paths relative to it.
 
 ### R feels slow to start
 
-Normal. R loads more at startup than Python. If it's *very* slow, you probably
-have `.RData` restoration enabled and it's reloading a large workspace. Turn it
-off (Step 6).
+That's normal; R loads more at startup than Python does. If it's *very* slow,
+you probably have `.RData` restoration enabled and R is reloading a large
+workspace. Turn it off (Step 6).
 
 ### `renv` says packages are out of sync
 
@@ -710,8 +716,9 @@ renv::restore()     # make the library match renv.lock  (the usual fix)
 renv::snapshot()    # make renv.lock match the library  (only if you added packages deliberately)
 ```
 
-Choosing between the last two is the whole skill: **restore** when you want the
-recorded state; **snapshot** when your current state is the new truth.
+Knowing which of the last two to use is most of the skill: **restore** when you
+want the recorded state back, **snapshot** when your current state is the new
+truth.
 
 ---
 
@@ -728,11 +735,12 @@ recorded state; **snapshot** when your current state is the new truth.
 - [ ] *(From Phase 4 onward)* `source("R/explore.R")` prints tables from the
       project database
 
-**What you learned:** the difference between a language and an IDE; that R and
-Python coexist in one repository because both are just files on disk; `renv` as
-R's answer to the same problem `.venv` solves; why `.RData` is a trap;
-that DuckDB lets both languages read one file with no export step; and enough
-R/Python vocabulary to read either.
+**What you learned:** you now know the difference between a language and an
+IDE, and why R and Python can coexist in one repository (both are just files on
+disk). You've seen `renv` solve, for R, the same problem `.venv` solves for
+Python, and why `.RData` is a trap. You've watched DuckDB let both languages read
+one file with no export step, and you've picked up enough R/Python vocabulary to
+read either.
 
 ---
 
@@ -756,8 +764,8 @@ git switch develop
 ```
 
 > **Check carefully before this particular commit.** `renv/library/` is large,
-> if it were accidentally tracked, the repository would balloon by hundreds of
-> megabytes. Confirm with:
+> and if it were accidentally tracked, the repository would balloon by hundreds
+> of megabytes. Confirm that it isn't with:
 > ```bash
 > git ls-files | grep -c "^renv/library/"      # must print 0
 > ```

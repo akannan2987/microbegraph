@@ -1,0 +1,28 @@
+# ---------------------------------------------------------------
+# MicrobeGraph, how Git treats line endings
+#
+# WHY THIS EXISTS
+#   Windows ends each line of text with two invisible characters (CR LF);
+#   macOS and Linux use one (LF). Git can convert between them when you
+#   check files out, which is usually helpful, but a shell script with
+#   Windows line endings breaks: bash reads the stray CR as part of each
+#   command ("$'\r': command not found").
+#
+#   These rules make every computer agree:
+#     * text files are stored in the repository with LF, and Git picks
+#       the right ending for your system when it writes them out;
+#     * shell scripts are ALWAYS written out with LF, even on Windows,
+#       so `bash check-public-safe.sh` works everywhere.
+#
+#   (Much like agreeing that every recipe card in a shared box is written
+#   in grams, whoever's kitchen it ends up in.)
+# ---------------------------------------------------------------
+
+* text=auto
+
+*.sh   text eol=lf
+*.py   text eol=lf
+*.csv  text eol=lf
+
+*.png  binary
+*.gz   binary

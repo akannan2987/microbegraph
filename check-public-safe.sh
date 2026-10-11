@@ -4,8 +4,8 @@
 #
 # WHY THIS EXISTS:
 #   .gitignore tells Git what to ignore. This script checks what Git
-#   is ACTUALLY tracking, right now. Two independent checks, because a
-#   secret published once is public forever.
+#   is ACTUALLY tracking, right now. That makes two independent checks,
+#   which is worth having because a secret published once is public forever.
 #
 # USAGE:  git add -A  &&  ./check-public-safe.sh      (run before every push)
 #         Windows:  git add -A ; bash check-public-safe.sh

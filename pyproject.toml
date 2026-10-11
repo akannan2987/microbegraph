@@ -1,0 +1,74 @@
+# ---------------------------------------------------------------------------
+# MicrobeGraph, the package description
+#
+# WHAT THIS FILE IS
+#   pyproject.toml is the standard "label on the box" for a Python project.
+#   It tells Python three things: what the package is called, where its code
+#   lives (src/microbegraph/), and how the project's tools (pytest, ruff) are
+#   configured.
+#
+# WHY IT ARRIVED IN PHASE 1
+#   Until Phase 1 there was nothing to run. Now there is a command,
+#       python -m microbegraph.fetch --probe
+#   and for Python to find "microbegraph" from anywhere, the package has to be
+#   installed into the virtual environment. One command does that, once:
+#       pip install -e .
+#   The "-e" means EDITABLE: Python is given a pointer to your src/ folder
+#   rather than a copy, so every edit you make is live immediately.
+#
+#   Think of a library catalogue card that says "the book is on shelf 4",
+#   as opposed to a photocopy of the book: if the book is rewritten, the card
+#   still points at the current version.
+#
+# WHY THERE ARE NO DEPENDENCIES LISTED HERE
+#   The install list lives in ONE place: requirements.txt (and
+#   requirements-ml.txt for Phase 7). Listing the same packages here as well
+#   would create two lists that slowly drift apart, so this file only
+#   describes the package itself and requirements.txt says what it needs.
+# ---------------------------------------------------------------------------
+
+[build-system]
+requires = ["setuptools>=77"]          # 77+ understands editable installs and SPDX licences
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "microbegraph"
+dynamic = ["version"]                  # read from src/microbegraph/__init__.py
+description = "An open, reproducible knowledge graph linking microbial gene clusters, through proteins and metabolites, to crop disease outcomes."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"       # same window check-setup.py enforces
+license = "MIT"
+authors = [{ name = "Abhilash Kannan" }]
+
+[project.urls]
+Repository = "https://github.com/akannan2987/microbegraph"
+
+[tool.setuptools.dynamic]
+version = { attr = "microbegraph.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]                        # the "src layout": code lives in src/
+
+# --- pytest --------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]                   # tests also work before "pip install -e ."
+addopts = "-q -ra"                     # quiet dots, plus a short reason for any skip or failure
+
+# --- ruff (the style and bug checker) --------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["docs/interactive"]
+
+[tool.ruff.lint]
+# E/F: real errors and likely bugs. I: import order. B: common bug patterns.
+# UP: modern Python syntax for the versions we support.
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]                      # long lines are allowed in comments and URLs
+
+[tool.ruff.lint.per-file-ignores]
+# check-setup.py lines its comments up in columns for readability, and the
+# import sorter would squash them. In a file written for beginners I'd rather
+# keep the columns.
+"check-setup.py" = ["I001"]

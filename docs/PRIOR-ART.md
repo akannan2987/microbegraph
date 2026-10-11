@@ -1,15 +1,17 @@
+[← Handbook](HANDBOOK.md) · [README](../README.md) · [Glossary](GLOSSARY.md) · [Architecture](00-architecture.md) · [Roadmap](ROADMAP.md)
+
 # Prior art: what exists already, and where this project sits
 
-**Prerequisites:** [`00-architecture.md`](00-architecture.md), you should know what
-a knowledge graph is and what MicrobeGraph builds. No specialist background
-needed; every tool and term below is explained.
+**Prerequisites:** [`00-architecture.md`](00-architecture.md). You should know
+what a knowledge graph is and what MicrobeGraph builds, but you don't need any
+specialist background; every tool and term below is explained.
 
 **Learning goal:** you will know what already exists in this field, how
 MicrobeGraph differs, and, just as importantly, **what it does not claim**. You
 will also understand why naming the related work makes a project *more* credible
 rather than less.
 
-**Time:** 25-30 minutes of reading. Nothing to run.
+**Time:** 25-30 minutes of reading. There's nothing to run.
 
 > Every term here is also in [`GLOSSARY.md`](GLOSSARY.md).
 
@@ -39,36 +41,35 @@ rather than less.
 making. The term comes from patent law: before an invention can be patented,
 someone checks whether it already exists.
 
-*Everyday example:* before spending a year designing a better umbrella, you spend
-an afternoon finding out what umbrellas already exist. Not to be discouraged, to
-find out which specific problem is still unsolved, and to avoid loudly announcing
-something invented in 1962.
+Before spending a year designing a better umbrella, you'd spend an afternoon
+finding out what umbrellas already exist. You do that to find out which specific
+problem is still unsolved, and to avoid loudly announcing something invented in
+1962.
 
 ### Why publishing it makes a project stronger
 
-This is counter-intuitive, so it's worth being explicit.
+This part is counter-intuitive, so I'll spell it out.
 
 A repository that says *"here is the related work, here is precisely where mine
-differs, and here is what mine is not"* reads as work by someone who knows the
-field. A repository silent about related work reads as someone who didn't look,
-and in a specialised area, the people most likely to read it are exactly the
-people who will know.
+differs, and here is what mine is not"* reads as the work of someone who knows
+the field. A repository that says nothing about related work suggests the author
+didn't look, and in a specialised area the people most likely to read it are the
+people who will notice.
 
-*Everyday example:* two people describe a restaurant idea. One says "a place that
-sells food". The other says "there are four Italian places on this street; three
-do pizza, one does pasta, none opens for lunch. I'd open for lunch." The second
-person has obviously done the work, and their idea is more believable *because*
+Picture two people describing a restaurant idea. One says "a place that sells
+food". The other says "there are four Italian places on this street; three do
+pizza, one does pasta, none opens for lunch. I'd open for lunch." The second
+person has clearly done the work, and their idea is more believable *because*
 they named the competition.
 
-**The rule this document follows:** state what exists, state what's different,
-state what isn't claimed. All three, plainly.
+So this document states what exists, what's different, and what isn't claimed.
 
 ---
 
 ## 2. The landscape, layer by layer
 
-MicrobeGraph sits on top of a mature ecosystem. Here is that ecosystem, from the
-raw biology upward.
+MicrobeGraph sits on top of a mature ecosystem. I'll go through it from the raw
+biology upward.
 
 ### Layer 1. The curated databases
 
@@ -78,12 +79,12 @@ particular molecule. Version 2.0 held 2,021 entries; 3.0 added 661 more with
 re-validation of existing ones; 4.0 continues that work through international
 collaboration.
 
-**What it is, in plain terms:** a hand-checked list of "this microbe's DNA
-contains this production line, and it makes this molecule", each entry signed off
-by a human against published experiments.
+In everyday terms, it's a hand-checked list of "this microbe's DNA contains this
+production line, and it makes this molecule", with each entry signed off by a
+human against published experiments.
 
-**This is MicrobeGraph's backbone.** The project does not compete with MIBiG, it
-consumes it, with attribution.
+MIBiG is MicrobeGraph's backbone. The project reads MIBiG's data, with
+attribution, and makes no attempt to compete with it.
 
 ### Layer 2. The prediction tools
 
@@ -91,39 +92,39 @@ consumes it, with attribution.
 are. Where MIBiG holds clusters that were *proven*, antiSMASH finds clusters that
 are *probable*, at enormous scale.
 
-*Everyday example:* MIBiG is a list of restaurants someone has actually eaten at
-and reviewed. antiSMASH is an algorithm scanning satellite images for buildings
-that look like restaurants. Both useful, very different confidence.
+If MIBiG is a list of restaurants someone has actually eaten at and reviewed,
+antiSMASH is an algorithm scanning satellite images for buildings that look like
+restaurants. Both are useful, with very different levels of confidence.
 
 ### Layer 3. The analysis tools
 
-**BiG-SCAPE** and **CORASON**, build *similarity networks* of gene clusters:
+**BiG-SCAPE** and **CORASON** build *similarity networks* of gene clusters:
 which clusters resemble which others, grouped into families. Widely used; a
 typical study might network a thousand clusters from a few dozen genomes and find
 that most have no close match to anything characterised.
 
-**Note what kind of network this is.** The nodes are all the *same type*, gene
-clusters, and the edges mean "these two resemble each other". That is a
-**similarity network**.
+It's worth noticing what kind of network this is. The nodes are all the *same
+type* (gene clusters), and the edges mean "these two resemble each other". That
+is a **similarity network**.
 
 MicrobeGraph is a different shape: nodes of nine *different* types, edges that are
 named relationships (*produces*, *inhibits*, *infects*). That is a **knowledge
 graph**.
 
-*Everyday example:* a similarity network is a chart of which songs sound alike. A
-knowledge graph is a chart of who wrote which song, for which film, in which year.
-Both are networks; they answer completely different questions.
+In music terms, a similarity network is a chart of which songs sound alike, and
+a knowledge graph is a chart of who wrote which song, for which film, in which
+year. Both are networks, but they answer completely different questions.
 
 ### Layer 4. Machine learning on clusters
 
-An active, crowded area. Recent work includes transformer models trained on
+This is an active, crowded area. Recent work includes transformer models trained on
 22,258 Actinomycete clusters to predict what compound class a cluster produces,
 and deep networks classifying cluster products at fine structural resolution using
 roughly 3,800 cluster-product pairs from MIBiG.
 
-**Be clear-eyed about this:** applying machine learning to BGC data is not novel.
-Phase 7 of this project is *learning* an established technique on a small graph,
-not advancing the state of the art. The docs say so.
+To be clear, applying machine learning to BGC data is not novel. Phase 7 of this
+project is about *learning* an established technique on a small graph. It doesn't
+advance the state of the art, and the docs say so.
 
 ---
 
@@ -138,8 +139,8 @@ molecular-networking clusters, and ships precomputed databases, including one
 spanning over 343,000 reference genomes and another holding more than two million
 antiSMASH-predicted clusters.
 
-**Say plainly what that means: the first half of MicrobeGraph already exists, is
-published, is open source, and is enormously larger.**
+**In other words, the first half of MicrobeGraph already exists, is published,
+is open source, and is enormously larger.**
 
 | | SocialGene | MicrobeGraph |
 |---|---|---|
@@ -150,11 +151,11 @@ published, is open source, and is enormously larger.**
 | Evidence model | Provenance by source | Evidence *level* on every edge, filterable |
 | Documentation | Reference documentation | The repository **is** a tutorial |
 
-**Two honest conclusions:**
+Two conclusions follow from that:
 
-1. **On scale and on the genomics half, SocialGene is simply better.** It is the
-   right tool if you want to mine biosynthetic potential across all of RefSeq.
-   Nothing here competes with that.
+1. **On scale and on the genomics half, SocialGene is better.** It's the right
+   tool if you want to mine biosynthetic potential across all of RefSeq, and
+   nothing here competes with that.
 2. **The chain is different at the end.** SocialGene connects clusters to
    *chemistry and analytical measurement*. MicrobeGraph connects them to *disease
    outcomes in crops*, which is a different question and requires data that isn't
@@ -162,24 +163,25 @@ published, is open source, and is enormously larger.**
 
 **If you want the state of the art in BGC knowledge graphs, use SocialGene.** This
 project is a smaller, differently-aimed, fully-taught system that extends the
-chain past the point the others stop.
+chain past the point where the others stop.
 
-Saying that clearly costs nothing and buys a great deal of credibility.
+I'd rather say that clearly here than leave a reader to find it out on their
+own.
 
 ---
 
 ## 4. The pattern borrowed from biomedicine
 
 Building a heterogeneous knowledge graph and using it to suggest untested links is
-**a well-established pattern in biomedicine**, not an invention of this project.
+**a well-established pattern in biomedicine**. This project didn't invent it.
 
-Drug-repurposing knowledge graphs. Hetionet is the best-known early example, with
-several larger successors, integrate genes, compounds, diseases, symptoms and
-side effects into one graph, then use path-based and embedding methods to rank
-plausible drug-disease pairs for testing.
+Drug-repurposing knowledge graphs (Hetionet is the best-known early example, and
+it has several larger successors) integrate genes, compounds, diseases, symptoms
+and side effects into one graph, then use path-based and embedding methods to
+rank plausible drug-disease pairs for testing.
 
-**MicrobeGraph applies that established pattern to agriculture.** The structure of
-the question is the same:
+MicrobeGraph applies that established pattern to agriculture, and the structure
+of the question is the same:
 
 | Biomedical version | This project |
 |---|---|
@@ -187,36 +189,35 @@ the question is the same:
 | compound → target → pathway → disease | organism → cluster → protein → compound → pathogen → crop |
 | Rank candidates for a clinical trial | Rank candidates for a greenhouse trial |
 
-**That transfer is the honest description of the idea:** a proven pattern moved to
-a domain where it is much less common. Applying a known method in a new domain is
-legitimate, useful work, and it is *not* the same as inventing the method.
+That transfer is the most accurate description of the idea: a proven pattern
+moved to a domain where it is much less common. Applying a known method in a new
+domain is legitimate, useful work, though it is *not* the same as inventing the
+method.
 
 ---
 
 ## 5. The gap: where the knowledge stops being machine-readable
 
-Here is the one place where something is genuinely missing, and it is the reason
+This is the one place where something really is missing, and it's the reason
 this project exists.
 
-**The biocontrol literature is enormous.** Reviews consolidate which microbial
-lipopeptides and polyketides act against which crop pathogens, *Fusarium*,
-*Botrytis*, *Magnaporthe*, *Colletotrichum*, *Phytophthora*, *Rhizoctonia*, from
+The biocontrol literature is enormous. Reviews consolidate which microbial
+lipopeptides and polyketides act against which crop pathogens (*Fusarium*,
+*Botrytis*, *Magnaporthe*, *Colletotrichum*, *Phytophthora*, *Rhizoctonia*), from
 genera such as *Bacillus*, *Pseudomonas*, *Streptomyces* and *Trichoderma*. The
 economic stakes are well documented: crop losses to disease are routinely
 estimated at 20-40% of global production.
 
-**And essentially none of it is downloadable as structured data.**
-
-It exists as prose: sentences in papers, written for humans. There is no public
-table you can query with *"which compounds have reported activity against
+Yet **essentially none of it is downloadable as structured data.** It exists as
+prose: sentences in papers, written for humans. There is no public table you can
+query with *"which compounds have reported activity against
 Botrytis cinerea on strawberry, and which organisms produce them?"*
 
-*Everyday example:* imagine every restaurant review ever written existing only as
-flowing paragraphs, with no ratings, no cuisine tags, no price fields. All the
-knowledge is there. None of it is sortable.
+Imagine every restaurant review ever written existing only as flowing
+paragraphs, with no ratings, cuisine tags or price fields. All the knowledge
+would be there, but you couldn't sort any of it.
 
-**This is the gap MicrobeGraph addresses**, and it addresses it in a deliberately
-modest, honest way:
+This is the gap MicrobeGraph addresses, and it does so modestly and in the open:
 
 - A small hand-curated CSV, **dozens of rows, not thousands**
 - **A literature citation required on every row**, enforced by the loader
@@ -224,17 +225,15 @@ modest, honest way:
   in the app, and filterable out entirely
 - Version-controlled, so its history is public
 
-**What this is:** a transparent, auditable, tiny bridge across a real gap.
-
-**What this is not:** a comprehensive biocontrol database. Building one properly
-would take a funded team years, and the project says so everywhere the layer
-appears.
+The result is a transparent, auditable, tiny bridge across a real gap. It is a
+long way from a comprehensive biocontrol database: building one properly would
+take a funded team years, and the project says so everywhere the layer appears.
 
 ---
 
 ## 6. Commercial platforms
 
-Several well-funded companies work on the same underlying problem, finding
+Several well-funded companies work on the same underlying problem: finding
 microbes that protect crops.
 
 - **AgBiome**: its GENESIS platform runs environmental sampling through genomics,
@@ -248,46 +247,45 @@ microbes that protect crops.
 - **IFF Crop Biologicals**: an integrated discovery-to-field pipeline inside a
   large ingredients company.
 
-**What their platforms have that this project does not, and never will:**
+Their platforms have things this project doesn't have, and never will:
 
-1. **Physical strain collections**, tens of thousands of isolates, owned.
-2. **Proprietary screening results**, their own assay data on their own strains.
-3. **Field trial data**, the expensive, slow, decisive evidence.
+1. **Physical strain collections**: tens of thousands of isolates, which they own.
+2. **Proprietary screening results**: their own assay data on their own strains.
+3. **Field trial data**: the expensive, slow, decisive evidence.
 4. **Regulatory and commercial infrastructure.**
 
-**Their moat is the data, not the graph.** Any competent team can build a
-knowledge graph. Nobody else has their strain library.
+Their moat (the thing competitors can't easily copy) is that data. Any competent
+team can build a knowledge graph, but nobody else has their strain library.
 
-**Which points at where public value actually lies.** These platforms are closed,
-you cannot inspect their reasoning, check their sources, or reproduce their
+That also suggests where the public value lies. These platforms are closed: you
+can't inspect their reasoning, check their sources, or reproduce their
 conclusions. An open, evidence-labelled, reproducible graph is a *different kind
-of object*: not a competitor to a commercial pipeline, but a public, auditable
-starting point that anyone can extend.
+of object*, a public, auditable starting point that anyone can extend, and it
+doesn't compete with a commercial pipeline.
 
 ### Could this become a product?
 
-An honest answer, since it's a fair question to ask of any project.
+It's a fair question to ask of any project, so here is my answer.
 
 **Selling the data would not work.** The valuable layer is hand-curated from
-published papers, so anyone can rebuild it; it is small; and it lacks the
-proprietary experimental evidence that gives the commercial platforms their value.
-There is no data moat here.
+published papers, so anyone can rebuild it. It's also small, and it lacks the
+proprietary experimental evidence that gives the commercial platforms their
+value, so there's no data moat here.
 
-**The more credible direction is the opposite: the machinery, not the facts.**
-Many research organisations have the same underlying problem, scattered internal
-and public data, no provenance, no way to ask questions that cross several
-sources. What they cannot easily buy is a *system* for building an
+**A more credible direction would be to offer the machinery rather than the
+facts.** Many research organisations have the same underlying problem: scattered
+internal and public data, no provenance, and no way to ask questions that cross
+several sources. What they cannot easily buy is a *system* for building an
 evidence-graph over **their own private data**, with the ontology, entity
 resolution, evidence model and query layer already designed.
 
-In that framing the product is the framework, ingestion contract, ontology,
-resolution ledger, evidence discipline, GraphRAG, MCP server, and the customer
-supplies the data. The graph is the product; the facts stay theirs.
+In that framing the product is the framework (ingestion contract, ontology,
+resolution ledger, evidence discipline, GraphRAG, MCP server), and the customer
+supplies the data. The graph that comes out belongs to them, and so do the facts.
 
-**Stated as honestly as possible:** that is a plausible direction, not a plan.
-This repository is a working demonstration and a teaching resource. Anyone
-considering the commercial path would need to talk to people actually working in
-that field first.
+That's a plausible direction rather than a plan. This repository is a
+working demonstration and a teaching resource, and anyone considering the
+commercial path would need to talk to people working in that field first.
 
 ---
 
@@ -301,34 +299,34 @@ that field first.
 | Mine biosynthetic potential across all of RefSeq | SocialGene | No. SocialGene is far larger |
 | What is this compound's chemistry? | PubChem | No. MicrobeGraph reads PubChem |
 | Which compounds act on this crop pathogen? | **Scattered across papers** | **Yes, this is the gap** |
-| Show the full chain from crop back to microbe, with evidence for every step | **Nothing public** | **Yes, this is the point** |
+| Show the full chain from crop back to microbe, with evidence for every step | **Nothing public** | **Yes, this is what it's for** |
 | How confident is each link in that chain? | Rarely modelled anywhere | **Yes, evidence level on every edge** |
 | Learn how such a system is built, from zero | Rarely documented | **Yes, the repo is the tutorial** |
 
-**The pattern:** for every question a mature tool answers well, use that tool. The
-last four rows are where this project contributes.
+In short, for every question a mature tool answers well, use that tool. The last four rows are where this project contributes.
 
 ---
 
 ## 8. What is genuinely uncommon here
 
-Three things. Each is real; none is a scientific breakthrough.
+I can point to three things. Each is real, and none is a scientific
+breakthrough.
 
 ### 1. The chain continues past the compound
 
 Every system surveyed above stops at chemistry. MicrobeGraph continues to
-*pathogen* and *crop*, which is only possible because of the curated bridge, and
-which is exactly why nobody else's system does it.
+*pathogen* and *crop*. That's only possible because of the curated bridge, which
+is also why nobody else's system does it.
 
-**Why that matters practically:** it turns a literature-review-shaped task into a
-query. Starting at a crop disease and walking backwards to candidate organisms, in
-one step, is not something the existing tools can do.
+In practice, it turns a literature-review-shaped task into a query. The existing
+tools can't start at a crop disease and walk backwards to candidate organisms in
+one step.
 
 ### 2. Evidence level as a first-class, filterable property
 
 Most knowledge graphs record *that* a relationship exists. Recording **how
-strongly it is known**, on every single edge, and making "show me only what is
-actually measured" a checkbox, that is rarer than it should be.
+strongly it is known** on every single edge, and making "show me only what is
+actually measured" a checkbox, is rarer than it should be.
 
 Concretely, this project:
 
@@ -338,23 +336,24 @@ Concretely, this project:
   chains by default
 - reports the graph's own evidence composition as a quality metric
 
-*Everyday example:* a recipe that distinguishes "I measured 200g" from "I reckon
-about 200g". Obvious once stated; almost nobody does it.
+It's like a recipe that distinguishes "I measured 200g" from "I reckon about
+200g". The idea is obvious once stated, yet almost nobody does it.
 
 ### 3. Reproducible, open, and taught
 
-The commercial platforms are closed. The academic tools are open but assume you
-already are a bioinformatician.
+The commercial platforms are closed, and the academic tools are open but assume
+you're already a bioinformatician.
 
-A system that is simultaneously **open**, **reproducible from raw responses**, and
-**documented so a complete beginner can rebuild every step** is unusual, and that
-combination is a deliberate goal here rather than a by-product.
+A system that is open, reproducible from raw responses, and documented so a
+complete beginner can rebuild every step at the same time is unusual. I set out
+to get that combination from the start.
 
 ---
 
 ## 9. What this project does not claim
 
-Stated plainly, because the boundary matters more than the achievement.
+I'm listing these up front because the boundary matters more than the
+achievement.
 
 - ❌ **Not a new scientific method.** Knowledge graphs, entity resolution, link
   prediction and GraphRAG are all established. This project applies them.
@@ -371,70 +370,72 @@ Stated plainly, because the boundary matters more than the achievement.
 
 ### What it does claim, in one sentence
 
-This is the claim to make when you have one line: in a README opener, a summary, a
-conversation. Every clause is defensible, and each is doing work.
+When you only have one line (a README opener, a summary, a conversation), this
+is the claim to make. I can defend every clause, and each one is there for a
+reason.
 
 > **An open, reproducible knowledge graph that connects curated biosynthetic gene
 > cluster data to crop disease outcomes, with evidence provenance on every
 > relationship, including a transparently hand-curated bridge for the
 > literature-derived links that no public database provides.**
 
-Read it clause by clause and notice that nothing is decorative:
+Here is what each clause is for:
 
 | Clause | Why it's there |
 |---|---|
 | *open, reproducible* | Distinguishes it from the closed commercial platforms |
 | *curated biosynthetic gene cluster data* | Says the source is MIBiG, proven entries, not predictions. Claims no credit for the underlying data |
-| *to crop disease outcomes* | The part no other system reaches. This is the whole contribution |
+| *to crop disease outcomes* | The part no other system reaches, and the whole of what this project contributes |
 | *evidence provenance on every relationship* | The design decision that makes the graph auditable |
 | *transparently hand-curated bridge* | Volunteers the weakest part before anyone has to ask |
 | *no public database provides* | States the gap as fact, and it is checkable |
 
-**Notice what the sentence does not say.** No "novel", no "breakthrough", no "first
-of its kind", no "AI-powered". Those words invite exactly the question you cannot
-answer, and their absence is what makes the rest believable.
+The sentence also leaves some words out: no "novel", no "breakthrough", no
+"first of its kind", no "AI-powered". Those words invite exactly the question
+you can't answer, and leaving them out makes the rest believable.
 
-*Everyday parallel:* a builder who says "I extended the kitchen, kept the original
-brickwork, and here's where the new join is" is more trustworthy than one who says
-"I transformed the property." The first one you can walk round and check.
+A builder who says "I extended the kitchen, kept the original brickwork, and
+here's where the new join is" is more trustworthy than one who says "I
+transformed the property", because you can walk round the first one's work and
+check it.
 
-**The longer version**, when there's room for a paragraph: a correct, honest,
-end-to-end workflow, ingestion with provenance, an ontology-governed graph,
+When there's room for a paragraph, the longer version is: a correct,
+end-to-end workflow (ingestion with provenance, an ontology-governed graph,
 entity resolution with a written ledger, statistically validated analytics,
-machine learning with honest evaluation, and a public application, extending the
-chain to crop outcomes, with evidence provenance throughout, documented so that
-anyone can reproduce and learn from it.
+machine learning with honest evaluation, and a public application) that extends
+the chain to crop outcomes, with evidence provenance throughout, documented so
+that anyone can reproduce and learn from it.
 
-**That is a smaller claim than "novel", and it is entirely defensible.** A smaller
-true claim is worth more than a larger one that doesn't survive a question.
+That's a smaller claim than "novel", and I can defend all of it. I'd rather make
+a smaller true claim than a larger one that doesn't survive a question.
 
 ---
 
 ## 10. What would make it more novel
 
-If this were to become genuinely new work rather than a well-built integration,
-these are the honest directions, recorded so the ambition is on the record even
-where the work isn't done.
+If this were to become new work in its own right rather than a well-built
+integration, these are the directions it could take. I've written them down so
+the ambition is on record even where the work isn't done.
 
 | Direction | What it would take | Why it would matter |
 |---|---|---|
 | **Systematic literature extraction** | Language models reading thousands of abstracts to propose compound → pathogen edges, with human review (Phase 17) | Turns the tiny bridge into a real resource. This is the single highest-value extension |
 | **Quantitative activity, not binary** | Recording measured inhibition values rather than "inhibits yes/no" | Lets you rank by strength, not just presence |
-| **Strain-level resolution** | Modelling strains rather than species | Two strains of one species genuinely differ; the current model cannot express that |
+| **Strain-level resolution** | Modelling strains rather than species | Two strains of one species really do differ, and the current model cannot express that |
 | **Experimental validation** | A lab testing a handful of top predictions | Would convert "plausible" into evidence. Requires a lab |
 | **Formal ontology alignment** | Mapping onto established ontologies and publishing as linked data | Would let this graph merge with others rather than stand alone |
 | **Negative results** | Recording where a compound was tested and *failed* | Absence of evidence and evidence of absence are different, and almost nobody records the second |
 
-**That last row is worth dwelling on.** Failed tests are rarely published, so every
-graph in this field silently over-represents success. Modelling negative results
-explicitly would be a genuinely uncommon contribution, and it costs nothing but
+The last row deserves a closer look. Failed tests are rarely published, so
+every graph in this field silently over-represents success. Modelling negative
+results explicitly would be an uncommon contribution, and it costs nothing but
 discipline.
 
 ---
 
 ## 11. References
 
-Everything cited above, so any claim can be checked.
+These are the sources for everything cited above, so you can check any claim.
 
 **Databases and tools**
 
@@ -470,9 +471,10 @@ Everything cited above, so any claim can be checked.
 - AgBiome · Lavie Bio · Indigo Ag · Biome Makers · IFF Crop Biologicals
 
 > **On keeping this current.** This survey reflects the landscape at the time of
-> writing. Fields move. If you find work that overlaps more closely than anything
-> listed here, that is worth an issue and an update, a prior-art document that is
-> never revised is a prior-art document nobody should trust.
+> writing, and fields move. If you find work that overlaps more closely than
+> anything listed here, please open an issue so the document can be updated. I
+> wouldn't trust a prior-art document that never gets revised, and I don't expect
+> you to either.
 
 ---
 

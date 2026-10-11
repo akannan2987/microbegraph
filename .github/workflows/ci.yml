@@ -1,0 +1,89 @@
+# ---------------------------------------------------------------------------
+# MicrobeGraph, continuous integration (CI)
+#
+# WHAT THIS FILE DOES
+#   Every time you push, GitHub borrows fresh computers, installs the project
+#   from scratch exactly as docs/01-setup.md describes, and runs the checks:
+#     * ruff  (style and likely bugs)
+#     * pytest (every promise the code makes)
+#   on Windows, macOS and Linux, with Python 3.11 and 3.12, plus one run
+#   inside a Red Hat Enterprise Linux 8 container.
+#
+# WHY IT MATTERS
+#   Without CI, "runs on Windows, macOS and RHEL 8" really only describes the
+#   one machine you tested on. With CI it is checked on all of them, on every
+#   push, by machines with nothing left over from yesterday.
+#
+#   Compare a recipe you've only ever cooked in your own kitchen, where you
+#   know which drawer the whisk is in, with one that has been tested in three
+#   other people's kitchens.
+#
+# WHERE TO SEE THE RESULT
+#   Your repository on GitHub -> the "Actions" tab. Green tick = all passed.
+#
+# ONE-TIME NOTE ON PUSHING THIS FILE
+#   GitHub only accepts a push that adds or changes a file in .github/workflows/
+#   if your access token has the "workflow" permission. If the push is
+#   refused with "refusing to allow a Personal Access Token to create or
+#   update workflow", see docs/01-setup.md, Troubleshooting T13.
+# ---------------------------------------------------------------------------
+
+name: tests
+
+# Why only pushes to master: the end-of-phase push sends the SAME commit to
+# develop, beta and master at once. Testing it on all three would run the same
+# checks three times. master is also the branch the README badge reports on.
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:          # lets you start a run by hand from the Actions tab
+
+permissions:
+  contents: read              # CI only reads the code; it never writes to the repository
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false        # let every combination finish, so you see the whole picture
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install the project (the same two commands as docs/01-setup.md, Step 8)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -e .
+      - name: Check style and likely bugs
+        run: ruff check .
+      - name: Run the tests
+        run: pytest
+
+  rhel8:
+    name: RHEL 8 (UBI 8) / Python 3.11
+    runs-on: ubuntu-latest
+    # UBI is Red Hat's freely redistributable build of RHEL. Running the tests
+    # inside it checks the RHEL 8 promise with RHEL 8's own system libraries.
+    container:
+      image: registry.access.redhat.com/ubi8/python-311
+      options: --user 0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the project
+        run: |
+          python3.11 -m venv /tmp/venv
+          /tmp/venv/bin/python -m pip install --upgrade pip
+          /tmp/venv/bin/python -m pip install -r requirements.txt
+          /tmp/venv/bin/python -m pip install -e .
+      - name: Check style and likely bugs
+        run: /tmp/venv/bin/ruff check .
+      - name: Run the tests
+        run: /tmp/venv/bin/pytest
