@@ -18,6 +18,60 @@ and start a new, empty *Unreleased* above it. The
 
 ## Unreleased (toward 1.0.0)
 
+### Phase 3: the proteomics layer, MIBiG's gene records and UniProt
+
+- **Added** gene records to the MIBiG adapter (`src/microbegraph/sources/mibig.py`):
+  every gene an entry lists becomes a `Protein` node, named `ncbiprotein:<id>`
+  for an INSDC or RefSeq protein number and `mg.protein:<entry>-<id>` for a locus
+  tag or gene name, with an `ENCODES` arrow from its cluster. Genes whose job
+  builds the molecule (scaffold biosynthesis, precursor biosynthesis, tailoring)
+  also get a `CATALYZES` arrow to each compound of the entry, at
+  `curated_experimental` when MIBiG records an experiment for the job. Ten new
+  counts in `mibig_summary.json`.
+- **Added** the UniProt adapter (`src/microbegraph/sources/uniprot.py`): every
+  INSDC and RefSeq protein number goes through UniProt's ID mapping service,
+  1,000 per job, kept as a dated snapshot (each job's answer and its results
+  table). Every UniProt entry found becomes a `uniprot:` node with its names,
+  organism, length, EC numbers and function, and remembers the MIBiG protein
+  number it was found through; every id that didn't map is listed in
+  `uniprot_summary.json`.
+- **Added** the `ncbiprotein` identifier prefix to the rulebook
+  (`src/microbegraph/ontology.py`, `docs/02-ontology-and-data-model.md`).
+- **Added** to the socket (`sources/base.py`): a GET can be told not to follow a
+  redirect, which UniProt's job status needs.
+- **Changed** the plan after a survey of the real data, made before any adapter
+  code by `tests/fixtures/capture_uniprot_samples.py`: UniProt doesn't
+  cross-reference MIBiG (the roadmap said it did), so the join goes through
+  protein numbers; and only 452 of the 2,437 active entries have gene records, so
+  Phase 3b (every cluster's proteins, from MIBiG's protein file) is added to the
+  roadmap and the Handbook as the next phase.
+- **Added** 39 tests (183 in all), built from seven real UniProt answers
+  captured on 2026-10-12, with their real status codes and headers
+  (`tests/fixtures/uniprot/`); the surfactin test record now keeps its real gene
+  records, and two made-up records cover the other cases.
+- **Added** the Phase 3 guide (`docs/05-proteomics-uniprot.md`), four pictures
+  (`protein_layer.svg`, `gene_jobs.svg`, `idmapping_flow.svg`,
+  `protein_coverage.svg`), UniProt in the
+  data sources and licences table, srfAA in the interactive evidence chain, and
+  the new terms in the glossary. The sources picture now shows six sources.
+- **Measured on the first run** (2026-10-12, from `mibig_summary.json` and
+  `uniprot_summary.json`):
+  - *MIBiG gene records:* 452 of the 2,437 active entries have them, 4,737 in
+    all: 3,994 named by an INSDC protein id, 95 by a RefSeq id and 648 by a locus
+    tag or gene name, none without an id. 1,991 genes have a job that builds the
+    molecule, 522 only other jobs and 2,224 no job recorded. That gives 4,737
+    `Protein` nodes, 4,737 `ENCODES` arrows and 4,492 `CATALYZES` arrows (1,482
+    `curated_experimental`, 3,010 `database_assertion`), of which 3,324 come from
+    entries that list more than one compound. MIBiG's arrows grow from 10,023 to
+    19,252; the Phase 1 counts are unchanged.
+  - *UniProt* (release `2026_03` of 02-September-2026, 10 answers, 777.6 KB):
+    4,089 protein ids asked about in 5 jobs (3,994 INSDC, 95 RefSeq). 2,449
+    mapped and 1,640 didn't (1,574 INSDC, 66 RefSeq; all listed in the summary).
+    That gives 2,442 UniProt entries, 360 of them reviewed, 683 with an EC number
+    and 524 with a description of function. Five RefSeq ids map to two entries
+    each, and twelve entries are each reached from two ids.
+  - A second run the same day reused the snapshot and asked UniProt nothing.
+
 ### Phase 2: more sources, PubChem · NCBI Taxonomy · KEGG · the cited bridge
 
 - **Added** the PubChem adapter (`src/microbegraph/sources/pubchem.py`): it asks

@@ -1,7 +1,7 @@
 {
   "accession": "BGC0000433",
   "version": 5,
-  "comment": "TEST FIXTURE. A trimmed copy of MIBiG entry BGC0000433 (version 5, surfactin) exactly as it appears in the MIBiG 4.0 release on Zenodo (record 14169073), made for offline tests. Every field MicrobeGraph reads is copied unchanged from that release, including the way it writes activity names. Two parts it does not read were removed: the gene annotations and the biosynthesis modules. Use the real record for anything other than testing.",
+  "comment": "TEST FIXTURE. A trimmed copy of MIBiG entry BGC0000433 (version 5, surfactin) exactly as it appears in the MIBiG 4.0 release on Zenodo (record 14169073), made for offline tests. Every field MicrobeGraph reads is copied unchanged from that release, including the way it writes activity names and the gene records (added to this copy in Phase 3, when the adapter started reading them). One part it does not read was removed: the biosynthesis modules. Use the real record for anything other than testing.",
   "changelog": {
     "releases": [
       {
@@ -177,6 +177,111 @@
   "taxonomy": {
     "name": "Bacillus velezensis FZB42",
     "ncbiTaxId": 326423
+  },
+  "genes": {
+    "annotations": [
+      {
+        "id": "CAE02630.1",
+        "name": "srfAA",
+        "product": "surfactin synthetase A",
+        "functions": [
+          {
+            "function": {
+              "name": "Scaffold biosynthesis"
+            },
+            "evidence": [
+              {
+                "method": "Knock-out"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "CAE02631.1",
+        "name": "srfAB",
+        "product": "surfactin synthetase B ",
+        "functions": [
+          {
+            "function": {
+              "name": "Scaffold biosynthesis"
+            },
+            "evidence": []
+          }
+        ]
+      },
+      {
+        "id": "CAE02632.1",
+        "name": "comS",
+        "product": "competence protein S "
+      },
+      {
+        "id": "CAE02633.1",
+        "name": "srfAC",
+        "product": "surfactin synthetase C ",
+        "functions": [
+          {
+            "function": {
+              "name": "Scaffold biosynthesis"
+            },
+            "evidence": []
+          }
+        ]
+      },
+      {
+        "id": "CAE02634.1",
+        "name": "srfAD",
+        "product": "surfactin synthetase D"
+      },
+      {
+        "id": "CAE02636.1",
+        "name": "ycxc",
+        "product": "transporter",
+        "functions": [
+          {
+            "function": {
+              "name": "Transport"
+            },
+            "evidence": []
+          }
+        ]
+      },
+      {
+        "id": "CAE02637.1",
+        "name": "ycxD",
+        "product": "transcriptional regulator containing an aminotransferase domain",
+        "functions": [
+          {
+            "function": {
+              "name": "Regulation"
+            },
+            "evidence": []
+          }
+        ]
+      },
+      {
+        "id": "CAE02638.1",
+        "name": "sfp",
+        "product": "phosphopantetheinyl transferase involved in nonribosomal synthesis",
+        "functions": [
+          {
+            "function": {
+              "name": "Activation / processing"
+            },
+            "evidence": [
+              {
+                "method": "Knock-out"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "CAE02639.1",
+        "name": "yczE",
+        "product": "integral membrane protein involved in nonribosomal synthesis"
+      }
+    ]
   },
   "legacy_references": [
     "pubmed:14762003"

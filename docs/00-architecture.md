@@ -96,7 +96,7 @@ SELECT name FROM compounds WHERE activity = 'antifungal';
 Read aloud, that's *give me the name column, from the compounds table, for rows
 where the activity is antifungal.* SQL is one of the most durable skills in data
 work (it was invented in the 1970s and is still everywhere), and you'll write
-your first real SQL in Phase 3.
+your first real SQL in Phase 4.
 
 MicrobeGraph uses **DuckDB**, a database that is a single file sitting in your
 project folder. There's no server to install, and no account, password or cost.
@@ -159,6 +159,7 @@ flowchart TD
         S2["PubChem<br/>compound chemistry"]
         S3["NCBI Taxonomy<br/>who is related to whom"]
         S4["KEGG<br/>compound → pathway"]
+        S6["UniProt<br/>what each enzyme is"]
         S5["Curated bridge (disclosed)<br/>compound → pathogen → crop"]
     end
     A["Layer 2. Ingestion adapters<br/>one contract: probe → fetch → tidy"]
@@ -175,6 +176,7 @@ flowchart TD
     S2 --> A
     S3 --> A
     S4 --> A
+    S6 --> A
     S5 --> A
     A --> B
     B --> C
@@ -192,7 +194,7 @@ flowchart TD
     classDef artifact fill:#EAECEF,stroke:#8A94A6,color:#1F2933;
     classDef cloud fill:#E6F4EA,stroke:#4CAF7D,color:#0B3D2E;
     classDef ai fill:#F3E8FD,stroke:#9C6ADE,color:#3A1D6E;
-    class S1,S2,S3,S4,S5 src
+    class S1,S2,S3,S4,S5,S6 src
     class A,C,F work
     class D,E store
     class B,G artifact
@@ -279,10 +281,15 @@ in the repository ([`04-more-sources-secrets.md`](04-more-sources-secrets.md)).
 ### UniProt, the proteins in between
 
 UniProt is the standard public reference for protein sequence and function, and
-it's free and comprehensive.
+it's free and comprehensive (CC BY 4.0).
 
-MIBiG tells you that a gene cluster produces a compound; UniProt tells you
-*which enzymes* do the work in between. Adding those makes the chain
+MIBiG tells you that a gene cluster produces a compound. For some clusters it
+also lists the genes, each with the number of the protein it makes and the job
+it does, which gives the enzymes in between. UniProt then says what each of those
+enzymes is: its names, length, the reaction it carries out and its function.
+UniProt doesn't refer to MIBiG, so the two are joined through the protein's
+sequence number, using UniProt's ID mapping service. Adding the enzymes makes the
+chain
 
 ```
 Organism → GeneCluster → Protein → Compound → Pathogen → Crop
@@ -292,9 +299,10 @@ Organism → GeneCluster → Protein → Compound → Pathogen → Crop
 three different kinds of biological measurement joined into one structure that
 a single query can walk. That is what **multi-omics integration** means in
 practice; three tables sitting next to each other wouldn't qualify. The protein
-layer arrives in Phase 3.
+layer arrived in Phase 3 ([`05-proteomics-uniprot.md`](05-proteomics-uniprot.md)).
 
-**Access:** free, no account.
+**Access:** free, no account, no key. ID mapping runs as a background job: you
+hand in the numbers, get a job number, and collect the results when it's done.
 
 ### KEGG, the pathway context
 
@@ -356,13 +364,13 @@ of evidence"* is worth more to me than a bigger graph nobody can audit.
 ## 6. Layer 2. Ingestion and the evidence locker
 
 **Ingestion** means "getting data in". Two ideas make this layer worth designing
-properly, instead of writing five ad-hoc download scripts.
+properly, instead of writing six ad-hoc download scripts.
 
 ### Idea 1: one socket, many plugs
 
 Every source has a different website, a different response format, and different
-rules. If each got its own bespoke script, adding a sixth source would mean
-inventing a sixth way of doing things, and the project would get harder to
+rules. If each got its own bespoke script, adding a seventh source would mean
+inventing a seventh way of doing things, and the project would get harder to
 extend over time rather than easier.
 
 Instead, every source adapter promises the same three functions:
@@ -384,8 +392,10 @@ has the right plug.
 
 The payoff came in Phase 2: four sources were added (three web APIs and the
 curated bridge) and *nothing written for Phase 1 had to change*. The only
-addition to the socket itself was the ability to send POST requests. The
-contract is what made that possible.
+addition to the socket itself was the ability to send POST requests. Phase 3
+added a sixth plug, UniProt, and the socket only learned one more small thing: to
+ask a question without following a redirect. The contract is what made that
+possible.
 
 ### Idea 2: the evidence locker
 
@@ -709,7 +719,7 @@ tool arrives at the point where the project has a real need for it:
 | **GitHub Actions (CI)** | Phase 1 | The first code that must run on Windows, macOS and RHEL 8. Checking that claim on every push costs nothing; discovering it was false at release time costs a lot |
 | **dbt** | Phase 10 | The ontology's validation rules *are* dbt's built-in tests (`unique`, `relationships`, `accepted_values`, `not_null`). The rulebook becomes a `schema.yml` |
 | **PostgreSQL + Apache AGE + pgvector** | Phase 11 | Three needs converge: a real graph database with Cypher, a vector store for RAG, and an application database for the API. One engine, three jobs |
-| **Airflow** | Phase 12 | Five sources, strict dependency order, a monthly refresh, retries, alerts. That list is exactly what Airflow was built for |
+| **Airflow** | Phase 12 | Six sources, strict dependency order, a monthly refresh, retries, alerts. That list is exactly what Airflow was built for |
 | **Docker / Podman** | Phase 12 | Airflow is several cooperating services, the situation containers exist for. Three routes documented, including a container-free one |
 | **Snowflake** | Phase 13 | This one is a *demonstration* rather than a need: the same dbt models running against a cloud warehouse with only a target change |
 | **FastAPI** | Phase 14 | Streamlit, React and MCP all need the same query logic, and it's better written once than three times |

@@ -6,16 +6,18 @@ Every adapter is registered here by its short name. The fetch command
 as soon as it's added below, without touching any other file.
 
     Phase 1   mibig           gene clusters, organisms, compounds, activities
+                              (and, from Phase 3, each gene's protein)
     Phase 2   pubchem         compound identity, structure and other names
               ncbi_taxonomy   the family tree above organisms and pathogens
               kegg            which pathway maps compounds appear on
               curation        the cited bridge: compound -> pathogen -> crop
-    Phase 3   uniprot         (planned)
+    Phase 3   uniprot         what each MIBiG protein is, through ID mapping
 
 THE ORDER MATTERS
     Later sources build on earlier ones: PubChem asks about MIBiG's compound
-    numbers, KEGG reads PubChem's KEGG numbers, the bridge is checked against
-    MIBiG and NCBI. `--all` runs them in the order written below.
+    numbers, KEGG reads PubChem's KEGG numbers, UniProt maps MIBiG's protein
+    ids, the bridge is checked against MIBiG and NCBI. `--all` runs them in
+    the order written below.
 """
 
 from __future__ import annotations
@@ -26,6 +28,7 @@ from microbegraph.sources.kegg import KeggSource
 from microbegraph.sources.mibig import MibigSource
 from microbegraph.sources.ncbi_taxonomy import NcbiTaxonomySource
 from microbegraph.sources.pubchem import PubchemSource
+from microbegraph.sources.uniprot import UniprotSource
 
 # name -> adapter class. Order is the order sources run in.
 SOURCES: dict[str, type[Source]] = {
@@ -33,6 +36,7 @@ SOURCES: dict[str, type[Source]] = {
     PubchemSource.name: PubchemSource,
     NcbiTaxonomySource.name: NcbiTaxonomySource,
     KeggSource.name: KeggSource,
+    UniprotSource.name: UniprotSource,
     CurationSource.name: CurationSource,
 }
 

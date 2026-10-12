@@ -1,7 +1,7 @@
 {
   "accession": "BGC9999903",
   "version": 1,
-  "comment": "TEST FIXTURE. A synthetic record invented for tests; it describes no real organism, cluster or compound. Its only evidence is a homology-based prediction, so MicrobeGraph must label its HARBORS and PRODUCES arrows database_assertion, not curated_experimental. The 10.0000 DOI prefix belongs to no publisher.",
+  "comment": "TEST FIXTURE. A synthetic record invented for tests; it describes no real organism, cluster or compound. Its only evidence is a homology-based prediction, so MicrobeGraph must label its HARBORS and PRODUCES arrows database_assertion, not curated_experimental. Its one gene record (added in Phase 3) uses the same made-up locus tag as a gene in BGC9999901, which must still give two separate proteins, because a locus tag only means something inside its own genome. The 10.0000 DOI prefix belongs to no publisher.",
   "changelog": {
     "releases": [
       {
@@ -30,5 +30,10 @@
   ],
   "biosynthesis": {"classes": [{"class": "other", "subclass": "cyclitol"}]},
   "compounds": [{"name": "predictamycin", "evidence": [{"method": "Mass spectrometry", "references": ["doi:10.0000/fixture.5"]}]}],
-  "taxonomy": {"name": "Testibacter fixturensis T3", "ncbiTaxId": 999999903}
+  "taxonomy": {"name": "Testibacter fixturensis T3", "ncbiTaxId": 999999903},
+  "genes": {
+    "annotations": [
+      {"id": "TESTI_00020", "name": "prdA", "product": "sugar phosphate cyclase", "functions": [{"function": {"name": "Scaffold biosynthesis"}, "evidence": []}]}
+    ]
+  }
 }

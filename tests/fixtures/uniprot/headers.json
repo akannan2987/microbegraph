@@ -1,0 +1,74 @@
+{
+  "idmapping_fields.json": {
+    "captured_as": "idmapping_fields.json",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "Date": "Mon, 12 Oct 2026 07:55:04 GMT",
+      "X-UniProt-Release": "2026_03",
+      "X-UniProt-Release-Date": "02-September-2026"
+    }
+  },
+  "insdc_001_job.json": {
+    "captured_as": "idmapping_insdc_run.json",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "Date": "Mon, 12 Oct 2026 07:55:07 GMT",
+      "X-UniProt-Release": "2026_03",
+      "X-UniProt-Release-Date": "02-September-2026"
+    }
+  },
+  "insdc_001_status.json": {
+    "captured_as": "idmapping_insdc_status.json",
+    "status": 303,
+    "headers": {
+      "Content-Type": "application/json",
+      "Date": "Mon, 12 Oct 2026 07:55:08 GMT",
+      "X-UniProt-Release": "2026_03",
+      "Location": "https://rest.uniprot.org/idmapping/uniprotkb/results/8Pr33gbOw8",
+      "X-UniProt-Release-Date": "02-September-2026"
+    }
+  },
+  "insdc_001_results.tsv": {
+    "captured_as": "idmapping_insdc_results.tsv",
+    "status": 200,
+    "headers": {
+      "Content-Type": "text/plain;format=tsv",
+      "Date": "Mon, 12 Oct 2026 07:55:10 GMT",
+      "X-UniProt-Release": "2026_03",
+      "X-UniProt-Release-Date": "02-September-2026"
+    }
+  },
+  "refseq_001_job.json": {
+    "captured_as": "idmapping_refseq_run.json",
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "Date": "Mon, 12 Oct 2026 07:55:12 GMT",
+      "X-UniProt-Release": "2026_03",
+      "X-UniProt-Release-Date": "02-September-2026"
+    }
+  },
+  "refseq_001_status.json": {
+    "captured_as": "idmapping_refseq_status.json",
+    "status": 303,
+    "headers": {
+      "Content-Type": "application/json",
+      "Date": "Mon, 12 Oct 2026 07:55:14 GMT",
+      "X-UniProt-Release": "2026_03",
+      "Location": "https://rest.uniprot.org/idmapping/uniprotkb/results/sufWW4pG1o",
+      "X-UniProt-Release-Date": "02-September-2026"
+    }
+  },
+  "refseq_001_results.tsv": {
+    "captured_as": "idmapping_refseq_results.tsv",
+    "status": 200,
+    "headers": {
+      "Content-Type": "text/plain;format=tsv",
+      "Date": "Mon, 12 Oct 2026 07:55:16 GMT",
+      "X-UniProt-Release": "2026_03",
+      "X-UniProt-Release-Date": "02-September-2026"
+    }
+  }
+}

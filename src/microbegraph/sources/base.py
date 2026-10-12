@@ -2,9 +2,9 @@
 MicrobeGraph, the contract every data source follows.
 
 THE BIG IDEA: ONE SOCKET, MANY PLUGS
-    MicrobeGraph reads from several public databases: MIBiG, PubChem, NCBI
-    Taxonomy and KEGG now, UniProt next, plus our own curated file. Each one
-    has its own website, file format and rules.
+    MicrobeGraph reads from several public databases (MIBiG, PubChem, NCBI
+    Taxonomy, KEGG and UniProt), plus our own curated file. Each one has its
+    own website, file format and rules.
 
     Instead of writing a separate, tangled script for each, this file defines
     ONE shape that every source must fit, and each source becomes a small
@@ -246,7 +246,7 @@ class Source(ABC):
         )
 
     def http_get(self, url: str, *, params: dict[str, str] | None = None,
-                 stream: bool = False) -> requests.Response:
+                 stream: bool = False, allow_redirects: bool = True) -> requests.Response:
         """
         One polite GET request, retried only when retrying could help.
 
@@ -254,10 +254,15 @@ class Source(ABC):
         nature, so we wait and try again: 2 s, 4 s, 8 s, 16 s by default.
         Any other refusal (404 not found, 403 forbidden...) is a clear answer,
         so it is reported immediately instead of being repeated.
+
+        allow_redirects=False keeps a "look over there" answer (HTTP 303, say)
+        as it is, instead of following it. UniProt answers "your job is
+        finished" that way (Phase 3), and the adapter wants to see that answer.
         """
         for attempt in self._retrying():
             with attempt:
-                return self._get_once(url, params=params, stream=stream)
+                return self._get_once(url, params=params, stream=stream,
+                                      allow_redirects=allow_redirects)
         raise AssertionError("unreachable: tenacity either returns or re-raises")
 
     def http_post(self, url: str, data: dict[str, str]) -> requests.Response:
@@ -276,9 +281,10 @@ class Source(ABC):
         raise AssertionError("unreachable: tenacity either returns or re-raises")
 
     def _get_once(self, url: str, *, params: dict[str, str] | None = None,
-                  stream: bool = False) -> requests.Response:
+                  stream: bool = False, allow_redirects: bool = True) -> requests.Response:
         """A single GET, turning HTTP refusals into clear errors. No retrying here."""
         return self._check(url, self.session.get(url, params=params, stream=stream,
+                                                 allow_redirects=allow_redirects,
                                                  timeout=TIMEOUT))
 
     def _check(self, url: str, response: requests.Response) -> requests.Response:

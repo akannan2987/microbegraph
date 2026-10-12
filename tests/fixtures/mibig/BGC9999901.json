@@ -1,7 +1,7 @@
 {
   "accession": "BGC9999901",
   "version": 1,
-  "comment": "TEST FIXTURE. A synthetic record invented for tests; it describes no real organism, cluster or compound. It covers the cases the real surfactin record does not: medium quality, a hybrid cluster, two compounds, a compound shared with another cluster, a recorded negative bioactivity, cited bioactivities, activity names written as plain text (MIBiG 4.0 uses this style as well as the object style in the surfactin record), one activity object carrying a curator's comment, a compound class, synonyms, a PubChem identifier and a Greek letter in a name. The 10.0000 DOI prefix belongs to no publisher.",
+  "comment": "TEST FIXTURE. A synthetic record invented for tests; it describes no real organism, cluster or compound. It covers the cases the real surfactin record does not: medium quality, a hybrid cluster, two compounds, a compound shared with another cluster, a recorded negative bioactivity, cited bioactivities, activity names written as plain text (MIBiG 4.0 uses this style as well as the object style in the surfactin record), one activity object carrying a curator's comment, a compound class, synonyms, a PubChem identifier and a Greek letter in a name. Its gene records (added in Phase 3) cover a RefSeq protein id, locus tags, a gene with no name, a job shown by an activity assay with a reference, a gene with two jobs, a job that does not build the molecule, and a gene record with no identifier. WP_999999901.1 and the TESTI_ locus tags are made up. The 10.0000 DOI prefix belongs to no publisher.",
   "changelog": {
     "releases": [
       {
@@ -56,5 +56,15 @@
       "formula": "C25H36N2O8"
     }
   ],
-  "taxonomy": {"name": "Testibacter fixturensis T1", "ncbiTaxId": 999999901}
+  "taxonomy": {"name": "Testibacter fixturensis T1", "ncbiTaxId": 999999901},
+  "genes": {
+    "annotations": [
+      {"id": "WP_999999901.1", "name": "tstA", "product": "nonribosomal peptide synthetase", "functions": [{"function": {"name": "Scaffold biosynthesis"}, "evidence": [{"method": "Knock-out"}]}]},
+      {"id": "TESTI_00020", "name": "tstB", "product": "cytochrome P450", "functions": [{"function": {"name": "Tailoring"}, "evidence": [{"method": "Activity assay", "references": ["doi:10.0000/fixture.6"]}]}]},
+      {"id": "TESTI_00030", "product": "aminotransferase ", "functions": [{"function": {"name": "Precursor biosynthesis"}, "evidence": []}]},
+      {"id": "TESTI_00040", "name": "tstR", "product": "regulator with a methyltransferase domain", "functions": [{"function": {"name": "Regulation"}, "evidence": []}, {"function": {"name": "Tailoring"}, "evidence": []}]},
+      {"id": "TESTI_00050", "name": "tstP", "product": "phosphopantetheinyl transferase", "functions": [{"function": {"name": "Activation / processing"}, "evidence": [{"method": "Knock-out"}]}]},
+      {"name": "tstX", "product": "hypothetical protein"}
+    ]
+  }
 }

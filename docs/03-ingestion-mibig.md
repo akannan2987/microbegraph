@@ -692,10 +692,10 @@ Phase 12.
 
    | File | What it is | What it lets the tests check |
    |---|---|---|
-   | `BGC0000433.json` | A cut-down copy of the real surfactin entry, taken from the MIBiG 4.0 archive with only the gene annotations and biosynthesis modules removed | The worked example, row for row, and the object style of activity name |
-   | `BGC9999901.json` | Invented ("Testibacter fixturensis") | Merging a compound made by two clusters, a negative result, citations, a compound class, a Greek letter, a PubChem number, plain-text activity names, a curator's comment |
+   | `BGC0000433.json` | A cut-down copy of the real surfactin entry, taken from the MIBiG 4.0 archive with only its biosynthesis modules removed (its gene records were removed too until Phase 3, when the adapter began reading them) | The worked example, row for row, and the object style of activity name |
+   | `BGC9999901.json` | Invented ("Testibacter fixturensis") | Merging a compound made by two clusters, a negative result, citations, a compound class, a Greek letter, a PubChem number, plain-text activity names, a curator's comment; from Phase 3, made-up gene records for the cases surfactin doesn't cover |
    | `BGC9999902.json` | Invented, retired | That withdrawn entries are skipped and counted |
-   | `BGC9999903.json` | Invented, evidence by prediction only | That a predicted cluster is never called an experiment |
+   | `BGC9999903.json` | Invented, evidence by prediction only | That a predicted cluster is never called an experiment; from Phase 3, a locus tag shared with BGC9999901 |
 
    All four were checked with the MIBiG maintainers' own reader for the 4.0
    layout (`MibigEntry.from_json` in
@@ -922,6 +922,13 @@ archive lands on your machine.
    mg.compound:surfactin,mg.activity:surfactant,HAS_ACTIVITY,database_assertion,mibig,BGC0000433,,0.50,2026-10-10
    mibig:BGC0000433,mg.compound:surfactin,PRODUCES,curated_experimental,mibig,BGC0000433,pubmed:14762003,0.50,2026-10-10
    ```
+
+   > **After Phase 3** the same tidy also reads each entry's gene records, so
+   > it prints ten more counts, and the table of arrows gains `ENCODES` and
+   > `CATALYZES` rows (surfactin gains three `CATALYZES` arrows, from its three
+   > synthetase genes). The numbers in this step are Phase 1's;
+   > [`05-proteomics-uniprot.md`, Step 3](05-proteomics-uniprot.md#7-step-3-mibig-reads-its-gene-records)
+   > has the new ones.
 
    The last column is the date of your own download, so yours will differ. In
    MIBiG 4.0, BGC0000433 is the only active entry with a compound named

@@ -57,7 +57,7 @@ NODE_TEXT = {
     "GeneCluster": ("A run of neighbouring genes that together build one specialised molecule.",
                     "Phase 1 (MIBiG)"),
     "Protein": ("An enzyme encoded by the cluster: the machine that performs one chemical step.",
-                "Phase 3 (UniProt)"),
+                "Phase 3 (MIBiG's gene records; UniProt describes each enzyme)"),
     "Compound": ("The molecule the cluster makes.",
                  "Phase 1 (MIBiG); PubChem identities in Phase 2, joined to MIBiG's in Phase 4"),
     "CompoundClass": ("A family of chemically related molecules.",
@@ -73,8 +73,10 @@ NODE_TEXT = {
 
 EDGE_TEXT = {
     "HARBORS": ("The organism carries the gene cluster in its DNA.", "MIBiG, Phase 1"),
-    "ENCODES": ("The cluster's genes are the instructions for the protein.", "UniProt, Phase 3"),
-    "CATALYZES": ("The protein performs a step in making the molecule.", "UniProt, Phase 3"),
+    "ENCODES": ("The cluster's genes are the instructions for the protein.",
+                "MIBiG's gene records, Phase 3"),
+    "CATALYZES": ("The protein performs a step in making the molecule.",
+                  "MIBiG's gene records, Phase 3 (only genes whose job builds the molecule)"),
     "PRODUCES": ("The cluster is known to make the molecule: the direct shortcut.", "MIBiG, Phase 1"),
     "BELONGS_TO": ("The molecule is a member of a chemical family.", "MIBiG, Phase 1"),
     "HAS_ACTIVITY": ("The molecule has been seen to do this.", "MIBiG, Phase 1"),
@@ -291,17 +293,22 @@ all.forEach(g => {{
 CHAIN_NODES = [
     ("ncbitaxon:326423", "Organism", "Bacillus velezensis FZB42", 110, 150),
     ("mibig:BGC0000433", "GeneCluster", "surfactin BGC", 340, 150),
-    ("mg.compound:surfactin", "Compound", "surfactin", 570, 150),
-    ("mg.activity:antibacterial", "Activity", "antibacterial", 400, 380),
-    ("mg.activity:surfactant", "Activity", "surfactant", 740, 380),
-    ("ncbitaxon:40559", "Pathogen", "Botrytis cinerea (grey mould)", 820, 150),
-    ("mg.crop:jujube", "Crop", "jujube", 1070, 150),
+    ("ncbiprotein:CAE02630.1", "Protein", "srfAA (UniProt Q70KJ7)", 470, 370),
+    ("mg.compound:surfactin", "Compound", "surfactin", 600, 150),
+    ("mg.activity:antibacterial", "Activity", "antibacterial", 760, 380),
+    ("mg.activity:surfactant", "Activity", "surfactant", 980, 380),
+    ("ncbitaxon:40559", "Pathogen", "Botrytis cinerea (grey mould)", 840, 150),
+    ("mg.crop:jujube", "Crop", "jujube", 1080, 150),
 ]
 CHAIN_EDGES = [
     ("ncbitaxon:326423", "mibig:BGC0000433", "HARBORS", "curated_experimental", "mibig",
      "BGC0000433", "pubmed:14762003", "0.50", True),
     ("mibig:BGC0000433", "mg.compound:surfactin", "PRODUCES", "curated_experimental", "mibig",
      "BGC0000433", "pubmed:14762003", "0.50", True),
+    ("mibig:BGC0000433", "ncbiprotein:CAE02630.1", "ENCODES", "database_assertion", "mibig",
+     "BGC0000433", "pubmed:14762003", "0.50", False),
+    ("ncbiprotein:CAE02630.1", "mg.compound:surfactin", "CATALYZES", "curated_experimental", "mibig",
+     "BGC0000433", "pubmed:14762003", "0.50", False),
     ("mg.compound:surfactin", "mg.activity:antibacterial", "HAS_ACTIVITY", "database_assertion",
      "mibig", "BGC0000433", "", "0.50", False),
     ("mg.compound:surfactin", "mg.activity:surfactant", "HAS_ACTIVITY", "database_assertion",
@@ -368,18 +375,24 @@ def evidence_chain() -> str:
                       "on_path"], e)) for e in CHAIN_EDGES]
     body = f"""
 <h1>One chain, every arrow with its evidence</h1>
-<p class="lede">From a soil bacterium to grey mould on jujube fruit. Hover or focus an arrow to see where it
-came from. Untick an evidence level to hide those arrows, and watch what still connects: this is the
-"show me only what is actually known" filter the app gets in Phase 8.</p>
+<p class="lede">From a soil bacterium to grey mould on jujube fruit, with one of the enzymes that makes the
+molecule on the way. Hover or focus an arrow to see where it came from. Untick an evidence level to
+hide those arrows, and watch what still connects: this is the "show me only what is actually known"
+filter the app gets in Phase 8.</p>
 <div class="controls" role="group" aria-label="Evidence filters">{boxes}</div>
 <div class="card figure">{svg}</div>
 <div class="card panel" id="panel" aria-live="polite"></div>
 <details open><summary>The same rows as a table</summary>
 <table><tr><th>source_id</th><th>edge_type</th><th>target_id</th><th>evidence_level</th><th>source</th>
 <th>source_record_id</th><th>citation</th><th class="num">confidence</th></tr>{rows}</table>
-<p class="muted">The four MIBiG rows are what Phase 1 writes from the public entry BGC0000433 on its
-own, which MIBiG grades "questionable" (hence confidence 0.50). Other surfactin entries in the full
-release can add their record numbers and citations to the same arrows. The two curation rows come
+<p class="muted">The MIBiG rows are what the MIBiG adapter writes from the public entry BGC0000433 on
+its own, which MIBiG grades "questionable" (hence confidence 0.50). Other surfactin entries in the
+full release can add their record numbers and citations to the same arrows. ENCODES and CATALYZES
+come from the entry's gene record for srfAA (Phase 3): a knock-out showed that srfAA builds the
+molecule's backbone, so its CATALYZES arrow is curated_experimental, while ENCODES only states that
+the gene is in the cluster. UniProt's ID mapping says CAE02630.1 is the entry Q70KJ7, Surfactin
+synthetase A. The protein route sits beside the PRODUCES shortcut, so hiding it never breaks the
+chain. The two curation rows come
 from one row of the cited bridge (Phase 2): Xiao et al. (2023) found that purified surfactin inhibited
 <i>Botrytis cinerea</i> and reduced grey mould on harvested winter jujube. The bridge refuses any row
 without a citation.</p>

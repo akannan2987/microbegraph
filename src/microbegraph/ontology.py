@@ -67,13 +67,14 @@ KNOWN_PREFIXES: Final[frozenset[str]] = frozenset({
     "mibig",              # MIBiG gene clusters
     "pubchem.compound",   # PubChem compounds
     "kegg.pathway",       # KEGG pathways
+    "ncbiprotein",        # NCBI protein sequence records (GenBank, EMBL, DDBJ, RefSeq)
     "uniprot",            # UniProt proteins
     "mg.class",           # ours: compound classes
     "mg.activity",        # ours: biological activities
     "mg.crop",            # ours: crops
     "mg.organism",        # ours: strains with no NCBI entry
     "mg.compound",        # ours: compounds with no PubChem entry
-    "mg.protein",         # ours: proteins with no UniProt entry
+    "mg.protein",         # ours: proteins MIBiG names only by a gene name or locus tag
 })
 
 

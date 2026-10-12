@@ -18,8 +18,9 @@ WHY THE TESTS NEVER TOUCH THE INTERNET
     by hand, once, on your machine (docs/03-ingestion-mibig.md, Step 8).
 
     From Phase 2 the fake server answers with REAL answers, captured once
-    from PubChem, NCBI and KEGG and kept in tests/fixtures/<source>/.
-    tests/fixtures/README.md says where each one came from.
+    from PubChem, NCBI, KEGG and (from Phase 3) UniProt, and kept in
+    tests/fixtures/<source>/. tests/fixtures/README.md says where each one
+    came from.
 """
 
 from __future__ import annotations
@@ -155,10 +156,13 @@ class FakeSession:
         self.headers: dict[str, str] = {}
         self.calls: list[str] = []
         self.sent: list[tuple[str, str, dict[str, str]]] = []
+        self.not_followed: list[str] = []      # GETs asked NOT to follow a redirect
 
     def get(self, url: str, params: dict[str, str] | None = None, stream: bool = False,
-            timeout: Any = None) -> FakeResponse:
+            allow_redirects: bool = True, timeout: Any = None) -> FakeResponse:
         self.sent.append(("GET", url, dict(params or {})))
+        if not allow_redirects:
+            self.not_followed.append(url)
         return self._answer(url)
 
     def post(self, url: str, data: dict[str, str] | None = None,
@@ -191,11 +195,13 @@ def fixture_bytes(source: str, name: str) -> bytes:
 
 
 def write_mibig_staging(staging_dir: Path, compounds: dict[str, str | None] | None = None,
-                        organisms: list[str] | None = None) -> Path:
+                        organisms: list[str] | None = None,
+                        proteins: dict[str, str] | None = None) -> Path:
     """
-    A small mibig_nodes.csv, standing in for the Phase 1 output that the
-    Phase 2 sources build on. `compounds` maps a compound id to its PubChem
-    CID (or None); `organisms` lists NCBI taxids.
+    A small mibig_nodes.csv, standing in for the MIBiG output that later
+    sources build on. `compounds` maps a compound id to its PubChem CID (or
+    None); `organisms` lists NCBI taxids; `proteins` maps a gene record's
+    protein id to its id_type ("insdc", "refseq" or "other").
     """
     from microbegraph.sources.base import NODE_COLUMNS, write_table
 
@@ -208,6 +214,12 @@ def write_mibig_staging(staging_dir: Path, compounds: dict[str, str | None] | No
     for taxid in organisms or []:
         rows.append({"node_id": f"ncbitaxon:{taxid}", "node_type": "Organism",
                      "name": f"organism {taxid}", "properties": "{}",
+                     "source": "mibig", "retrieved_at": "2026-10-10"})
+    for protein_id, id_type in (proteins or {}).items():
+        prefix = "mg.protein:bgc9999901-" if id_type == "other" else "ncbiprotein:"
+        rows.append({"node_id": prefix + protein_id, "node_type": "Protein",
+                     "name": protein_id,
+                     "properties": json.dumps({"protein_id": protein_id, "id_type": id_type}),
                      "source": "mibig", "retrieved_at": "2026-10-10"})
     path = staging_dir / "mibig_nodes.csv"
     write_table(path, NODE_COLUMNS, rows)

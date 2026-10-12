@@ -18,6 +18,7 @@ WHY SOME SOURCES READ ANOTHER SOURCE'S TABLES
         pubchem         asks about the compound numbers MIBiG recorded
         ncbi_taxonomy   asks about MIBiG's organisms and the bridge's pathogens
         kegg            links the KEGG numbers PubChem found to pathways
+        uniprot         maps the protein ids in MIBiG's gene records (Phase 3)
         curation        checks every bridge row against MIBiG and NCBI
 
     So the order sources run in matters, and `--all` follows it. If a table a

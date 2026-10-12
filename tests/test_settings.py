@@ -65,4 +65,4 @@ def test_list_shows_every_source_in_running_order(capsys):
     out = capsys.readouterr().out
     names = [line.split()[0] for line in out.splitlines() if line.startswith("  ") and
              not line.strip().startswith("licence")]
-    assert names == ["mibig", "pubchem", "ncbi_taxonomy", "kegg", "curation"]
+    assert names == ["mibig", "pubchem", "ncbi_taxonomy", "kegg", "uniprot", "curation"]

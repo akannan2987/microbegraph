@@ -33,8 +33,9 @@ attached tells a reader more than a list of promises does.
 
 ## The shape of the plan
 
-There are nineteen numbered phases (1-19) plus two optional sub-phases (8b and
-9b), so twenty-one pieces of work in total, grouped into three releases. The
+There are nineteen numbered phases (1-19) plus three sub-phases (3b, and the
+optional 8b and 9b), so twenty-two pieces of work in total, grouped into three
+releases. The
 design work you have already read (architecture, setup, ontology, this roadmap)
 is Phase 0.
 
@@ -165,10 +166,17 @@ release in Phase 9.
 
 ---
 
-## Phase 3. The proteomics layer: UniProt
+## Phase 3. The proteomics layer: UniProt ✅
 
-**What gets built:** a fifth adapter fetching the **enzymes** encoded by each gene
-cluster, adding `Protein` nodes and the `ENCODES` / `CATALYZES` edges.
+**Status:** built and tested. Guide: [`05-proteomics-uniprot.md`](05-proteomics-uniprot.md).
+
+**What gets built:** the **enzymes** encoded by each gene cluster, as `Protein`
+nodes with the `ENCODES` and `CATALYZES` edges. They come from two places. The
+MIBiG adapter now reads each entry's **gene records** (the protein number of each
+gene, and the job it does), which give the nodes and both arrows; only genes whose
+job builds the molecule get `CATALYZES`. A sixth adapter asks **UniProt** what
+each of those proteins is, through its ID mapping service, and keeps the answers
+as a dated snapshot. The rulebook gains one identifier prefix, `ncbiprotein`.
 
 **Why this matters more than it looks:** it turns the graph from two molecular
 layers into three. The chain becomes:
@@ -188,14 +196,68 @@ Compound` edge. I keep it *and* add the detailed protein path, because the two
 answer different questions (the shortcut is for fast traversal; the protein path
 is for mechanism). The data model documents that both exist and why.
 
-**Why UniProt:** it's free and public, it's comprehensive, and it's the standard
-reference for protein sequence and function. It cross-references MIBiG accessions
-directly, so the join is exact rather than fuzzy.
+**Why UniProt:** it's free and public (CC BY 4.0), comprehensive, and the
+standard reference for protein sequence and function. The first version of this
+plan said UniProt cross-references MIBiG directly. A survey of the real data
+before any code was written showed it doesn't (UniProt's list of linked databases
+has no MIBiG), so the join goes through the protein's sequence number instead:
+MIBiG's gene record gives the INSDC or RefSeq protein id, and UniProt's ID
+mapping turns it into a UniProt entry. That join is still exact, because both
+sides use the same worldwide number; an id UniProt can't map is counted and
+listed, never guessed.
 
-**New concepts:** proteins as the working machinery between DNA and chemistry;
-enzyme function; cross-referencing between databases.
+**New concepts:** genes, proteins and enzymes; the jobs genes do in a cluster;
+joining two databases through a shared identifier (a crosswalk); background jobs,
+polling and HTTP redirects; identifiers that only mean something inside one
+genome; reporting what a join didn't match.
+
+**Checkpoint:** MIBiG's tables include `Protein` nodes and the two new arrows,
+passing the twelve rules; a finished UniProt snapshot in `data/raw/uniprot/`;
+`uniprot_summary.json` lists every id that didn't map; surfactin's cluster
+encodes nine proteins, three of which catalyze surfactin.
+
+**Known limit, handed to Phase 3b:** only 452 of MIBiG 4.0's 2,437 active
+entries have gene records in the pinned JSON release, so most clusters have no
+proteins yet.
+
+**Handed on to Phase 4:** each UniProt entry lists the MIBiG protein number(s) it
+was found through (`mibig_protein_ids`), so joining `ncbiprotein:` nodes to
+`uniprot:` nodes is exact; ids with several UniProt entries are listed for the
+ledger; proteins named only by a locus tag stay as `mg.protein:` nodes, one per
+entry, until the ledger decides otherwise.
 
 **Effort:** ~5-7 hours.
+
+---
+
+## Phase 3b. Every cluster's proteins: MIBiG's protein file
+
+**What gets built:** the protein layer for every cluster, not only the 452
+entries with gene records. MIBiG's own download server
+(<https://dl.secondarymetabolites.org/mibig/>) publishes every protein of every
+cluster in one file, `mibig_prot_seqs_4.0.fasta` (about 30 MB), and the full
+GenBank records as `mibig_gbk_4.0.tar.gz`. This phase reads the protein file:
+each protein's cluster and identifier become a `Protein` node and an `ENCODES`
+arrow, and the new protein numbers go through the same UniProt adapter.
+`CATALYZES` still comes only from MIBiG's gene records, because only they say
+which job a gene does.
+
+**Why it's a phase of its own:** the file isn't in the Zenodo record this project
+pins, so it has no published checksum. Following the habit from Phases 2 and 3,
+the phase starts by looking at the real file (how its headers name each protein
+and cluster), then pins it by its own SHA-256 fingerprint, recorded in the code
+the way MIBiG's MD5 is. MIBiG's corrections to a sequence record's gene list
+(`to_add` and `to_delete` in the JSON) are applied here.
+
+**New concepts:** the FASTA format; pinning a file that has no published
+checksum; working with a file of tens of thousands of records; ID mapping at
+scale.
+
+**Checkpoint:** every active entry that has a protein in the file has `ENCODES`
+arrows; the protein counts per entry agree between the file and the gene records
+wherever both exist; the UniProt summary lists what didn't map.
+
+**Effort:** ~4-5 hours.
 
 ---
 
@@ -227,6 +289,13 @@ gave its number (`mibig_compound_ids`), so most compound joins are exact; the
 rest are looked up by name. Taxids NCBI has merged are listed old → new in
 `ncbi_taxonomy_summary.json`, and MIBiG's organisms are moved to the current
 number, with the move written in the ledger.
+
+**What Phases 3 and 3b hand over:** each UniProt protein lists the MIBiG protein
+numbers it was found through (`mibig_protein_ids`), so an `ncbiprotein:` node and
+its `uniprot:` entry become one node, by an exact join. A number with several
+UniProt entries, and a locus tag that appears in two entries, are decisions for
+the ledger. UniProt's organism names stay properties; organisms come from MIBiG
+and NCBI only.
 
 **New concepts:** entity resolution, normalisation before comparison, why a wrong
 merge is worse than a missed one, validation that *refuses* rather than warns,
@@ -1014,6 +1083,8 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | | Data sources and licences listed, attribution in the app | ✅ Phase 2, Phase 8 |
 | | Secrets kept out of the repository: `.env`, a safety gate that catches key-shaped text | ✅ Phase 0, first key in Phase 2 |
 | | Answers from live services kept as dated snapshots, one provenance row per answer | ✅ Phase 2 |
+| | What each join didn't match counted and listed, never dropped quietly | ✅ Phases 2-3 |
+| **Science** | Three molecular layers joined: genes, proteins (enzymes), molecules | ✅ Phase 3 (entries with gene records), every cluster in Phase 3b |
 | **Engineering** | Installable package, bounded dependencies, lockfile | ✅ Phase 0-1 |
 | | Automated tests on Windows, macOS, Linux and RHEL 8 at every push | ✅ Phase 1 |
 | | One-command setup scripts per operating system | Phase 9 |
@@ -1093,12 +1164,12 @@ weeks:
 | Release | Phases | Hours | Calendar |
 |---|---|---|---|
 | 0, design and setup | 0 | ~5-6 | ~1 week |
-| 1.0, the science | 1-9 | ~74-92 | ~16-20 weeks |
+| 1.0, the science | 1-9 (with 3b) | ~78-97 | ~17-22 weeks |
 | 1.0, the same app in Shiny *(optional)* | 8b | ~8-10 | ~2 weeks |
 | 1.0, one container *(optional)* | 9b | ~4-5 | ~1 week |
 | 2.0, the platform | 10-13 | ~34-42 | ~8-9 weeks |
 | 3.0, the product | 14-19 | ~55-66 | ~12-15 weeks |
-| **Total** | **0-19 (+8b, 9b)** | **~180-221** | **~40-49 weeks** |
+| **Total** | **0-19 and 3b (+8b, 9b)** | **~184-226** | **~41-50 weeks** |
 
 *The per-phase hours live in [`phases.csv`](phases.csv); the weeks assume about
 4.5 hours a week.*

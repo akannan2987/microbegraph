@@ -4,10 +4,11 @@
 
 ![MicrobeGraph: from a microbe's genes to a crop's disease, with the evidence for every arrow](img/cover_microbegraph.svg)
 
-**Handbook version:** 1.3 · **Last updated:** 2026-10-12 · **Repository state it
-describes:** Phase 0 (design and setup), Phase 1 (MIBiG ingestion) and Phase 2
-(PubChem, NCBI Taxonomy, KEGG and the cited bridge) built and tested; Phase 3
-(the proteomics layer) next.
+**Handbook version:** 1.4 · **Last updated:** 2026-10-12 · **Repository state it
+describes:** Phase 0 (design and setup), Phase 1 (MIBiG ingestion), Phase 2
+(PubChem, NCBI Taxonomy, KEGG and the cited bridge) and Phase 3 (the proteomics
+layer: MIBiG's gene records and UniProt) built and tested; Phase 3b (every
+cluster's proteins) next.
 
 **Read this document first, and come back to it whenever you lose your place.**
 It follows the whole journey in order: understanding the project, setting up a
@@ -103,7 +104,8 @@ for the same plan.
 | 3 | The rulebook: ontology and data model | 0 | 1 h | ✅ | [`02-ontology-and-data-model.md`](02-ontology-and-data-model.md) |
 | 4 | Ingestion: the MIBiG backbone | 1 | 7-9 h | ✅ | [`03-ingestion-mibig.md`](03-ingestion-mibig.md) |
 | 5 | More sources: PubChem, NCBI Taxonomy, KEGG, the curated bridge | 2 | 6-8 h | ✅ | [`04-more-sources-secrets.md`](04-more-sources-secrets.md) |
-| 6 | The proteomics layer: UniProt | 3 | 5-7 h | ⏳ next | `05-proteomics-uniprot.md` |
+| 6 | The proteomics layer: MIBiG's gene records and UniProt | 3 | 5-7 h | ✅ | [`05-proteomics-uniprot.md`](05-proteomics-uniprot.md) |
+| 6b | Every cluster's proteins: MIBiG's protein file | 3b | 4-5 h | ⏳ next | `05b-all-cluster-proteins.md` |
 | 7 | Entity resolution and the graph build | 4 | 10-12 h | ⬜ | `06-entity-resolution-graph-build.md` |
 | 8 | Graph analytics | 5 | 8-10 h | ⬜ | `07-graph-analytics.md` |
 | 9 | Statistical validation in R | 6 | 6-8 h | ⬜ | `08-statistical-validation-r.md` |
@@ -124,8 +126,8 @@ for the same plan.
 
 Guides listed without a link arrive with their phase, and I add the link here as
 each one is written. The times are hands-on estimates for a beginner following the
-guides. At four to five hours a week, Release 1.0 takes about a season and the
-whole product roughly a part-time year. Every stage ends at a natural stopping
+guides. At four to five hours a week, Release 1.0 takes four to five months and
+the whole product roughly a part-time year. Every stage ends at a natural stopping
 point with everything committed, and **each release is complete on its own**, so
 stopping after any of them still leaves you with something whole.
 
@@ -311,6 +313,8 @@ node and edge tables; the **Actions** tab on GitHub is green.
 **What you should get:** 3,013 records read, 2,437 of them active, and 10,023
 arrows (the counts are explained in
 [`03-ingestion-mibig.md`, Step 8](03-ingestion-mibig.md#12-step-8-run-it-for-real)).
+From Phase 3 the same tidy also reads gene records, so it prints ten more counts
+and writes more arrows; Stage 6 has those numbers.
 **Commit message:** `feat: add MIBiG source adapter with evidence locker and provenance log`.
 **Estimated time:** 7-9 hours.
 
@@ -344,7 +348,7 @@ with machine learning and a public app. This release is complete on its own.*
 
 ## Stage 5. More sources (Phase 2)
 
-![Five sources, one graph: what each needs first, its licence, and what it adds](img/sources_map.svg)
+![The sources, one graph: what each needs first, its licence, and what it adds (the sixth, UniProt, arrives in Stage 6)](img/sources_map.svg)
 
 **What.** Follow [`04-more-sources-secrets.md`](04-more-sources-secrets.md). Four
 more sources plug into the socket from Phase 1:
@@ -363,7 +367,7 @@ This is also where the project meets its first **API key**: NCBI's free, optiona
 key, which lives in `.env` on your computer and never in the repository.
 
 ```bash
-python -m microbegraph.fetch --list                # five sources, each with its licence
+python -m microbegraph.fetch --list                # every source, each with its licence
 python -m microbegraph.fetch --probe               # what is out there? (no download)
 python -m microbegraph.fetch --all                 # fetch and tidy all five, in order
 python -m microbegraph.fetch --tidy-only --all     # rebuild every table, offline
@@ -406,18 +410,94 @@ sanity checks are in
 
 ## Stage 6. The proteomics layer (Phase 3)
 
-**What.** You write a UniProt adapter that adds the enzymes each gene cluster
-encodes, as `Protein` nodes with `ENCODES` and `CATALYZES` arrows.
+![The protein layer: a cluster encodes its enzymes, the enzymes that build the molecule catalyze it, and UniProt says what each enzyme is](img/protein_layer.svg)
+
+**What.** Follow [`05-proteomics-uniprot.md`](05-proteomics-uniprot.md). The
+enzymes each gene cluster codes for join the graph as `Protein` nodes, in two
+steps:
+
+* **MIBiG's gene records.** Some MIBiG entries list the cluster's genes, each
+  with the number of the protein it makes and the job it does. The MIBiG adapter
+  now reads them: every gene gives a `Protein` node and an `ENCODES` arrow from
+  its cluster, and a gene whose job builds the molecule (scaffold, precursor or
+  tailoring) also gives a `CATALYZES` arrow to the molecule.
+* **UniProt**, the catalogue of proteins, says what each one is (names, organism,
+  length, EC number, function). A sixth adapter asks it through its **ID
+  mapping** service: hand in the protein numbers, get a job number, ask until the
+  job is finished, collect the results.
+
+```bash
+python -m microbegraph.fetch --list                         # six sources now
+python -m microbegraph.fetch --tidy-only --source mibig     # MIBiG's tables, now with proteins (offline)
+python -m microbegraph.fetch --probe --source uniprot       # UniProt's release, proteins to ask about
+python -m microbegraph.fetch --source mibig --source uniprot
+pytest                                                      # 183 promises, checked
+```
 
 **Why.** The graph goes from two molecular layers to three (genes → proteins →
 molecules → disease), so a single walk can now cross genomics, proteomics and
 metabolomics. I kept MIBiG's direct `PRODUCES` shortcut because it answers a
-different question: the shortcut is there for fast traversal, and the protein
-route is there to show the mechanism.
+different question: the shortcut says which cluster makes a molecule, and the
+protein route shows how.
 
-**Open:** `05-proteomics-uniprot.md`. **Checkpoint:** the protein rows pass the
-rules, and the surfactin cluster shows its synthetase enzymes.
+This stage also changed its own plan. A short survey of the real data, run before
+any adapter code, showed that UniProt doesn't cross-reference MIBiG at all, so
+the join goes through the protein's sequence number instead, and that only 452 of
+the 2,437 active MIBiG entries have gene records. The second finding is why Stage
+6b exists.
+
+![Asking UniProt: a job with a ticket number](img/idmapping_flow.svg)
+
+**New ideas in this stage:** genes, proteins and enzymes; the jobs genes do in a
+cluster; joining two databases through a shared identifier; background jobs,
+polling and HTTP redirects; identifiers that only mean something inside one
+genome; reporting what a join didn't match.
+
+**Open:** [`05-proteomics-uniprot.md`](05-proteomics-uniprot.md);
+[`tests/fixtures/README.md`](../tests/fixtures/README.md) for the captured
+UniProt answers.
+**Checkpoint:** `pytest` passes; MIBiG's tables include `Protein` nodes with
+`ENCODES` and `CATALYZES` arrows, passing the twelve rules; `data/raw/uniprot/`
+holds one finished snapshot; surfactin's cluster encodes nine proteins, three of
+which catalyze surfactin; the **Actions** tab is green.
+**What you should get:** on the first run (2026-10-12), MIBiG's 452 entries
+with gene records gave 4,737 `Protein` nodes and `ENCODES` arrows, and 4,492
+`CATALYZES` arrows from the 1,991 genes whose job builds the molecule (1,482 of
+them backed by an experiment). UniProt (release `2026_03`) found 2,449 of the
+4,089 protein numbers asked about, giving 2,442 entries, 360 of them reviewed; the
+1,640 it didn't find are listed in `uniprot_summary.json`. The MIBiG counts are
+fixed by the pinned release; UniProt's may move a little with each release. The
+sanity checks are in
+[`05-proteomics-uniprot.md`, Step 7](05-proteomics-uniprot.md#11-step-7-run-it-for-real).
+
+![How far the protein layer reaches](img/protein_coverage.svg)
+
 **Commit message:** `feat: add UniProt adapter and the protein layer`.
+**Estimated time:** 5-7 hours.
+
+---
+
+## Stage 6b. Every cluster's proteins (Phase 3b)
+
+**What.** MIBiG's own download server also publishes every protein of every
+cluster in one file (`mibig_prot_seqs_4.0.fasta`, about 30 MB). You look at it
+first, the way Stage 6 looked at the JSON, pin it by its own fingerprint (the
+file has no published checksum), and turn each protein into a `Protein` node
+with an `ENCODES` arrow, so the protein layer covers every cluster that has
+proteins in the file, instead of only the 452 entries with gene records. The new
+protein numbers go through the same UniProt adapter.
+
+**Why.** A graph where four clusters in five have no proteins can't answer "which
+enzymes do these clusters share?" fairly. The analytics in Stage 8 and the
+machine learning in Stage 10 both lean on the protein layer, so it's worth
+completing before them.
+
+**Open:** `05b-all-cluster-proteins.md`; the plan is in
+[`ROADMAP.md`, Phase 3b](ROADMAP.md#phase-3b-every-clusters-proteins-mibigs-protein-file).
+**Checkpoint:** every active entry with proteins in the file has `ENCODES` arrows,
+and UniProt's summary lists what didn't map.
+**Commit message:** `feat: add every cluster's proteins from MIBiG's protein file`.
+**Estimated time:** 4-5 hours.
 
 ---
 
@@ -434,7 +514,10 @@ first `QUERY_COOKBOOK.md`, a collection of tested SQL recipes.
 
 **Why.** This step decides whether you end up with a graph you can trust or one
 that looks fine while being quietly wrong. A wrong merge does more harm than a
-missed one, so the engine refuses to guess. It's also the stage where an organism
+missed one, so the engine refuses to guess. Proteins join the same way compounds
+do: each UniProt entry lists the MIBiG protein numbers it was found through
+(Stage 6), so an `ncbiprotein:` node and its `uniprot:` entry become one node by
+an exact join. It's also the stage where an organism
 that is both a producer and a crop pathogen (*Botrytis cinerea* and some
 *Fusarium* species are; Phase 2 counts them as `pathogens_also_organisms`) gets
 caught by rule 1, and you resolve it on purpose.
@@ -725,6 +808,7 @@ ritual from [Stage 2](#stage-2-version-control-and-the-end-of-phase-ritual).
 | The probe says `API key : not set` although you made `.env` | [`04-more-sources-secrets.md`, Step 3](04-more-sources-secrets.md#7-step-3-your-first-api-key-optional) |
 | A key was published by mistake | Replace it at the service first: [`04-more-sources-secrets.md`, Step 3](04-more-sources-secrets.md#7-step-3-your-first-api-key-optional) |
 | The bridge refuses a row ("check ...") | [`curation/README.md`](../curation/README.md); the check numbers are in [`04-more-sources-secrets.md`, Step 8](04-more-sources-secrets.md#12-step-8-the-curated-bridge) |
+| UniProt: "no proteins with an INSDC or RefSeq id", a job that fails or never finishes, an identifier type that disappeared | [`05-proteomics-uniprot.md`, section 15](05-proteomics-uniprot.md#15-what-could-go-wrong) |
 | A test fails | The test's name says which promise broke; the phase guide's *What could go wrong* table |
 | `$'\r': command not found` from the safety gate (Windows) | [`01-setup.md`, T14](01-setup.md#t14-bash-check-public-safesh-fails-with-r-command-not-found-windows) |
 | The Actions tab shows no run after a push | [`03-ingestion-mibig.md`, *Starting a run by hand*](03-ingestion-mibig.md#starting-a-run-by-hand) |
@@ -752,9 +836,10 @@ ritual from [Stage 2](#stage-2-version-control-and-the-end-of-phase-ritual).
 | [`02-ontology-and-data-model.md`](02-ontology-and-data-model.md) | The rulebook: nodes, edges, identifiers, evidence, twelve rules | Stage 3 |
 | [`03-ingestion-mibig.md`](03-ingestion-mibig.md) | Phase 1: the evidence locker, provenance, tests, CI | Stage 4 |
 | [`04-more-sources-secrets.md`](04-more-sources-secrets.md) | Phase 2: web APIs, snapshots, the first API key, licences, the curated bridge | Stage 5 |
-| `05-...` to `21-...` | One guide per later phase | As each stage arrives |
+| [`05-proteomics-uniprot.md`](05-proteomics-uniprot.md) | Phase 3: genes, proteins and enzymes, MIBiG's gene records, UniProt's ID mapping, what didn't match | Stage 6 |
+| `05b-...` to `21-...` | One guide per later phase | As each stage arrives |
 | [`curation/README.md`](../curation/README.md) | The bridge file's columns, the confidence scale, how to add a row | Stage 5, and whenever you add a finding |
-| [`tests/fixtures/README.md`](../tests/fixtures/README.md) | Where every test record came from, with fingerprints | Stage 5, and when a source changes its format |
+| [`tests/fixtures/README.md`](../tests/fixtures/README.md) | Where every test record came from, with fingerprints | Stages 5-6, and when a source changes its format |
 | [`ROADMAP.md`](ROADMAP.md) | The plan, the reasons for every tool, the product checklist | Stage 0, and per release |
 | [`GIT-WORKFLOW.md`](GIT-WORKFLOW.md) | Commit messages, the branch flow, fixing git mistakes | Stage 2, and when stuck |
 | [`PRIOR-ART.md`](PRIOR-ART.md) | Related work and what this project does not claim | Stage 0 |
@@ -797,6 +882,7 @@ mentions it in that same commit, and add a change-log line.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4 | 2026-10-12 | Phase 3 built and run: Stage 6 rewritten around the new guide, with two new pictures (the protein layer, and asking UniProt); a survey of the real data showed UniProt doesn't cross-reference MIBiG and only 452 entries have gene records, so Stage 6b (every cluster's proteins, Phase 3b) is added to the plan and is next; Stage 4 notes that the MIBiG tidy now prints more counts; Stage 7 notes how proteins are joined; a troubleshooting row for UniProt; the document map lists the Phase 3 guide |
 | 1.3 | 2026-10-12 | Phase 2 built and run against the live services: Stage 5 rewritten around the new guide, with the first run's counts and two new pictures (the five sources, and where a key lives); the running example now ends at grey mould on jujube, the crop for which a paper tested surfactin; Stage 7 notes what Phase 2 hands to entity resolution; new troubleshooting rows for missing tables, API trouble, keys and bridge checks; the document map lists the Phase 2 guide, `curation/README.md` and `tests/fixtures/README.md` |
 | 1.2 | 2026-10-11 | After Phase 1: the test workflow moved to version 7 of `actions/checkout` and `actions/setup-python`, each job now stops after 20 minutes, and the code checkout leaves no login behind. Stage 4 gains "Looking after the automatic tests" with a new picture of what a run does; the troubleshooting map covers a push that starts no run and the version warnings |
 | 1.1 | 2026-10-11 | Corrections from the first full run of Phase 1 on a Phase 0 checkout. `src/microbegraph/__init__.py` is new in Phase 1, not carried over from Phase 0. The unused top-level `sources/` and `figures/` folders are removed with `git rm`. New troubleshooting entry for `ModuleNotFoundError` during `pip install -e .`. The Phase 1 guide's probe output is now a real run against Zenodo, with the archive size as the program prints it (9.5 MB). The real MIBiG 4.0 archive is not gzip-compressed despite its name, so archives are now read by their contents, and a fetch logs the file it filed even if it then can't open it. MIBiG 4.0 writes activity names in two styles; both are now read, curators' comments are kept on the compound as `activity_notes`, and the surfactin test record is a cut-down copy of the real one. The Phase 1 checkpoint now gives the expected counts |

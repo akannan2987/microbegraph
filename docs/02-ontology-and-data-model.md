@@ -159,13 +159,14 @@ runs through biological and linked-data systems.
 | `mibig` | MIBiG | `mibig:BGC0000433` | Gene clusters |
 | `pubchem.compound` | PubChem | `pubchem.compound:<CID>` | Compounds, once resolved |
 | `kegg.pathway` | KEGG | `kegg.pathway:map00660` | Pathways |
-| `uniprot` | UniProt | `uniprot:P27206` | Proteins (enzymes) |
+| `ncbiprotein` | NCBI Protein (INSDC and RefSeq protein ids) | `ncbiprotein:CAE02630.1` | Proteins named in MIBiG's gene records (from Phase 3) |
+| `uniprot` | UniProt | `uniprot:Q70KJ7` | Proteins (enzymes), as UniProt describes them |
 | `mg.class` | *this project* | `mg.class:lipopeptide` | Compound classes |
 | `mg.activity` | *this project* | `mg.activity:antifungal` | Biological activities |
 | `mg.crop` | *this project* | `mg.crop:jujube` | Crops |
 | `mg.compound` | *this project* | `mg.compound:surfactin` | Compounds not (yet) matched to PubChem |
 | `mg.organism` | *this project* | `mg.organism:<name>` | Strains with no NCBI number |
-| `mg.protein` | *this project* | `mg.protein:<name>` | Proteins with no UniProt entry |
+| `mg.protein` | *this project* | `mg.protein:bgc0000154-tsta-117750` | Proteins MIBiG names only by a locus tag or gene name, scoped to their entry |
 
 > **A measured fact that shapes the whole pipeline.** MIBiG does not supply
 > PubChem identifiers for most of its compounds. Counting across the current
@@ -253,8 +254,18 @@ production line inside the factory*.
 An enzyme encoded by the gene cluster. It's the actual molecular machine that
 performs one chemical step, like *a machine standing on the production line*.
 
-**Identifier:** `uniprot:<accession>`, or `mg.protein:<slug>` where UniProt has no
-entry.
+**Identifier:** three kinds, depending on where the protein was met (Phase 3):
+
+* `ncbiprotein:<protein id>` when MIBiG's gene record gives an INSDC or RefSeq
+  protein number, e.g. `ncbiprotein:CAE02630.1`. These numbers are worldwide, so
+  the same number in two entries is one node.
+* `mg.protein:<entry>-<locus tag or gene name>` when the gene record gives only a
+  name that is unique inside its own genome, e.g.
+  `mg.protein:bgc0000154-tsta-117750`. The entry number keeps two genomes' names
+  apart.
+* `uniprot:<accession>` for UniProt's description of a protein, e.g.
+  `uniprot:Q70KJ7`. Phase 4 joins it to the `ncbiprotein:` node it was found
+  through, so the finished graph has one node per protein.
 
 This node type matters because it turns MicrobeGraph from two molecular layers
 into three. With `Protein` in place, the chain reads
@@ -263,12 +274,29 @@ biological measurement, joined into one structure that a single query can walk.
 That's what "multi-omics integration" means in practice, as opposed to three
 tables sitting next to each other.
 
+Properties from MIBiG's gene record (on `ncbiprotein:` and `mg.protein:` nodes):
+
 | Property | Type | Meaning |
 |---|---|---|
-| `name` | text | Protein name, e.g. `surfactin synthase SrfAA` |
-| `ec_number` | text | Enzyme Commission number, the standard code for what reaction it performs |
+| `name` | text | The gene name, e.g. `srfAA` (or the product, or the id, when there's no gene name) |
+| `protein_id`, `id_type` | text | The id exactly as MIBiG gives it, and its kind: `insdc`, `refseq` or `other` |
+| `gene_name`, `product` | text | The gene's name and MIBiG's short product description, e.g. `surfactin synthetase A` |
+| `functions` | text | The gene's jobs, joined with `\|`, e.g. `Scaffold biosynthesis` |
+| `function_evidence` | text | How the jobs were shown, e.g. `Knock-out` |
+| `comment`, `mutation_phenotype` | text | A curator's note, and what happened when the gene was switched off, when MIBiG gives them |
+
+Properties from UniProt (on `uniprot:` nodes):
+
+| Property | Type | Meaning |
+|---|---|---|
+| `name` | text | UniProt's main name, e.g. `Surfactin synthetase A` |
+| `entry_name`, `reviewed` | text, true/false | e.g. `Q70KJ7_BACAM`; whether a curator wrote the entry (Swiss-Prot) |
+| `ec_numbers` | text | Enzyme Commission number(s), the standard code for the reaction it performs |
 | `length` | number | Number of amino acids |
-| `function` | text | UniProt's short functional description |
+| `function` | text | UniProt's description of what it does |
+| `organism`, `organism_taxid` | text, number | The organism as UniProt names it |
+| `protein_existence`, `annotation_score` | text, number | How directly the protein is known to exist; how well the entry is described (1 to 5) |
+| `mibig_protein_ids` | text | The `ncbiprotein:` node(s) it was found through, for the join in Phase 4 |
 
 ### 4. `Compound`
 
@@ -406,8 +434,8 @@ There are ten edge types, and **every edge has a direction**:
 | Edge type | From → To | Reads as | Where it comes from |
 |---|---|---|---|
 | `HARBORS` | Organism → GeneCluster | *this microbe carries this production line* | MIBiG |
-| `ENCODES` | GeneCluster → Protein | *this production line specifies this enzyme* | UniProt |
-| `CATALYZES` | Protein → Compound | *this enzyme performs a step making this molecule* | UniProt |
+| `ENCODES` | GeneCluster → Protein | *this production line specifies this enzyme* | MIBiG's gene records (Phase 3) |
+| `CATALYZES` | Protein → Compound | *this enzyme performs a step making this molecule* | MIBiG's gene records, for genes whose job builds the molecule (Phase 3) |
 | `PRODUCES` | GeneCluster → Compound | *this production line makes this molecule* (the direct shortcut) | MIBiG |
 | `BELONGS_TO` | Compound → CompoundClass | *this molecule is one of these* | MIBiG / curated |
 | `HAS_ACTIVITY` | Compound → Activity | *this molecule does this* | MIBiG / curated |
@@ -428,7 +456,8 @@ Organism --HARBORS--> GeneCluster --PRODUCES--> Compound --INHIBITS--> Pathogen 
 
 The top row is the fast path: MIBiG states directly that a cluster produces a
 compound, so traversal is short. The lower branch is the mechanistic path
-through the enzymes, added in Phase 3 from UniProt.
+through the enzymes, added in Phase 3 from MIBiG's gene records, with UniProt
+describing each enzyme.
 
 I kept both because they answer different questions. The shortcut answers
 "which microbe makes this?", and the protein path answers "*how*?". A redundant
@@ -745,6 +774,15 @@ harvest the fruit rots easily, and grey mould is one of the causes.)
 → `mibig:BGC0000433`
 *Evidence: `curated_experimental`.*
 
+**Step 4b, the protein route** (from Phase 3). Which enzymes make it? Walk
+`CATALYZES` backwards from surfactin, then `ENCODES` backwards to the cluster:
+→ `ncbiprotein:CAE02630.1` (srfAA), `ncbiprotein:CAE02631.1` (srfAB) and
+`ncbiprotein:CAE02633.1` (srfAC), the three parts of the surfactin synthetase,
+all encoded by `mibig:BGC0000433`.
+*Evidence: `curated_experimental` for srfAA, whose job a knock-out showed;
+`database_assertion` for the other two.* UniProt adds that `CAE02630.1` is the
+entry `Q70KJ7`, "Surfactin synthetase A", 3,584 amino acids long.
+
 **Step 5, walk `HARBORS` backwards.** Which microbes carry it?
 → `ncbitaxon:326423` (*Bacillus velezensis* FZB42)
 *Evidence: `curated_experimental`.*
@@ -758,7 +796,8 @@ turns "this one strain" into "and what about the rest of its genus?".
 **The answer, assembled:**
 
 > *Bacillus velezensis* FZB42 carries the surfactin gene cluster
-> (MIBiG BGC0000433), which produces surfactin. Purified surfactin inhibited
+> (MIBiG BGC0000433), which produces surfactin with its surfactin synthetase
+> enzymes (SrfAA, SrfAB, SrfAC). Purified surfactin inhibited
 > *Botrytis cinerea* and reduced grey mould on harvested winter jujube
 > (Xiao et al. 2023).
 >
@@ -900,13 +939,14 @@ KNOWN_PREFIXES: Final[frozenset[str]] = frozenset({
     "mibig",              # MIBiG gene clusters
     "pubchem.compound",   # PubChem compounds
     "kegg.pathway",       # KEGG pathways
+    "ncbiprotein",        # NCBI protein sequence records (GenBank, EMBL, DDBJ, RefSeq)
     "uniprot",            # UniProt proteins
     "mg.class",           # ours: compound classes
     "mg.activity",        # ours: biological activities
     "mg.crop",            # ours: crops
     "mg.organism",        # ours: strains with no NCBI entry
     "mg.compound",        # ours: compounds with no PubChem entry
-    "mg.protein",         # ours: proteins with no UniProt entry
+    "mg.protein",         # ours: proteins MIBiG names only by a gene name or locus tag
 })
 
 

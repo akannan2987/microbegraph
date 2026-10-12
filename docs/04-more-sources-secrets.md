@@ -50,7 +50,7 @@ a few minutes and brings in a few megabytes.
 
 ## 1. What this phase builds, in one picture
 
-![Five sources, one graph: MIBiG, PubChem, NCBI Taxonomy, KEGG and the curated bridge, in the order they run, with what each needs first, its licence, and what it adds](img/sources_map.svg)
+![The sources, one graph: MIBiG, PubChem, NCBI Taxonomy, KEGG and the curated bridge, in the order they run, with what each needs first, its licence, and what it adds (the sixth, UniProt, arrives in Phase 3)](img/sources_map.svg)
 
 Phase 1 brought in the backbone: which microbe carries which gene cluster, and
 which molecule that cluster makes. This phase adds four more sources, and with
@@ -444,7 +444,8 @@ file from the table in section 1 at the path shown. Some notes:
                     licence: MIT (this repository)
    ```
 
-✅ **Checkpoint.** `--list` shows five sources in that order.
+✅ **Checkpoint.** `--list` shows five sources in that order. (From Phase 3 it
+shows six: `uniprot` arrives between `kegg` and `curation`.)
 
 ---
 
@@ -834,7 +835,7 @@ the higher confidence and the earlier date.
    144 passed in 0.8s
    ```
 
-   (The time varies by computer.)
+   (The time varies by computer. Phase 3 adds 39 more tests, for 183 in all.)
 4. **Run the style checker:**
 
    ```bash
@@ -1284,7 +1285,8 @@ minutes).
 
 ---
 
-**Next:** Phase 3, `05-proteomics-uniprot.md`: the UniProt adapter adds the
-enzymes each gene cluster encodes, so the chain gains its middle layer
-(genomics → proteomics → metabolomics). The plan is in the
+**Next:** Phase 3, [`05-proteomics-uniprot.md`](05-proteomics-uniprot.md): the
+enzymes each gene cluster encodes join the graph, from MIBiG's gene records and
+UniProt, so the chain gains its middle layer (genomics → proteomics →
+metabolomics). The overview is in the
 [Handbook, Stage 6](HANDBOOK.md#stage-6-the-proteomics-layer-phase-3).

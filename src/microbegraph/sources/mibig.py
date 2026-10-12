@@ -1,5 +1,5 @@
 """
-MicrobeGraph, the MIBiG adapter (Phase 1).
+MicrobeGraph, the MIBiG adapter (Phase 1; gene records from Phase 3).
 
 WHAT MIBiG IS
     MIBiG (Minimum Information about a Biosynthetic Gene Cluster) is a public,
@@ -40,7 +40,38 @@ WHAT tidy() TURNS ONE ENTRY INTO
                                                         kept on the compound, as
                                                         activity_notes)
            CompoundClass  mg.class:<slug>              (when MIBiG gives one)
-    edges  HARBORS, PRODUCES, HAS_ACTIVITY, BELONGS_TO
+           Protein        ncbiprotein:<protein id>     (Phase 3: one per gene record,
+                          or mg.protein:<entry>-<id>    see "GENE RECORDS" below)
+    edges  HARBORS, PRODUCES, HAS_ACTIVITY, BELONGS_TO, ENCODES, CATALYZES
+
+GENE RECORDS (added in Phase 3)
+    Some entries also list the cluster's genes, one record per gene: an
+    identifier for the protein it makes, a gene name, a short product
+    description and, often, the gene's job ("function") with the experiment
+    that showed it. In MIBiG 4.0 only 452 of the 2,437 active entries carry
+    gene records, so most clusters get no Protein nodes from here yet
+    (docs/ROADMAP.md, Phase 3b, plans how to fill that gap).
+
+    The protein's identifier decides its node id:
+        INSDC protein id (CAE02630.1)      -> ncbiprotein:CAE02630.1
+        RefSeq protein id (WP_029025939.1) -> ncbiprotein:WP_029025939.1
+        anything else (a locus tag such as TSTA_117750, or a gene name)
+                                           -> mg.protein:bgc0000154-tsta-117750
+    The first two are worldwide sequence numbers, so the same number in two
+    entries is the same protein and gets one node. A locus tag or gene name
+    only means something inside its own genome (two unrelated clusters can
+    both have an "orf1"), so it gets one node per entry.
+
+    Each gene gives one ENCODES arrow (cluster -> protein). A gene whose job
+    is to build the molecule also gives a CATALYZES arrow (protein ->
+    compound) to every compound the entry lists. "Building the molecule"
+    means one of MIBiG's three biosynthetic jobs:
+        Scaffold biosynthesis    builds the molecule's backbone
+        Precursor biosynthesis   makes a building block the backbone uses
+        Tailoring                modifies the backbone once it exists
+    The other jobs (Regulation, Transport, Resistance/immunity, Activation /
+    processing) matter to the cluster but don't carry out a step in making
+    the molecule, so they get ENCODES only. They are counted, never dropped.
 
 HOW EVIDENCE AND CONFIDENCE ARE SET (two separate questions)
     evidence_level answers "what KIND of evidence stands behind this?"
@@ -52,6 +83,12 @@ HOW EVIDENCE AND CONFIDENCE ARE SET (two separate questions)
         HAS_ACTIVITY with a reference  -> curated_experimental
         HAS_ACTIVITY without one       -> database_assertion
         BELONGS_TO                     -> database_assertion
+        ENCODES                        -> database_assertion (MIBiG states which
+                                          genes the cluster holds)
+        CATALYZES, when the gene's job was shown by an experiment (knock-out,
+          activity assay...)           -> curated_experimental
+        CATALYZES, when the job is stated with no experiment
+                                       -> database_assertion
 
     confidence answers "how much does the source itself trust this entry?"
         MIBiG grades every entry: high, medium, low or questionable.
@@ -65,12 +102,18 @@ WHAT tidy() LEAVES OUT ON PURPOSE
       results, where someone tested for the activity and did not find it, so
       an arrow saying "has activity" would state the opposite of the record.
       They are counted in the summary, so nothing disappears silently.
+    * Gene records with no identifier at all (counted as genes_without_id),
+      and the domain-by-domain detail of large enzymes, which no phase uses.
+    * MIBiG's corrections to the gene list of the underlying sequence record
+      ("to_add" and "to_delete"). They matter once the full gene lists are
+      read from MIBiG's GenBank files (Phase 3b).
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import re
 import tarfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -124,6 +167,28 @@ PREDICTION_METHODS = frozenset({
     "Homology-based prediction",
     "Synthetic-bioinformatic natural product (syn-BNP)",
 })
+
+# The three gene jobs that carry out a step in making the molecule (Phase 3).
+BIOSYNTHETIC_FUNCTIONS = frozenset({
+    "Scaffold biosynthesis",
+    "Precursor biosynthesis",
+    "Tailoring",
+})
+
+# The two protein identifier styles that are worldwide sequence numbers.
+# INSDC (GenBank, EMBL, DDBJ): three letters, five or seven digits, a version.
+# RefSeq: WP_, NP_, YP_ or XP_, digits, a version.
+INSDC_PROTEIN = re.compile(r"^[A-Z]{3}\d{5}(\d{2})?\.\d+$")
+REFSEQ_PROTEIN = re.compile(r"^(WP|NP|YP|XP)_\d+\.\d+$")
+
+
+def protein_id_type(identifier: str) -> str:
+    """'insdc', 'refseq' or 'other', from the shape of a gene record's protein id."""
+    if INSDC_PROTEIN.match(identifier):
+        return "insdc"
+    if REFSEQ_PROTEIN.match(identifier):
+        return "refseq"
+    return "other"
 
 
 class MibigSource(Source):
@@ -398,6 +463,11 @@ class _GraphBuilder:
             "compounds_read": 0, "bioactivities_observed": 0,
             "bioactivities_not_observed": 0, "compound_name_collisions": 0,
             "property_conflicts": 0,
+            # Phase 3: gene records
+            "entries_with_gene_records": 0, "genes_read": 0, "genes_without_id": 0,
+            "genes_insdc_id": 0, "genes_refseq_id": 0, "genes_other_id": 0,
+            "genes_in_biosynthesis": 0, "genes_other_roles": 0, "genes_role_not_stated": 0,
+            "catalyzes_in_multi_compound_entries": 0,
         }
         # slug -> the exact (case-folded) name that first claimed it
         self._slug_owner: dict[str, str] = {}
@@ -458,9 +528,11 @@ class _GraphBuilder:
                        accession, confidence, entry_refs)
 
         # --- each compound ------------------------------------------------------
+        compound_ids: list[str] = []
         for compound in compounds:
             self.counts["compounds_read"] += 1
             compound_id = self._compound_id(str(compound["name"]))
+            compound_ids.append(compound_id)
             database_ids = sorted({str(d) for d in compound.get("databaseIds") or []})
             self._add_node(compound_id, "Compound", str(compound["name"]), {
                 "formula": compound.get("formula"),
@@ -509,6 +581,66 @@ class _GraphBuilder:
                 self._add_edge(compound_id, class_id, "BELONGS_TO", "database_assertion",
                                accession, confidence, [])
 
+        # --- each gene's protein (Phase 3) ------------------------------------------
+        genes = raw.get("genes") if isinstance(raw.get("genes"), dict) else {}
+        annotations = [g for g in genes.get("annotations") or [] if isinstance(g, dict)]
+        if annotations:
+            self.counts["entries_with_gene_records"] += 1
+        for gene in annotations:
+            self._add_gene(gene, accession, cluster_id, compound_ids, confidence, entry_refs)
+
+    def _add_gene(self, gene: dict[str, Any], accession: str, cluster_id: str,
+                  compound_ids: list[str], confidence: float, entry_refs: list[str]) -> None:
+        """One gene record: a Protein node, its ENCODES arrow and any CATALYZES arrows."""
+        self.counts["genes_read"] += 1
+        raw_id = str(gene.get("id") or "").strip()
+        if not raw_id:
+            self.counts["genes_without_id"] += 1
+            return
+        id_type = protein_id_type(raw_id)
+        self.counts[f"genes_{id_type}_id"] += 1
+        if id_type == "other":
+            # A locus tag or gene name: scoped to its entry (see the module notes).
+            protein_id = f"mg.protein:{slugify(accession)}-{slugify(raw_id)}"
+        else:
+            protein_id = f"ncbiprotein:{raw_id}"
+
+        jobs = _gene_jobs(gene)
+        gene_name = str(gene.get("name") or "").strip()
+        product = str(gene.get("product") or "").strip()
+        self._add_node(protein_id, "Protein", gene_name or product or raw_id, {
+            "protein_id": raw_id,
+            "id_type": id_type,
+            "gene_name": gene_name,
+            "product": product,
+            "functions": "|".join(sorted({job["name"] for job in jobs})),
+            "function_evidence": "|".join(sorted({m for job in jobs for m in job["methods"]})),
+            "comment": _text(gene.get("comment")),
+            "mutation_phenotype": _text(gene.get("mutation_phenotype")),
+        })
+        self._add_edge(cluster_id, protein_id, "ENCODES", "database_assertion",
+                       accession, confidence, entry_refs)
+
+        building = [job for job in jobs if job["name"] in BIOSYNTHETIC_FUNCTIONS]
+        if not jobs:
+            self.counts["genes_role_not_stated"] += 1
+            return
+        if not building:
+            self.counts["genes_other_roles"] += 1
+            return
+        self.counts["genes_in_biosynthesis"] += 1
+        # An experiment is any method that isn't a prediction from the sequence.
+        shown = any("prediction" not in m.lower() for job in building for m in job["methods"])
+        level = "curated_experimental" if shown else "database_assertion"
+        refs = sorted({r for job in building for r in job["references"]} | set(entry_refs))
+        for compound_id in compound_ids:
+            self._add_edge(protein_id, compound_id, "CATALYZES", level,
+                           accession, confidence, refs)
+        if len(compound_ids) > 1:
+            # MIBiG doesn't say which of an entry's compounds a gene works on,
+            # so the arrow goes to all of them. Counted, so the spread is visible.
+            self.counts["catalyzes_in_multi_compound_entries"] += len(compound_ids)
+
     # ---------------------------------------------------------------- helpers
     def _compound_id(self, name: str) -> str:
         """
@@ -537,7 +669,8 @@ class _GraphBuilder:
             return
         merged = existing["properties"]
         for key, value in clean.items():
-            if key in ("synonyms", "database_ids", "loci", "bgc_class", "activity_notes"):
+            if key in ("synonyms", "database_ids", "loci", "bgc_class", "activity_notes",
+                       "functions", "function_evidence"):
                 parts = set(str(merged.get(key, "")).split("|")) | set(str(value).split("|"))
                 merged[key] = "|".join(sorted(p for p in parts if p))
             elif key not in merged:
@@ -623,6 +756,11 @@ def _slim(raw: Any) -> Any:
     classes = (raw.get("biosynthesis") or {}).get("classes") or []
     slim["biosynthesis"] = {"classes": [{"class": c.get("class")} for c in classes
                                         if isinstance(c, dict)]}
+    genes = raw.get("genes") if isinstance(raw.get("genes"), dict) else {}
+    gene_keys = ("id", "name", "product", "functions", "comment", "mutation_phenotype")
+    slim["genes"] = {"annotations": [{key: g[key] for key in gene_keys if key in g}
+                                     for g in genes.get("annotations") or []
+                                     if isinstance(g, dict)]}
     return slim
 
 
@@ -636,6 +774,38 @@ def _entry_references(raw: dict[str, Any]) -> list[str]:
             for ev in locus.get("evidence") or [] for ref in ev.get("references") or []}
     refs.update(str(ref) for ref in raw.get("legacy_references") or [])
     return sorted(refs)
+
+
+def _gene_jobs(gene: dict[str, Any]) -> list[dict[str, Any]]:
+    """
+    A gene record's jobs, each as {"name", "methods", "references"}.
+
+    MIBiG 4.0 writes one job like this:
+        {"function": {"name": "Scaffold biosynthesis"},
+         "evidence": [{"method": "Knock-out"}]}
+    An empty evidence list means the job is stated without an experiment.
+    """
+    jobs = []
+    for item in gene.get("functions") or []:
+        if not isinstance(item, dict):
+            continue
+        function = item.get("function")
+        name = function.get("name") if isinstance(function, dict) else function
+        name = str(name or "").strip()
+        if not name:
+            continue
+        evidence = [e for e in item.get("evidence") or [] if isinstance(e, dict)]
+        jobs.append({
+            "name": name,
+            "methods": sorted({str(e["method"]).strip() for e in evidence if e.get("method")}),
+            "references": sorted({str(r) for e in evidence for r in e.get("references") or []}),
+        })
+    return jobs
+
+
+def _text(value: Any) -> str:
+    """A free-text field, trimmed; anything that isn't text is left out."""
+    return value.strip() if isinstance(value, str) else ""
 
 
 def _activity_name_and_note(raw_name: Any) -> tuple[str, str]:

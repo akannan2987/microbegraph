@@ -32,6 +32,10 @@ its phase and skim the rest. Within each section they're alphabetical.
 
 ## Biology and agriculture
 
+**Amino acid**: one of the twenty or so small building blocks that proteins are
+made of. A protein is a chain of them, folded into shape, and its length is
+counted in amino acids: surfactin synthetase A is 3,584 long.
+
 **Bacterium** (plural *bacteria*): a single-celled living thing far too small to
 see. Most are harmless and many are useful, though a few cause disease.
 *Bacillus subtilis*, common in soil, is one of the useful ones and appears
@@ -84,6 +88,14 @@ on the ear (Gibberella was the older name of the fungus's sexual stage).
 **Gene**: one instruction in an organism's DNA, usually the recipe for one
 protein.
 
+**Gene job (function)**: what MIBiG says a gene does for its cluster. There are
+seven: scaffold biosynthesis (builds the molecule's backbone), precursor
+biosynthesis (makes a building block), tailoring (changes the backbone once it
+exists), regulation, transport, activation / processing, and
+resistance/immunity. Only the first three carry out a step in making the
+molecule, so only they give a `CATALYZES` arrow. See
+[`img/gene_jobs.svg`](img/gene_jobs.svg).
+
 **Genome**: the complete set of an organism's DNA. In the cookbook comparison,
 it's the entire book rather than any one recipe.
 
@@ -109,6 +121,10 @@ gives bacteria kingdoms, such as *Bacillati*, which holds *Bacillus*. Because th
 word now has that exact meaning, MicrobeGraph's own broad label is called
 `group` (see **Group**).
 
+**Knock-out**: switching one gene off (or removing it) and seeing what changes.
+If the molecule disappears, the gene is needed to make it. It's one of the
+experiments MIBiG records, both for whole clusters and for single genes.
+
 **Lineage**: the full list of groups an organism belongs to, from the top of the
 tree down, as NCBI writes it. For *Bacillus velezensis* FZB42 it starts
 `cellular organisms; Bacteria; Bacillati; Bacillota; Bacilli; ...`. MicrobeGraph
@@ -117,6 +133,10 @@ keeps it as text on the node, and turns the main ranks into `MEMBER_OF` arrows.
 **Lipopeptide**: a class of molecules that are part fat, part protein-fragment.
 Many are soapy, which is how they damage the membranes of other microbes.
 Surfactin is one.
+
+**Locus tag**: a label a genome project gives each gene, such as `TSTA_117750`.
+It's unique inside that one genome only, rather like a staff badge number, so
+this project scopes it to its MIBiG entry (`mg.protein:bgc0000154-tsta-117750`).
 
 **Metabolite**: a small chemical an organism makes and often releases. Picture
 the microbe as a factory and its metabolites as the products. Some of those
@@ -136,6 +156,11 @@ weight, which mixes in the heavier isotopes, is about 1022.3.
 at each in isolation. The difficulty is that each layer has different units,
 scales and identifiers, and that is exactly why the ontology and entity
 resolution phases exist.
+
+**NRPS** (nonribosomal peptide synthetase): a giant enzyme that strings amino
+acids together like an assembly line, each section adding one. Surfactin is made
+by one, split across three proteins (srfAA, srfAB and srfAC). MIBiG also uses
+`NRPS` as the name of a class of gene cluster.
 
 **Oomycete**: a fungus-like organism that belongs to a different branch of life
 from true fungi (it's closer to brown seaweeds). Oomycetes look like moulds and
@@ -185,6 +210,9 @@ of the same species can behave quite differently.
 **Surfactin**: a lipopeptide made by *Bacillus* bacteria. I use it as the
 running example in these docs because it's real and well studied, and its whole
 chain, from microbe to crop, can be backed by a citation.
+
+**Synthetase**: an enzyme that joins smaller molecules into a bigger one. The
+surfactin synthetase joins seven amino acids and a fatty acid.
 
 **Take-all**: a root disease of wheat caused by the fungus *Gaeumannomyces
 tritici* (in older papers, *G. graminis* var. *tritici*). It blackens the roots
@@ -317,6 +345,10 @@ an absolute path that works on your machine breaks on everyone else's.
 
 **Terminal**: a window where you type text commands instead of clicking. Also
 called shell, console, or command line.
+
+**TSV** ("tab-separated values"): a CSV that separates columns with tabs
+instead of commas. UniProt sends its result tables this way, and Python, VS Code
+and any spreadsheet program can open them.
 
 **Working directory**: the folder your terminal is currently "in". `pwd` prints
 it.
@@ -523,6 +555,11 @@ example:* putting items in a shopping basket, where nothing's bought yet.
 **Constraint**: a rule the data must obey, enforced by the database or the
 loader. "This value must be unique" is a constraint.
 
+**Crosswalk**: a table of matched identifiers between two databases, such as
+"INSDC protein `CAE02630.1` is UniProt entry `Q70KJ7`". Two databases that never
+mention each other can be joined through one, as long as both know some shared
+number.
+
 **Database**: a program whose job is to store information in an organised way
 and answer questions about it quickly. Compare a library with a catalogue and a
 fast librarian to a pile of books in a garage.
@@ -625,6 +662,11 @@ servers.
 **Ingestion**: the act of getting data into your system, and the first pipeline
 stage.
 
+**Job (on a web service)**: a request that runs in the background because it may
+take a while. You hand in the work, get a job number back, ask about it until it
+is finished, then collect the result, much like ordering at a busy cafe counter.
+UniProt's ID mapping works this way.
+
 **Manifest**: the file `manifest.json` in each API snapshot, listing what was
 asked and what came back. It's written last, so its presence means the fetch
 finished.
@@ -632,6 +674,9 @@ finished.
 **`.part` file**: a download in progress, saved under a temporary name and
 renamed only once it is complete and verified, so a dropped connection never
 leaves a half-file that looks finished.
+
+**Polling**: asking the same question again and again, a few seconds apart,
+until the answer changes ("is my job finished yet?").
 
 **Provenance**: the recorded origin of a piece of information: where it came
 from, when, and under what terms. Written to `data/raw/provenance.csv` on every
@@ -643,6 +688,11 @@ CID, their properties or synonyms) and the CIDs themselves in a POST body.
 **Rate limit**: a cap on how many requests you may make per second. Exceed it
 and you get blocked; respecting it is basic politeness to a free service.
 PubChem allows 5 a second, NCBI 3 (10 with a key) and KEGG 3.
+
+**Redirect**: an answer that says "what you want is over there", with the new
+address in a header called `Location`. HTTP 303 is one kind. Programs usually
+follow redirects automatically; the UniProt adapter turns that off when it asks
+whether a job is finished, because the redirect itself is the answer it needs.
 
 **Request body**: the part of a request that carries its details separately from
 the web address. Error messages, logs and browser histories show addresses, not
@@ -686,6 +736,10 @@ when using public scientific APIs.
 
 ## The data sources used here
 
+**Annotation score**: UniProt's rating, from 1 to 5, of how well an entry is
+described. It measures how much is written about the protein, not how certain
+any one statement is.
+
 **ChEBI** (Chemical Entities of Biological Interest): a free dictionary of small
 molecules, run by EMBL-EBI. Phase 2 reads ChEBI numbers from PubChem's synonyms
 (`CHEBI:30838` is itaconic acid).
@@ -693,8 +747,19 @@ molecules, run by EMBL-EBI. Phase 2 reads ChEBI numbers from PubChem's synonyms
 **CID** (compound identifier): PubChem's number for one chemical structure, for
 example `811` for itaconic acid, written `pubchem.compound:811` here.
 
+**ID mapping**: UniProt's service for translating identifiers from another
+database (an INSDC or RefSeq protein number, for example) into UniProt
+accessions. It runs as a job. An id it can't translate doesn't appear in
+the results, so this project compares what it asked with what came back.
+
 **InChIKey**: a 27-character fingerprint of a chemical structure, the same in
 every database, which makes it handy for matching compounds across sources.
+
+**INSDC** (International Nucleotide Sequence Database Collaboration): GenBank
+(USA), the European Nucleotide Archive (Europe) and DDBJ (Japan), three public
+archives of DNA sequences that share one numbering. Each translated gene in them
+gets a protein id such as `CAE02630.1`, the same in all three, written
+`ncbiprotein:CAE02630.1` in this project.
 
 **KEGG**: the Kyoto Encyclopedia of Genes and Genomes, a set of hand-drawn maps
 of cell chemistry (pathway maps such as `map00660`) with the compounds on them
@@ -707,6 +772,12 @@ community-curated public repository of gene clusters that have been
 experimentally shown to produce a particular molecule, published under CC-BY on
 Zenodo with a permanent DOI. It's **this project's backbone**, because it
 supplies the organism → cluster → compound arrows.
+
+**MIBiG gene record**: the part of a MIBiG entry that lists the cluster's genes:
+for each one, the id of the protein it makes, its name, a short product
+description, and often its job and the experiment that showed it. In MIBiG 4.0,
+452 of the 2,437 active entries have them. The MIBiG adapter reads them from
+Phase 3.
 
 **MIBiG quality grade**: MIBiG's own rating of each entry: `high`, `medium`,
 `low` or `questionable`. MicrobeGraph carries it through as the `confidence` of
@@ -721,10 +792,28 @@ data to it claim rights in what they submitted.
 records some bioactivities as `"observed": false`. MicrobeGraph counts them but
 never turns them into a `HAS_ACTIVITY` arrow, which would say the opposite.
 
+**Protein existence**: UniProt's note of how directly a protein is known to
+exist, from "evidence at protein level" (someone detected the protein itself)
+through "evidence at transcript level" and "inferred from homology" to
+"predicted".
+
+**Protein id**: the identifier a sequence archive gives a translated gene, such
+as `CAE02630.1` (INSDC) or `WP_029025939.1` (RefSeq). The part after the dot is a
+version number, which goes up if the sequence is corrected.
+
 **PubChem**: the US National Institutes of Health's chemistry database. Given a
 CID it returns a formula, weights, the structure and a synonym list; given a name
 it can find the CID. Access is free and needs no account. Its synonym lists are
 the raw material for entity resolution here.
+
+**RefSeq**: NCBI's Reference Sequence collection, a cleaned-up, non-redundant
+copy of the public sequence archives. Its protein ids start with `WP_`, `NP_`,
+`YP_` or `XP_`.
+
+**Reviewed / unreviewed**: the two kinds of UniProt entry. A reviewed entry
+(Swiss-Prot) was written by a curator from the literature; an unreviewed one
+(TrEMBL) was made automatically from a sequence record. Most enzymes from gene
+clusters are unreviewed.
 
 **SMILES**: a way of writing a molecule's structure as one line of text, for
 example `C=C(CC(=O)O)C(=O)O` for itaconic acid.
@@ -739,6 +828,13 @@ links as a downloadable table. Every row carries a citation and every edge is
 labelled `curated_literature`, and the whole layer can be filtered out. Every
 row passes thirteen checks before it's loaded; how to add one is in
 [`curation/README.md`](../curation/README.md).
+
+**UniProt**: the world's main public catalogue of proteins, run by the European
+Bioinformatics Institute, the Swiss Institute of Bioinformatics and the Protein
+Information Resource, free under CC BY 4.0. Each entry has an **accession**, a
+permanent identifier such as `Q70KJ7`, and an **entry name** such as
+`Q70KJ7_BACAM`. It releases a new version about every eight weeks
+(`2026_03`, for example). See [`05-proteomics-uniprot.md`](05-proteomics-uniprot.md).
 
 **Zenodo**: a free, permanent archive for research outputs, run by CERN. Each
 upload gets a DOI and a checksum for every file. MIBiG publishes its releases
