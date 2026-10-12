@@ -1,5 +1,6 @@
 """
-MicrobeGraph, cut a small, real slice out of the staging tables (Phase 4).
+MicrobeGraph, cut a small, real slice out of the staging tables (Phase 4;
+more clusters and the curation files from Phase 4b).
 
 WHY THIS EXISTS
     The resolver's tests need staging tables shaped exactly like the real
@@ -36,6 +37,21 @@ THE CHOSEN CLUSTERS, AND WHAT EACH ONE IS THERE FOR
     BGC0000546  the same sequence listed twice in one cluster
     BGC0001238, BGC0001239  one UniProt entry encoded by two clusters
 
+    From Phase 4b:
+    BGC0000657, BGC0000658  2-methylisoborneol: one entry gives a bromine
+                compound's number, formula and structure, another 16913
+    BGC0000898  desosamine with methymycin's number, formula and NPAtlas number
+    BGC0002390  maize: four genes the curators removed and gene records named
+                LOC..., all placed through the GenBank file
+    BGC0000038, BGC0000849  one protein (CAB60184.1) named SCO6265 by one entry
+                and scbR by the other
+    BGC0001979, BGC0000028, BGC0000090, BGC0000224, BGC0000581, BGC0000185
+                the activity words folded by curation/activity_synonyms.csv
+
+    The slice also gets its own curation/ folder: the activity synonyms as
+    they are, and the rows of curation/resolution_decisions.csv whose two
+    records are both in the slice.
+
 USAGE (from the project folder, with .venv active, after Phases 1 to 3b)
     python tests/fixtures/capture_resolution_samples.py --survey
         prints what the real tables say about duplicates, without writing
@@ -56,7 +72,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-from microbegraph.paths import STAGING_DIR, relative_to_repo
+from microbegraph.paths import CURATION_DIR, STAGING_DIR, relative_to_repo
 from microbegraph.resolution.names import compare_formulas
 from microbegraph.sources.base import EDGE_COLUMNS, NODE_COLUMNS, write_table
 
@@ -68,6 +84,9 @@ CLUSTERS = (
     "BGC0001953", "BGC0000088", "BGC0000098", "BGC0000094", "BGC0000899", "BGC0002187",
     "BGC0001600", "BGC0000631", "BGC0000519", "BGC0002180", "BGC0000670", "BGC0001865",
     "BGC0002005", "BGC0000546", "BGC0001238", "BGC0001239",
+    # Phase 4b
+    "BGC0000657", "BGC0000658", "BGC0000898", "BGC0002390", "BGC0000038", "BGC0000849",
+    "BGC0001979", "BGC0000028", "BGC0000090", "BGC0000224", "BGC0000581", "BGC0000185",
 )
 
 
@@ -197,9 +216,13 @@ def main() -> int:
     mibig_nodes_out = [n for n in rows("mibig", "nodes") if n["node_id"] in ids]
 
     # --- PubChem and KEGG: the PubChem records MIBiG's kept compounds point at
-    pubchem = [n for n in rows("pubchem", "nodes")
-               if set(json.loads(n["properties"]).get("mibig_compound_ids", "").split("|")) & ids]
-    pubchem = [keep_listed(n, "mibig_compound_ids", ids) for n in pubchem]
+    def linked(row: dict[str, str]) -> bool:
+        props = json.loads(row["properties"])
+        return bool((set(props.get("mibig_compound_ids", "").split("|"))
+                     | set(props.get("found_by_name", "").split("|"))) & ids)
+
+    pubchem = [keep_listed(keep_listed(n, "mibig_compound_ids", ids), "found_by_name", ids)
+               for n in rows("pubchem", "nodes") if linked(n)]
     pubchem_ids = {n["node_id"] for n in pubchem}
     kegg_edges = [e for e in rows("kegg", "edges") if e["source_id"] in pubchem_ids]
     kegg_nodes = [n for n in rows("kegg", "nodes")
@@ -270,7 +293,20 @@ def main() -> int:
         (OUT / f"{source}_summary.json").write_text(
             json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         print(f"  {source:<14} {len(nodes):>4} nodes {len(edges):>4} edges")
-    total = sum(p.stat().st_size for p in OUT.iterdir())
+
+    # --- Phase 4b: the curation files, cut to the slice
+    in_slice = {n["node_id"] for nodes, _ in tables.values() for n in nodes}
+    (OUT / "curation").mkdir(exist_ok=True)
+    synonyms = (CURATION_DIR / "activity_synonyms.csv").read_text(encoding="utf-8")
+    (OUT / "curation" / "activity_synonyms.csv").write_text(synonyms, encoding="utf-8")
+    with (CURATION_DIR / "resolution_decisions.csv").open(newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        decisions = [r for r in reader
+                     if {r["identifier"], r["other_identifier"]} <= in_slice]
+        write_table(OUT / "curation" / "resolution_decisions.csv", reader.fieldnames or [],
+                    decisions)
+    print(f"  curation/      {len(decisions)} decisions by hand, the activity synonyms")
+    total = sum(p.stat().st_size for p in OUT.rglob("*") if p.is_file())
     print(f"Wrote {relative_to_repo(OUT)}/ ({total / 1024:.0f} KB)")
     return 0
 

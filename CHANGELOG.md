@@ -18,6 +18,107 @@ and start a new, empty *Unreleased* above it. The
 
 ## Unreleased (toward 1.0.0)
 
+### Phase 4b: closing the gaps, with GenBank, PubChem names and a review file
+
+- **Added** MIBiG's GenBank file to the MIBiG adapter: `mibig_gbk_4.0.tar.gz`
+  (2,636 records, 79.8 MB) from MIBiG's download server, pinned by its SHA-256
+  (`43543f9c...e834b`) and size (83,652,126 bytes) like the protein file, probed
+  by its size, and read by a new reader, `src/microbegraph/sources/mibig_genbank.py`
+  (CDS features only, and only the qualifiers that name a gene or its protein;
+  about four seconds for the whole file). A gene record or a curators' removal
+  that neither the protein number nor the product finds is now looked up among
+  the names each CDS goes by (gene name, locus tag, old locus tag, gene
+  synonyms, NCBI gene number). A fetch now writes three provenance rows.
+- **Changed** the MIBiG adapter to keep every value when entries disagree: the
+  first stays under the property's name, and `<property>_by_entry` lists each
+  value with its entry.
+- **Changed** the PubChem adapter to ask in three rounds: every number MIBiG
+  gives (including the second numbers in `pubchem_cid_by_entry`) and every
+  number in the review file; a name search (`POST .../compound/name/cids/JSON`)
+  for compounds whose own numbers don't list their name, and for those with no
+  number but a formula, one a second, slowing down when PubChem's traffic light
+  turns yellow; then the numbers the search found. When PubChem stops
+  answering in round 2 (round 3 then waits) or round 3, the snapshot is
+  finished incomplete with every name-search answer, tidy leaves out answers
+  whose numbers round 3 hadn't described, and the next run carries the answers
+  over; a refusal in the first round says so in plain words. PubChem nodes gain `found_by_name`,
+  `names_matching_mibig` (from PubChem's full list of names) and
+  `synonym_count`.
+- **Changed** the compound rules (`src/microbegraph/resolution/compounds.py`)
+  to judge every candidate number on four clues: the name under MIBiG's own
+  number; the name under another record of the same structure (the first block
+  of the InChIKey); the name search with an agreeing formula; the formula alone,
+  which no longer counts when the name search points at another molecule or
+  MIBiG's entries disagree about the formula. New ledger rules
+  `pubchem_numbers_differ` and `pubchem_name_search`; every PubChem join's
+  grounds now name the clue that decided it ("Confirmed by name.", "Confirmed
+  by the formula alone." and so on). The NPAtlas rule refuses a
+  disputed formula too.
+- **Added** the review file, `curation/resolution_decisions.csv`, read by
+  `src/microbegraph/resolution/reviewed.py`: decisions a person made (`join` or
+  `keep_apart`), each with a reason, a citation and a date, checked line by line,
+  applied before the rules that join compounds and proteins, and recorded in
+  the ledger as `reviewed_by_hand`. A pair kept apart can never meet through a
+  chain of joins (`Groups.forbid`), and keeping apart two records already
+  joined by rows above is refused. The
+  first five rows keep 2-methylisoborneol and desosamine apart from the records
+  they were wrongly joined to, and CBF82293.1 apart from UniProt's P0CU77 and
+  P0CU78.
+- **Added** `curation/activity_synonyms.csv`, read by
+  `src/microbegraph/resolution/activities.py`: four activity words folded into
+  the word they mean the same as (ledger rule `activity_synonym`).
+- **Fixed** the gene-name rule's reading of UniProt's gene names: it split
+  them on spaces and semicolons, but the UniProt adapter joins them with `|`,
+  so an entry with more than one gene name never matched (baeI's entry Q1RS74
+  lists "baeI|PV946_13250"). Some of Phase 4's 21 leftover gene records were
+  left over for that reason; the rule has nothing left to match now, since the
+  GenBank file places all of them.
+- **Fixed** a circular import: `import microbegraph.staging` failed on its own.
+  The table shapes, safe writers and `SourceError` moved to
+  `src/microbegraph/tables.py`; `sources/base.py` still offers them, and the
+  resolver no longer loads any source adapter.
+- **Added** `python tests/fixtures/capture_gap_samples.py`, the look at the
+  evidence before the code, with a `--fixture` mode that cuts surfactin's
+  GenBank record into `tests/fixtures/mibig/genbank/`; the resolver's test slice
+  gains 12 clusters and its own `curation/` folder; two real PubChem name-search
+  answers join the fixtures.
+- **Added** 54 tests (350 in all), mostly in `tests/test_closing_the_gaps.py`;
+  the Phase 4b guide (`docs/06b-closing-the-gaps.md`); cookbook recipes R20 to
+  R22; four pictures (`gaps_closed.svg`, `genbank_record.svg`,
+  `clue_ladder.svg`, `review_row.svg`) and an interactive page of real cases
+  (`resolution_cases.html`); new glossary terms; the Handbook's Stage 7b.
+- **Measured** (2026-10-12, with the PubChem snapshot from Phase 2):
+  - *MIBiG:* the GenBank file's 46,987 CDS match the protein file's 46,987
+    proteins; 59 gene records found through it (21 that no rule had placed and
+    38 that UniProt's gene names had), so 511 gene records now carry a protein
+    number and none is left without; 4 removals found through it (22 in all,
+    none left); 278 disagreements kept, as 194 `_by_entry` properties on 120
+    nodes (structures 109, masses 49, PubChem numbers 17, formulas 16, two
+    proteins' gene names and one product). 29 of the 49 masses differ by less
+    than 0.01, often only in the last digits.
+  - *Resolver:* 70,550 identifiers in; 4 activity words folded; 5 decisions by
+    hand; 1,094 PubChem numbers confirmed (322 by the formula alone) and 65
+    refused; 2 NPAtlas pairs; 20,626 protein numbers joined to UniProt and 40
+    left with tied entries; 220 identical sequences; the gene-name rule found
+    nothing left to do.
+  - *Out:* 48,236 nodes (Activity 70, Compound 3,837, Protein 39,354) and 56,987
+    arrows (58 combined); 353 entries left out; a ledger of 23,937 rows. DuckDB
+    and NetworkX agree on every count.
+- **Not yet run:** PubChem's name search. On 2026-10-12 an early version of the
+  survey asked PubChem four names a second, and after about 400 names PubChem
+  began answering HTTP 429 (too many requests) to every request, and was still
+  refusing when the fetch ran later that day, so rounds 2 and 3 haven't run on
+  the real data. It
+  is the first step before Phase 5; it should join 2-methylisoborneol,
+  desosamine and lasalocid to their own records and review the 322 joins that
+  rest on the formula alone. Until then, lasalocid stays apart from PubChem (its
+  entries disagree about the formula: the sodium salt twice, the acid once).
+- **Planned, from what this phase found:** NPAtlas as a second, independent
+  witness for joins the name search can't settle; gene names from the GenBank
+  file as protein labels (Phase 5); every PubChem number an entry lists as a
+  candidate (17 compounds list two in one entry, and only the first is used
+  today).
+
 ### Phase 4: entity resolution, the resolution ledger, and the graph build
 
 - **Added** the resolver, `python -m microbegraph.resolve`
@@ -97,7 +198,7 @@ and start a new, empty *Unreleased* above it. The
   alone, and a formula only confirms a number when MIBiG didn't copy it from
   that same PubChem record. Most are right; a few aren't (MIBiG's
   "2-methylisoborneol" carries a bromine compound's formula). Recipe R19 lists
-  them, and Phase 4b checks them against PubChem's full list of names.
+  them; Phase 4b, above, takes them up.
 
 ### Phase 3b: every cluster's proteins, MIBiG's protein file
 

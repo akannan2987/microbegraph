@@ -1,7 +1,11 @@
 node_id,node_type,name,properties,source,retrieved_at
+ncbitaxon:100226,Organism,Streptomyces coelicolor A3(2),"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Bacillati; Actinomycetota; Actinomycetes; Kitasatosporales; Streptomycetaceae; Streptomyces; Streptomyces albidoflavus group; Streptomyces coelicolor"", ""rank"": ""strain""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:1002505,Organism,Pseudanabaena sp. dqh15,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Bacillati; Cyanobacteriota/Melainabacteria group; Cyanobacteriota; Cyanophyceae; Pseudanabaenales; Pseudanabaenaceae; Pseudanabaena; unclassified Pseudanabaena"", ""rank"": ""species""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:103721,Organism,Actinosynnema pretiosum subsp. pretiosum,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Bacillati; Actinomycetota; Actinomycetes; Pseudonocardiales; Pseudonocardiaceae; Actinosynnema; Actinosynnema pretiosum"", ""rank"": ""subspecies""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:110618,Organism,Nectriaceae,"{""rank"": ""family""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:1117,Organism,Cyanobacteriota,"{""rank"": ""phylum""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:1131492,Organism,Aspergillaceae,"{""rank"": ""family""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:1152,Organism,Pseudanabaena,"{""rank"": ""genus""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:1161,Organism,Nostocales,"{""rank"": ""order""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:1162,Organism,Nostocaceae,"{""rank"": ""family""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:1163,Organism,Anabaena,"{""rank"": ""genus""}",ncbi_taxonomy,2026-10-12
@@ -19,6 +23,8 @@ ncbitaxon:147545,Organism,Eurotiomycetes,"{""rank"": ""class""}",ncbi_taxonomy,2
 ncbitaxon:147548,Organism,Leotiomycetes,"{""rank"": ""class""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:147550,Organism,Sordariomycetes,"{""rank"": ""class""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:162425,Organism,Aspergillus nidulans,"{""division"": ""Plants and Fungi"", ""group"": ""Fungi"", ""lineage"": ""cellular organisms; Eukaryota; Opisthokonta; Fungi; Dikarya; Ascomycota; saccharomyceta; Pezizomycotina; leotiomyceta; Eurotiomycetes; Eurotiomycetidae; Eurotiales; Aspergillaceae; Aspergillus; Aspergillus subgen. Nidulantes"", ""rank"": ""species"", ""synonyms"": ""Aspergillus nidulans (Eidam) G. Winter, 1884|Aspergillus nidulellus|Emericella nidulans|Sterigmatocystis nidulans""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:1706369,Organism,Cellvibrionales,"{""rank"": ""order""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:1706371,Organism,Cellvibrionaceae,"{""rank"": ""family""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:1760,Organism,Actinomycetes,"{""rank"": ""class""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:1783272,Organism,Bacillati,"{""rank"": ""kingdom""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:1835,Organism,Saccharopolyspora,"{""rank"": ""genus""}",ncbi_taxonomy,2026-10-12
@@ -26,6 +32,9 @@ ncbitaxon:1836,Organism,Saccharopolyspora erythraea,"{""division"": ""Bacteria""
 ncbitaxon:186817,Organism,Bacillaceae,"{""rank"": ""family""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:1883,Organism,Streptomyces,"{""rank"": ""genus""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:1886,Organism,Streptomyces albidoflavus,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Bacillati; Actinomycetota; Actinomycetes; Kitasatosporales; Streptomycetaceae; Streptomyces; Streptomyces albidoflavus group"", ""rank"": ""species"", ""synonyms"": ""Actinomyces albidoflavus|Actinomyces globisporus var. caucasicus|Cladothrix albido-flava|Streptomyces albidoflavus (Rossi Doria 1891) Waksman and Henrici 1948 (Approved Lists 1980)|Streptomyces globisporus subsp. caucasicus""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:1890436,Organism,Pseudanabaenaceae,"{""rank"": ""family""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:1902,Organism,Streptomyces coelicolor,"{""rank"": ""species""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:1911,Organism,Streptomyces griseus,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Bacillati; Actinomycetota; Actinomycetes; Kitasatosporales; Streptomycetaceae; Streptomyces; Streptomyces griseus group; Streptomyces griseus subgroup"", ""rank"": ""species"", ""synonyms"": ""Streptomyces cavourensis subsp. washingtonensis|Streptomyces fimicarius|Streptomyces fimicarius (Duché 1934) Waksman and Henrici 1948 (Approved Lists 1980)|Streptomyces griseus (Krainsky 1914) Waksman and Henrici 1948 (Approved Lists 1980)|Streptomyces setonii|Streptomyces setonii (Millard and Burr 1926) Waksman 1953 (Approved Lists 1980)""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:1988,Organism,Actinomadura,"{""rank"": ""genus""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:2,Organism,Bacteria,"{""rank"": ""domain""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:201174,Organism,Actinomycetota,"{""rank"": ""phylum""}",ncbi_taxonomy,2026-10-12
@@ -38,9 +47,12 @@ ncbitaxon:227321,Organism,Aspergillus nidulans FGSC A4,"{""division"": ""Plants 
 ncbitaxon:2303152,Organism,Anabaena minutissima,"{""rank"": ""species""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:2303153,Organism,Anabaena minutissima UTEX B 1613,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Bacillati; Cyanobacteriota/Melainabacteria group; Cyanobacteriota; Cyanophyceae; Nostocales; Nostocaceae; Anabaena; Anabaena minutissima"", ""rank"": ""strain""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:2303154,Organism,Anabaena sp. UHCC-0399,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Bacillati; Cyanobacteriota/Melainabacteria group; Cyanobacteriota; Cyanophyceae; Nostocales; Nostocaceae; Anabaena; unclassified Anabaena"", ""rank"": ""species""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:2425,Organism,Teredinibacter,"{""rank"": ""genus""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:2426,Organism,Teredinibacter turnerae,"{""rank"": ""species""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:243023,Organism,Pochonia,"{""rank"": ""genus""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:2759,Organism,Eukaryota,"{""rank"": ""domain""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:280754,Organism,Pochonia chlamydosporia,"{""division"": ""Plants and Fungi"", ""group"": ""Fungi"", ""lineage"": ""cellular organisms; Eukaryota; Opisthokonta; Fungi; Dikarya; Ascomycota; saccharomyceta; Pezizomycotina; leotiomyceta; sordariomyceta; Sordariomycetes; Hypocreomycetidae; Hypocreales; Clavicipitaceae; Pochonia"", ""rank"": ""species"", ""synonyms"": ""Cordyceps chlamydosporia|Diheterospora catenulata|Diheterospora chlamydosporia|Diheterospora chlamydosporia var. chlamydosporia|Metacordyceps chlamydosporia|Pochonia chlamydosporia var. chlamydosporia|Verticillium catenulatum|Verticillium chlamydosporium|Verticillium chlamydosporium var. chlamydosporium""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:2881377,Organism,Pseudanabaenales,"{""rank"": ""order""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:28983,Organism,Sclerotiniaceae,"{""rank"": ""family""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:3028117,Organism,Cyanophyceae,"{""rank"": ""class""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:32033,Organism,Lysobacteraceae,"{""rank"": ""family""}",ncbi_taxonomy,2026-10-12
@@ -60,8 +72,17 @@ ncbitaxon:3699,Organism,Brassicales,"{""rank"": ""order""}",ncbi_taxonomy,2026-1
 ncbitaxon:3700,Organism,Brassicaceae,"{""rank"": ""family""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:3701,Organism,Arabidopsis,"{""rank"": ""genus""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:3702,Organism,Arabidopsis thaliana,"{""division"": ""Plants and Fungi"", ""group"": ""Plants"", ""lineage"": ""cellular organisms; Eukaryota; Viridiplantae; Streptophyta; Streptophytina; Embryophyta; Tracheophyta; Euphyllophyta; Spermatophyta; Magnoliopsida; Mesangiospermae; eudicotyledons; Gunneridae; Pentapetalae; rosids; malvids; Brassicales; Brassicaceae; Camelineae; Arabidopsis"", ""rank"": ""species"", ""synonyms"": ""Arabis thaliana""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:377629,Organism,Teredinibacter turnerae T7901,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Pseudomonadati; Pseudomonadota; Gammaproteobacteria; Cellvibrionales; Cellvibrionaceae; Teredinibacter; Teredinibacter turnerae"", ""rank"": ""strain""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:38820,Organism,Poales,"{""rank"": ""order""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:390239,Organism,Streptomyces lohii,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Bacillati; Actinomycetota; Actinomycetes; Kitasatosporales; Streptomycetaceae; Streptomyces"", ""rank"": ""species"", ""synonyms"": ""'Streptomyces lohii'""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:40559,Organism,Botrytis cinerea,"{""division"": ""Plants and Fungi"", ""group"": ""Fungi"", ""lineage"": ""cellular organisms; Eukaryota; Opisthokonta; Fungi; Dikarya; Ascomycota; saccharomyceta; Pezizomycotina; leotiomyceta; sordariomyceta; Leotiomycetes; Helotiales; Sclerotiniaceae; Botrytis"", ""rank"": ""species"", ""synonyms"": ""Botryotinia fuckeliana|Botrytis cinerea Pers., 1801|Peziza fuckeliana|Sclerotinia fuckeliana""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:40566,Organism,Actinosynnema,"{""rank"": ""genus""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:405948,Organism,Saccharopolyspora erythraea NRRL 2338,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Bacillati; Actinomycetota; Actinomycetes; Pseudonocardiales; Pseudonocardiaceae; Saccharopolyspora; Saccharopolyspora erythraea"", ""rank"": ""strain"", ""synonyms"": ""Saccharopolyspora erythraea ATCC 11635|Saccharopolyspora erythraea DSM 40517|Saccharopolyspora erythraea JCM 4748""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:42197,Organism,Actinosynnema pretiosum,"{""rank"": ""species""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:4479,Organism,Poaceae,"{""rank"": ""family""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:455632,Organism,Streptomyces griseus subsp. griseus NBRC 13350,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Bacillati; Actinomycetota; Actinomycetes; Kitasatosporales; Streptomycetaceae; Streptomyces; Streptomyces griseus group; Streptomyces griseus subgroup; Streptomyces griseus; Streptomyces griseus subsp. griseus"", ""rank"": ""strain"", ""synonyms"": ""Streptomyces griseus subsp. griseus IFO 13350""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:4575,Organism,Zea,"{""rank"": ""genus""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:4577,Organism,Zea mays,"{""division"": ""Plants and Fungi"", ""group"": ""Plants"", ""lineage"": ""cellular organisms; Eukaryota; Viridiplantae; Streptophyta; Streptophytina; Embryophyta; Tracheophyta; Euphyllophyta; Spermatophyta; Magnoliopsida; Mesangiospermae; Liliopsida; Petrosaviidae; commelinids; Poales; Poaceae; PACMAD clade; Panicoideae; Andropogonodae; Andropogoneae; Tripsacinae; Zea"", ""rank"": ""species"", ""synonyms"": ""Zea mays var. japonica""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:46161,Organism,Actinomadura kijaniata,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Bacillati; Actinomycetota; Actinomycetes; Streptosporangiales; Thermomonosporaceae; Actinomadura"", ""merged_from"": ""182080"", ""rank"": ""species"", ""synonyms"": ""Actinomadura namibiensis""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:4751,Organism,Fungi,"{""rank"": ""kingdom""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:4890,Organism,Ascomycota,"{""rank"": ""phylum""}",ncbi_taxonomy,2026-10-12
@@ -72,11 +93,15 @@ ncbitaxon:5052,Organism,Aspergillus,"{""rank"": ""genus""}",ncbi_taxonomy,2026-1
 ncbitaxon:5097,Organism,Monascus,"{""rank"": ""genus""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:5125,Organism,Hypocreales,"{""rank"": ""order""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:5178,Organism,Helotiales,"{""rank"": ""order""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:543,Organism,Enterobacteriaceae,"{""rank"": ""family""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:54571,Organism,Streptomyces venezuelae,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Bacillati; Actinomycetota; Actinomycetes; Kitasatosporales; Streptomycetaceae; Streptomyces"", ""rank"": ""species""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:5506,Organism,Fusarium,"{""rank"": ""genus""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:5518,Organism,Fusarium graminearum,"{""division"": ""Plants and Fungi"", ""group"": ""Fungi"", ""lineage"": ""cellular organisms; Eukaryota; Opisthokonta; Fungi; Dikarya; Ascomycota; saccharomyceta; Pezizomycotina; leotiomyceta; sordariomyceta; Sordariomycetes; Hypocreomycetidae; Hypocreales; Nectriaceae; Fusarium; Fusarium sambucinum species complex"", ""rank"": ""species"", ""synonyms"": ""Gibberella zeae|Sphaeria zeae""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:561,Organism,Escherichia,"{""rank"": ""genus""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:562,Organism,Escherichia coli,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Pseudomonadati; Pseudomonadota; Gammaproteobacteria; Enterobacterales; Enterobacteriaceae; Escherichia"", ""rank"": ""species"", ""synonyms"": ""Bacillus coli|Bacterium coli|Bacterium coli commune|Enterococcus coli""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:64187,Organism,Xanthomonas oryzae pv. oryzae,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Pseudomonadati; Pseudomonadota; Gammaproteobacteria; Lysobacterales; Lysobacteraceae; Xanthomonas; Xanthomonas oryzae"", ""rank"": ""no rank"", ""synonyms"": ""Xanthomonas campestris pv. oryza""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:67333,Organism,Streptomyces narbonensis,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Bacillati; Actinomycetota; Actinomycetes; Kitasatosporales; Streptomycetaceae; Streptomyces"", ""rank"": ""species"", ""synonyms"": ""Streptomyces narboensis|Streptomyces narbonesis""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:67376,Organism,Streptomyces vinaceusdrappus,"{""division"": ""Bacteria"", ""group"": ""Bacteria"", ""lineage"": ""cellular organisms; Bacteria; Bacillati; Actinomycetota; Actinomycetes; Kitasatosporales; Streptomycetaceae; Streptomyces; Streptomyces rochei group"", ""rank"": ""species""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:85009,Organism,Propionibacteriales,"{""rank"": ""order""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:85010,Organism,Pseudonocardiales,"{""rank"": ""order""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:85011,Organism,Kitasatosporales,"{""rank"": ""order""}",ncbi_taxonomy,2026-10-12
@@ -84,4 +109,5 @@ ncbitaxon:85012,Organism,Streptosporangiales,"{""rank"": ""order""}",ncbi_taxono
 ncbitaxon:85015,Organism,Nocardioidaceae,"{""rank"": ""family""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:89488,Organism,Monascus pilosus,"{""division"": ""Plants and Fungi"", ""group"": ""Fungi"", ""lineage"": ""cellular organisms; Eukaryota; Opisthokonta; Fungi; Dikarya; Ascomycota; saccharomyceta; Pezizomycotina; leotiomyceta; Eurotiomycetes; Eurotiomycetidae; Eurotiales; Aspergillaceae; Monascus"", ""rank"": ""species""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:91061,Organism,Bacilli,"{""rank"": ""class""}",ncbi_taxonomy,2026-10-12
+ncbitaxon:91347,Organism,Enterobacterales,"{""rank"": ""order""}",ncbi_taxonomy,2026-10-12
 ncbitaxon:92860,Organism,Pleosporales,"{""rank"": ""order""}",ncbi_taxonomy,2026-10-12

@@ -252,8 +252,9 @@ PubChem is run by the US National Institutes of Health. Give it a compound's
 number (a **CID**) and it returns the molecular formula, the weight, the
 structure and a list of synonyms; give it a name and it can look the number up.
 Phase 2 asks about the CIDs MIBiG already records; Phase 4 joins each one to
-MIBiG's compound where the name or the formula confirms it; and Phase 4b uses the
-name lookup for the rest.
+MIBiG's compound where the name or the formula confirms it; and Phase 4b adds the
+name search, asking PubChem which records a MIBiG name is filed under, one name a
+second, because PubChem limits how hard anyone may ask.
 
 We need it for two reasons. First, it makes compounds *comparable*: every
 compound in the graph gets one canonical PubChem identity. Second, its synonym
@@ -470,8 +471,10 @@ real-world thing, and merging them into one node.
 4. **Write down every decision.** Each merge is recorded in a **resolution
    ledger**: what was merged, into what, and on what grounds.
 5. **Refuse to guess.** If two names are similar but no source confirms they're
-   the same, they stay separate, listed in the ledger, and wait for a person's
-   review (Phase 4b). A wrong merge is
+   the same, they stay separate, listed in the ledger, and wait for more
+   evidence or a person's review. Since Phase 4b a person's decisions have a
+   file of their own, `curation/resolution_decisions.csv`, each with a reason
+   and a source, and the ledger records them under their own rule. A wrong merge is
    worse than a missed one, because a missed merge is visible (two dots where
    you expected one) while a wrong merge is invisible (one dot that quietly
    contains a lie).

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MicrobeGraph resolution cases</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --plane: #f3f2ee; --ink: #0b0b0b; --ink2: #52514e;
+  --muted: #898781; --hair: #e1e0d9; --base: #c3c2b7; --focus: #2a78d6;
+  --genomics: #2a78d6;
+  --proteomics: #eb6834;
+  --metabolomics: #1baf7a;
+  --phenotype: #eda100;
+  --context: #898781;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --plane: #242422; --ink: #f0efec; --ink2: #c3c2b7;
+    --muted: #898781; --hair: #2c2c2a; --base: #383835; --focus: #3987e5;
+    --genomics: #3987e5;
+    --proteomics: #d95926;
+    --metabolomics: #199e70;
+    --phenotype: #c98500;
+    --context: #898781;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --plane: #242422; --ink: #f0efec; --ink2: #c3c2b7;
+  --muted: #898781; --hair: #2c2c2a; --base: #383835; --focus: #3987e5;
+    --genomics: #3987e5;
+    --proteomics: #d95926;
+    --metabolomics: #199e70;
+    --phenotype: #c98500;
+    --context: #898781;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink);
+       font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 24px; margin: 0 0 4px; }
+.lede { color: var(--ink2); margin: 0 0 16px; max-width: 70ch; }
+.card { background: var(--surface); border: 1px solid var(--hair); border-radius: 14px; padding: 16px; }
+.figure { overflow-x: auto; }
+svg { display: block; width: 100%; height: auto; min-width: 720px; }
+svg text { fill: var(--ink); }
+.mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+.muted { color: var(--muted); }
+.panel { margin-top: 12px; min-height: 120px; }
+.panel h2 { font-size: 18px; margin: 0 0 4px; }
+.panel p { margin: 4px 0; }
+.hot { cursor: pointer; }
+.hot:focus { outline: none; }
+.hot:focus-visible .ring, .hot:focus-visible .hit { stroke: var(--focus); stroke-width: 4; }
+.dim { opacity: .18; transition: opacity .15s; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--hair); vertical-align: top; }
+th { color: var(--ink2); font-weight: 600; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+details { margin-top: 16px; }
+summary { cursor: pointer; color: var(--ink2); font-weight: 600; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--hair);
+        border-radius: 999px; padding: 2px 10px; margin: 2px 4px 2px 0; font-size: 13px;
+        background: var(--surface); }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0 0 12px; }
+.controls label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+.tooltip { position: fixed; pointer-events: none; background: var(--surface); color: var(--ink);
+           border: 1px solid var(--hair); border-radius: 10px; padding: 10px 12px; font-size: 13px;
+           max-width: 320px; box-shadow: 0 6px 24px rgba(0,0,0,.12); display: none; z-index: 5; }
+footer { margin-top: 20px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+<style>
+.layout { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: 16px; }
+@media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+.cases { display: flex; flex-direction: column; gap: 8px; }
+.case { text-align: left; background: var(--surface); color: var(--ink); border: 1px solid var(--hair);
+        border-radius: 12px; padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column;
+        gap: 2px; font: inherit; }
+.case[aria-pressed="true"] { border-color: var(--focus); box-shadow: 0 0 0 2px var(--focus) inset; }
+.case:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.kind { font-size: 12px; color: var(--muted); }
+.step { display: grid; grid-template-columns: 34px 1fr; gap: 8px; padding: 8px 0;
+        border-top: 1px solid var(--hair); }
+.mark { display: inline-flex; width: 26px; height: 26px; border-radius: 50%; align-items: center;
+        justify-content: center; font-weight: 700; color: #fff; margin-right: 6px; flex: none; }
+.mark.pass { background: #0ca30c; } .mark.fail { background: #898781; }
+.mark.stop { background: #d03b3b; } .mark.wait { background: #c3c2b7; color: #0b0b0b; }
+.mark.info { background: #2a78d6; } .mark.person { background: #eb6834; }
+.grounds { background: var(--plane); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+.btns { display: flex; gap: 8px; margin: 10px 0; }
+.btns button { font: inherit; border: 1px solid var(--hair); background: var(--surface); color: var(--ink);
+               border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.btns button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.btns button[disabled] { opacity: .45; cursor: default; }
+</style>
+<h1>Six real cases, clue by clue</h1>
+<p class="lede">Each case is a record the resolver had to decide about in Phase 4b, with what the
+sources say, what Phase 4 did, and each clue in turn. Pick a case, then press <b>Next clue</b>
+(or the right arrow key) to walk through it. Every value and every ledger sentence is copied from
+the real build of 2026-10-12.</p>
+<div class="layout">
+<div class="cases" role="group" aria-label="Cases"><button class="case" data-id="mib" aria-pressed="false"><span class="kind mono">Compound</span><b>2-methylisoborneol</b><span class="muted">the earthy smell in tap water, and a bromine compound&#x27;s number</span></button><button class="case" data-id="des" aria-pressed="false"><span class="kind mono">Compound</span><b>desosamine</b><span class="muted">a sugar, merged into the antibiotic that carries it</span></button><button class="case" data-id="fer" aria-pressed="false"><span class="kind mono">Compound</span><b>ferrichrome</b><span class="muted">an iron carrier, and a record of it with radioactive iron</span></button><button class="case" data-id="las" aria-pressed="false"><span class="kind mono">Compound</span><b>lasalocid</b><span class="muted">a salt and its acid</span></button><button class="case" data-id="cbf" aria-pressed="false"><span class="kind mono">Protein</span><b>CBF82293.1</b><span class="muted">one sequence, two proteins</span></button><button class="case" data-id="bae" aria-pressed="false"><span class="kind mono">Protein</span><b>baeI</b><span class="muted">a gene name no list could place</span></button></div>
+<div class="card" id="detail" aria-live="polite"></div>
+</div>
+<details><summary>How to read the marks</summary>
+<p><span class="chip"><span class="mark pass">&#10003;</span>passes</span><span class="chip"><span class="mark fail">&#10007;</span>doesn't confirm</span><span class="chip"><span class="mark stop">&#9940;</span>switched off</span><span class="chip"><span class="mark wait">&#9719;</span>waiting</span><span class="chip"><span class="mark info">i</span>what the data says</span><span class="chip"><span class="mark person">&#9998;</span>a person decides</span></p>
+<p class="muted">The four clues for a compound, strongest first, are explained in
+<span class="mono">docs/06b-closing-the-gaps.md</span>, Step 6; the review file in Step 7. Recipe R20
+in the query cookbook lists every decision made by hand.</p>
+</details>
+<footer>Built by <span class="mono">docs/interactive/make_interactive.py</span> from the
+project's own files. MicrobeGraph · MIT licence.</footer>
+</main>
+<script>
+
+const CASES = [{"id": "mib", "kind": "Compound", "title": "2-methylisoborneol", "hook": "the earthy smell in tap water, and a bromine compound's number", "sources": [["MIBiG BGC0000657", "pubchem:9237955", "formula C15H16BrN3O4S"], ["MIBiG BGC0000658", "pubchem:16913", "formula C11H20O"], ["MIBiG BGC0000659", "pubchem:16913", "formula C11H20O"], ["PubChem 9237955", "its title", "methyl (2S,4S)-1-[[5-(3-bromophenyl)-...]...-2-carboxylate, C15H16BrN3O4S"]], "phase4": "Phase 4 kept only the first entry's number and formula, so the two formulas agreed and MIBiG's 2-methylisoborneol was joined to the bromine compound's record on the formula alone.", "steps": [["info", "Every value, by entry", "Three entries give two numbers (9237955 once, 16913 twice) and two formulas. Both numbers are candidates now."], ["fail", "Clue 1, name", "PubChem's record 9237955 doesn't list the name. Record 16913 isn't in this PubChem snapshot yet: the next fetch asks about it."], ["wait", "Clues 2 and 3", "Both need PubChem's name search, which hasn't run yet."], ["info", "Clue 4, formula alone", "Would still join today: the only entry that gives 9237955 (BGC0000657) gives its formula too, so the two agree. Once the name search files the name under 16913, a different molecule, clue 4 is switched off."], ["person", "The review file", "Until then, a person's decision stops it: someone read PubChem's record 9237955 (a bromine and sulfur compound) and wrote keep_apart, with that record as the source."]], "rule": "reviewed_by_hand", "decision": "kept_apart", "grounds": "Decided by hand on 2026-10-12: mg.compound:2-methylisoborneol and pubchem.compound:9237955 are different things. PubChem's record 9237955 is methyl (2S,4S)-1-[[5-(3-bromophenyl)-2-sulfanylidene-1,3,4-oxadiazol-3-yl]methyl]-4-hydroxypyrrolidine-2-carboxylate (C15H16BrN3O4S), a bromine and sulfur compound. 2-Methylisoborneol is C11H20O, as MIBiG's entries BGC0000658 and BGC0000659 say (they give CID 16913); only BGC0000657 carries the other record's number, formula and structure. Source: pubchem.compound:9237955 (curation/resolution_decisions.csv, line 2).", "next": "When PubChem's name search runs, record 16913 is fetched and judged on the clues; PubChem is expected to list the name under it."}, {"id": "des", "kind": "Compound", "title": "desosamine", "hook": "a sugar, merged into the antibiotic that carries it", "sources": [["MIBiG BGC0000898", "pubchem:5282034, npatlas:NPA01238", "formula C25H43NO7"], ["MIBiG BGC0000899", "pubchem:419813", "formula C8H17NO3"], ["MIBiG BGC0000094 (methymycin)", "npatlas:NPA01238", "formula C25H43NO7"], ["PubChem 5282034", "its title", "Methymycin, C25H43NO7"]], "phase4": "Phase 4 joined desosamine to PubChem's methymycin record on the formula alone, then the NPAtlas rule pulled MIBiG's methymycin into the same node: a sugar merged into the molecule it is part of.", "steps": [["info", "Every value, by entry", "Two entries, two numbers, two formulas. Entry BGC0000898 gives desosamine methymycin's number, formula and NPAtlas number."], ["fail", "Clue 1, name", "PubChem's record 5282034 is titled Methymycin and doesn't list 'desosamine'."], ["info", "Clue 4, formula alone", "Would still join today: the only entry that gives 5282034 (BGC0000898) gives methymycin's formula too, so the two agree."], ["stop", "The NPAtlas rule", "One NPAtlas number and one formula would join two MIBiG names, but desosamine's entries disagree about its formula, so that can't confirm the pair."], ["person", "The review file", "Two decisions, both citing the paper MIBiG cites (pubmed:9770448): desosamine is not PubChem's methymycin, and not MIBiG's methymycin."]], "rule": "reviewed_by_hand", "decision": "kept_apart", "grounds": "Decided by hand on 2026-10-12: mg.compound:desosamine and mg.compound:methymycin are different things. Desosamine is the sugar part of methymycin, not another name for it. The two share an NPAtlas number only because entry BGC0000898 gives desosamine methymycin's records. Source: pubmed:9770448 (curation/resolution_decisions.csv, line 4).", "next": "The name search should find desosamine under 419813, the number BGC0000899 gives, with a formula that agrees."}, {"id": "fer", "kind": "Compound", "title": "ferrichrome", "hook": "an iron carrier, and a record of it with radioactive iron", "sources": [["MIBiG BGC0000900", "pubchem:644246 (and 90658043)", "formula C26H43N9O12, without iron"], ["MIBiG BGC0000901", "pubchem:644246", "formula C27H42FeN9O12, with iron"], ["PubChem 644246", "its title", "[55Fe] Ferrichrome, C27H42FeN9O12"]], "phase4": "Phase 4 compared the first formula (without iron) with PubChem's (with iron): they differ, and PubChem doesn't list the name, so the two stayed apart.", "steps": [["info", "Every value, by entry", "Both entries give 644246, but one formula has an iron atom and one doesn't. (BGC0000900 also lists 90658043; only the first number an entry lists is a candidate so far.)"], ["fail", "Clue 1, name", "PubChem titles the record '[55Fe] Ferrichrome', the molecule built with radioactive iron-55, and doesn't list 'ferrichrome'."], ["stop", "Clue 4, formula alone", "One formula now agrees, but the entries disagree, so it can't confirm the number. Without this rule, keeping every value would have joined ferrichrome to the radioactive record."]], "rule": "pubchem_number_confirmed", "decision": "kept_apart", "grounds": "MIBiG gives CID 644246; PubChem doesn't list the name 'ferrichrome' (its title is '[55Fe] Ferrichrome'); MIBiG's entries give it different formulas (C26H43N9O12, C27H42FeN9O12), so one of them agreeing with PubChem's (C27H42FeN9O12) can't confirm the number. Nothing else confirms it, so the two stay apart.", "next": "The name search asks PubChem for 'ferrichrome'; a record that lists the name with an agreeing formula would be joined."}, {"id": "las", "kind": "Compound", "title": "lasalocid", "hook": "a salt and its acid", "sources": [["MIBiG BGC0000086", "pubchem:2724110", "formula C34H53NaO8, the sodium salt"], ["MIBiG BGC0000087", "pubchem:2724110", "formula C34H53NaO8, the sodium salt"], ["MIBiG BGC0001648", "no number", "formula C34H54O8, the acid"], ["PubChem 2724110", "its title", "Sodium;6-[7-[5-ethyl-...]...]-2-hydroxy-3-methylbenzoate, C34H53NaO8"]], "phase4": "Phase 4 kept the first formula, the salt's, which matched PubChem's salt record, so the two were joined on the formula alone.", "steps": [["info", "Every value, by entry", "Three entries, two formulas: the sodium salt twice, the acid once."], ["fail", "Clue 1, name", "PubChem's title is the salt's chemical name; it doesn't list 'lasalocid'."], ["stop", "Clue 4, formula alone", "Switched off: the entries disagree about the formula."]], "rule": "pubchem_number_confirmed", "decision": "kept_apart", "grounds": "MIBiG gives CID 2724110; PubChem doesn't list the name 'lasalocid' (its title is 'Sodium;6-[7-[5-ethyl-5-(5-ethyl-5-hydroxy-6-methyloxan-2-yl)-3-methyloxolan-2-yl]-4-hydroxy-3,5-dimethyl-6-oxononyl]-2-hydroxy-3-methylbenzoate'); MIBiG's entries give it different formulas (C34H53NaO8, C34H54O8), so one of them agreeing with PubChem's (C34H53NaO8) can't confirm the number. Nothing else confirms it, so the two stay apart.", "next": "Kept apart until the name search runs. It should find 'lasalocid' under PubChem's record of the compound itself."}, {"id": "cbf", "kind": "Protein", "title": "CBF82293.1", "hook": "one sequence, two proteins", "sources": [["MIBiG BGC0002180 ((+)-asperlin)", "CBF82293.1", "822 amino acids, Aspergillus nidulans FGSC A4"], ["UniProt P0CU77", "reviewed", "alnG, 368 amino acids, lists CBF82293.1"], ["UniProt P0CU78", "reviewed", "alnR, 407 amino acids, lists CBF82293.1"]], "phase4": "UniProt lists the number under two entries. The organism, length and review-status steps couldn't pick one, so the number stayed on its own, listed as a tie.", "steps": [["info", "The cluster's organism", "Both entries are for Aspergillus nidulans: no choice yet."], ["fail", "The same length as MIBiG's sequence", "Neither entry is 822 amino acids long."], ["fail", "Reviewed by a curator", "Both are reviewed: still a tie."], ["person", "The review file", "A person read UniProt's entries: both carry the locus name AN9221, and MIBiG's 822-amino-acid sequence reads the two genes as one. keep_apart from each, with UniProt's entry as the source."]], "rule": "reviewed_by_hand", "decision": "kept_apart", "grounds": "Decided by hand on 2026-10-12: ncbiprotein:CBF82293.1 and uniprot:P0CU77 are different things. UniProt's reviewed entries P0CU77 (alnG, 368 amino acids) and P0CU78 (alnR, 407) both carry the locus name AN9221 and both list CBF82293.1. MIBiG's sequence for CBF82293.1 is 822 amino acids long, so it reads the two genes as one and is neither protein alone. Source: uniprot:P0CU77 (curation/resolution_decisions.csv, line 5).", "next": "Settled. 40 other protein numbers with tied UniProt entries wait for the same kind of reading."}, {"id": "bae", "kind": "Protein", "title": "baeI", "hook": "a gene name no list could place", "sources": [["MIBiG BGC0001089 (bacillaene), gene record", "baeI", "polyketide biosynthesis enoyl-CoA hydratase, no protein number"], ["MIBiG's protein file", "CAG23956.1", "label CAG23956.1, product enoyl-CoA-hydratase"], ["MIBiG's GenBank file", "a CDS", "/gene=\"baeI\" and /protein_id=\"CAG23956.1\""], ["UniProt Q1RS74", "unreviewed", "lists CAG23956.1"]], "phase4": "No list linked the name to a number. Phase 4's gene-name rule should have found it through UniProt (Q1RS74 lists 'baeI|PV946_13250'), but it split UniProt's gene names on spaces and semicolons, never on '|', so it missed every entry with two names. The gene record stayed a node of its own, beside its own protein.", "steps": [["fail", "The protein file, by number or label", "The gene record has no number, and no label in the file is 'baeI'."], ["fail", "The protein file, by product", "'polyketide biosynthesis enoyl-CoA hydratase' isn't the file's 'enoyl-CoA-hydratase'."], ["pass", "MIBiG's GenBank file", "One CDS in BGC0001089 has /gene=\"baeI\" and /protein_id=\"CAG23956.1\". This happens in the MIBiG tidy, counted as genes_found_by_genbank."], ["pass", "UniProt", "UniProt lists CAG23956.1 under Q1RS74, so the resolver joins them as for any protein number."]], "rule": "uniprot_cross_reference", "decision": "merged", "grounds": "UniProt lists CAG23956.1 under entry Q1RS74.", "next": "Settled: one node, uniprot:Q1RS74, named baeI. Bacillus velezensis FZB42 now leads to 174 proteins instead of 175 (cookbook recipe N5)."}];
+const LOOK = {"pass": ["&#10003;", "passes"], "fail": ["&#10007;", "doesn't confirm"], "stop": ["&#9940;", "switched off"], "wait": ["&#9719;", "waiting"], "info": ["i", "what the data says"], "person": ["&#9998;", "a person decides"]};
+const detail = document.getElementById('detail');
+const buttons = [...document.querySelectorAll('.case')];
+let current = null, shown = 0;
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function render() {
+  const c = current;
+  const rows = c.sources.map(s => `<tr><td>${esc(s[0])}</td><td class="mono">${esc(s[1])}</td><td>${esc(s[2])}</td></tr>`).join('');
+  const steps = c.steps.slice(0, shown).map(s => `<div class="step"><span class="mark ${s[0]}" aria-hidden="true">${LOOK[s[0]][0]}</span>
+    <div><b>${esc(s[1])}</b> <span class="muted">(${LOOK[s[0]][1]})</span><br>${esc(s[2])}</div></div>`).join('');
+  const done = shown >= c.steps.length;
+  const end = done ? `<h3>The decision</h3><p><span class="mono">${esc(c.rule)}</span> &middot;
+    <span class="mono">${esc(c.decision)}</span></p><div class="grounds">${esc(c.grounds)}</div>
+    <p><b>Next:</b> ${esc(c.next)}</p>` : '';
+  detail.innerHTML = `<h2>${esc(c.title)}<span class="muted" style="font-weight:400">: ${esc(c.hook)}</span></h2>
+    <table><tr><th>Who</th><th>Record</th><th>What it says</th></tr>${rows}</table>
+    <p><b>What Phase 4 did:</b> ${esc(c.phase4)}</p>
+    <h3>The clues, one by one</h3>${steps || '<p class="muted">Press Next clue to start.</p>'}
+    <div class="btns"><button id="prev" ${shown === 0 ? 'disabled' : ''}>Back</button>
+    <button id="next" ${done ? 'disabled' : ''}>Next clue</button>
+    <button id="all" ${done ? 'disabled' : ''}>Show all</button></div>${end}`;
+  document.getElementById('next').onclick = () => { shown++; render(); };
+  document.getElementById('prev').onclick = () => { shown--; render(); };
+  document.getElementById('all').onclick = () => { shown = c.steps.length; render(); };
+}
+function pick(id) {
+  current = CASES.find(c => c.id === id); shown = 0;
+  buttons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.id === id)));
+  render();
+}
+buttons.forEach(b => b.addEventListener('click', () => pick(b.dataset.id)));
+document.addEventListener('keydown', e => {
+  if (!current || e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight' && shown < current.steps.length) { shown++; render(); }
+  if (e.key === 'ArrowLeft' && shown > 0) { shown--; render(); }
+});
+pick(CASES[0].id);
+
+</script>
+</body>
+</html>

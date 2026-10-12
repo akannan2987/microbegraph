@@ -359,66 +359,119 @@ spent.
 
 ---
 
-## Phase 4b. Closing the gaps: names, GenBank and a review file
+## Phase 4b. Closing the gaps: names, GenBank and a review file ✅
 
-**Status:** planned. Guide: `06b-closing-the-gaps.md`.
+**Status:** built and tested, with one step waiting for PubChem (below). Guide:
+[`06b-closing-the-gaps.md`](06b-closing-the-gaps.md); new recipes R20 to R22 in
+[`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md).
 
 **Why it exists:** Phase 4's rules refuse to join anything they can't confirm,
 and the survey showed which gaps that leaves. Some close with more evidence
 from sources the project already uses; the rest need a person's judgement, and
 the graph needs a proper place to record it.
 
-**What gets built:**
+**What was built:**
 
-* **MIBiG's GenBank file** (`mibig_gbk_4.0.tar.gz`, about 80 MB, on MIBiG's
-  download server beside the protein file): each gene's name, locus tag,
-  protein number and NCBI gene number side by side. Pinned by its own SHA-256
-  like the protein file. It resolves the 21 gene records named only by a gene
-  name, and the 4 maize removals in BGC0002390 (`LOC100272490` and three more),
-  whose NCBI gene numbers it links to protein numbers.
-* **A PubChem name lookup** for MIBiG compounds without a PubChem number, and
-  for refused numbers whose name may be listed under another title (1233A is
-  hymeglusin), through the existing PubChem adapter, with the same confirmation
-  rule as Phase 4: a name match still needs the formula, where MIBiG gives one.
-* **A second look at the joins the formula alone confirmed** (325, listed by
-  cookbook recipe R19). Phase 2 keeps PubChem's 20 most used names per
-  compound, but its download holds them all, so each join is checked against
-  the full list first. A join whose name is still missing goes to the review
-  file below, where a person decides with a source. MIBiG's
-  "2-methylisoborneol", which carries a bromine compound's formula, is the
-  first case it has to catch.
-* **A review file**, `curation/resolution_decisions.csv`: a decision a person
-  made (join, or keep apart), with the reason and a source, which the resolver
-  applies before its own rules and writes to the ledger as `reviewed_by_hand`.
-  The first rows settle cases Phase 4 listed, such as the desosamine record and
-  tied UniProt entries, each with a citation.
-* **Both values for MIBiG's property conflicts:** the MIBiG adapter keeps the
-  second value (and the entry it came from) instead of only counting it, so the
-  review file can show both.
-* **Activity names that mean the same thing** (antitumor, anticancer,
-  antineoplastic): a small curated list, `curation/activity_synonyms.csv`, each
-  row with a reason, applied by the resolver.
-* **Housekeeping:** `import microbegraph.staging` on its own trips over a
-  circular import with the source adapters (every command loads the adapters
-  first, so nothing is affected today); the fix moves the shared table helpers
-  out of the adapters' package.
+* **MIBiG's GenBank file** (`mibig_gbk_4.0.tar.gz`, 79.8 MB, 2,636 records, on
+  MIBiG's download server beside the protein file), pinned by its own SHA-256
+  like the protein file and read by a small reader of its own
+  (`sources/mibig_genbank.py`). Each CDS lists a gene's names next to its
+  protein number, which places all 59 gene records named only by a gene name
+  (the 21 left over in Phase 4 and the 38 UniProt's gene names had rescued) and
+  the 4 maize genes the curators removed from BGC0002390.
+* **Every value when MIBiG's entries disagree:** a disputed property keeps its
+  first value and gains `<property>_by_entry`, every value with the entry that
+  gave it (120 nodes). Keeping both values showed why two Phase 4 joins were
+  wrong: one of 2-methylisoborneol's three entries carries a bromine compound's
+  number, formula and structure, and one of desosamine's carries methymycin's.
+* **PubChem in three rounds:** every number MIBiG gives (now including the
+  second numbers in `pubchem_cid_by_entry`, 1,193 in all) and every number in
+  the review file; then a name search, one name a second, for up to 1,660
+  compounds (those whose numbers don't list their name, and those with no number
+  but a formula); then the numbers it found. A busy PubChem stops the search
+  cleanly, in round 2 or round 3, and the next run carries the answers over.
+* **Four clues for a compound,** strongest first: the name under MIBiG's own
+  number; the name under another record of the same structure (the first block
+  of the InChIKey); the name search with an agreeing formula; the formula
+  alone, which no longer counts when the name points at another molecule or
+  MIBiG's entries disagree about the formula.
+* **A review file,** `curation/resolution_decisions.csv`: decisions a person
+  made (join, or keep apart), each with a reason and a source, applied before
+  the rules that join compounds and proteins, and written to the ledger as
+  `reviewed_by_hand`. A pair kept apart
+  can't meet through any chain of joins. The first five rows undo the two wrong
+  joins and settle CBF82293.1, whose sequence spans two UniProt proteins.
+* **Activity words that mean the same thing:** `curation/activity_synonyms.csv`
+  folds antitumor, its duplicate label and antineoplastic into anticancer, and
+  two spellings of anti-Gram-negative into one (74 activities became 70).
+* **Housekeeping:** the circular import is gone: the table shapes and safe
+  writers moved to `src/microbegraph/tables.py`, and the resolver no longer
+  loads any source adapter.
 
-**New concepts:** GenBank records and their features, human-in-the-loop review,
-an override that wins over a rule and says so.
+**What looking first changed:** PubChem's full list of names, the planned
+second look at the 325 formula-only joins, confirmed none of them: 86 of those
+records list no names and 213 list 20 or fewer, so the short list already was
+the full list. The name search did more, and keeping both values of a
+disagreement explained two of Phase 4's joins, so the plan moved to those.
 
-**Checkpoint:** the 21 gene records and 4 removals are resolved or listed with
-a reason; more compounds carry a confirmed PubChem number; every join the
-formula alone confirmed is backed by a name or settled in the review file; every
-reviewed decision appears in the ledger with its source.
+**New concepts:** GenBank records, CDS features and qualifiers; gene names,
+locus tags and NCBI gene numbers; stereochemistry and the first block of an
+InChIKey; keeping every value with its source; rate limits, HTTP 429 and a
+resumable download; human-in-the-loop review, and an override that wins over a
+rule and says so; circular imports.
 
-**Effort:** ~6-8 hours.
+**New tools:** none (the GenBank reader uses only Python's own `tarfile` and
+`re`).
+
+**Checkpoint (met on 2026-10-12, except the PubChem step):** every gene record
+has a protein number and every curators' removal is found; 70,550 identifiers
+became 48,236 nodes and 56,987 arrows; the twelve rules pass; DuckDB and
+NetworkX agree; the ledger's 23,937 rows include the five decisions by hand and
+the four folded words; 350 tests pass.
+
+**Still to run: PubChem's name search.** PubChem refused this computer on
+2026-10-12 (HTTP 429, after an early survey asked too fast), so the graph above
+uses the PubChem snapshot from Phase 2. The first thing to do before Phase 5 is
+to run `python -m microbegraph.fetch --source pubchem` (about 40 minutes), then
+the tidy, resolve and build steps in
+[the guide's Step 10](06b-closing-the-gaps.md#14-step-10-run-it-for-real), and
+add the new numbers to the guide, the cookbook and the changelog. It should
+join 2-methylisoborneol, desosamine and lasalocid to their own PubChem records
+and review the 322 joins that still rest on the formula alone.
+
+**Handed on:**
+
+* **A second, independent witness for formula-only joins.** Those the name
+  search can neither confirm nor refute need another source that ties a name to
+  a PubChem number on its own account. [NPAtlas](https://www.npatlas.org/), the
+  Natural Products Atlas, does that for microbial natural products, and MIBiG
+  already gives its numbers for many compounds. Planned as a small source
+  adapter after the name search has run, once its licence and download terms
+  are checked.
+* **40 protein numbers with tied UniProt entries,** each for a person to read
+  and settle in the review file, as CBF82293.1 was.
+* **Gene names as protein labels:** 19,759 of the GenBank file's CDS carry a
+  `/gene` name, most for proteins with no MIBiG gene record. Phase 5 uses them
+  as readable labels in the network pictures.
+* **Every PubChem number an entry lists:** 17 compounds list two PubChem
+  numbers in one MIBiG entry, and only the first becomes a candidate today. A
+  small change to the MIBiG adapter (all of them into `pubchem_cid_by_entry`)
+  goes in with the name search run, so the extra numbers reach PubChem in the
+  same fetch.
+
+**Effort:** ~6-8 hours, plus about 40 unattended minutes for the name search.
 
 ---
 
 ## Phase 5. Graph analytics
 
 **What gets built:** evidence-path finding, degree and betweenness centrality,
-community detection, and the first interactive network visualisations.
+community detection, and the first interactive network visualisations, with
+readable protein labels: the gene names MIBiG's GenBank file gives (Phase 4b
+reads them already) wherever a protein has no gene record.
+
+**First, from Phase 4b:** PubChem's name search, if it hasn't run yet (see
+Phase 4b above).
 
 **Why:** this is where the graph starts *answering* questions at scale. Phase
 4's cookbook already answers the jujube question as one SQL query (recipe R9)
@@ -1178,12 +1231,13 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | | A tutorial guide per phase, with checkpoints and troubleshooting | ✅ Phases 0-1, then each phase |
 | | The glossary, every term in plain language | ✅ Phase 0, grows each phase |
 | | Teaching diagrams and interactive explorers, regenerated by script | ✅ Phase 1, grows each phase |
-| | Query cookbook: tested SQL, then Cypher, recipes | ✅ Phase 4 (19 SQL and 5 graph recipes, all run by the tests), Cypher in Phase 11 |
+| | Query cookbook: tested SQL, then Cypher, recipes | ✅ Phase 4 (19 SQL and 5 graph recipes, all run by the tests), ✅ 3 more in Phase 4b, Cypher in Phase 11 |
 | **Trust** | Evidence level, source, record and date on every arrow | ✅ Phase 0 design, Phase 1 code |
 | | Checksums and an append-only provenance log for every download | ✅ Phase 1 |
 | | The twelve rules enforced in code, then as dbt tests | ✅ Phase 1, Phase 10 |
 | | A resolution ledger explaining every merge and every refusal | ✅ Phase 4 |
-| | Decisions only a person can make, recorded with a reason and a source | Phase 4b |
+| | Decisions only a person can make, recorded with a reason and a source | ✅ Phase 4b (`curation/resolution_decisions.csv`) |
+| | When two records of one source disagree, every value kept with the record that gave it | ✅ Phase 4b |
 | | Null-model statistics and a second-language cross-check | Phase 6 |
 | | Predictions stored as `inferred`, never mixed with evidence | Phase 7 |
 | | Data sources and licences listed, attribution in the app | ✅ Phase 2, Phase 8 |
@@ -1191,7 +1245,7 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | | Answers from live services kept as dated snapshots, one provenance row per answer | ✅ Phase 2 |
 | | What each join didn't match counted and listed, never dropped quietly | ✅ Phases 2-3b |
 | | Files with no published checksum pinned by a fingerprint of our own | ✅ Phase 3b |
-| | Curators' corrections applied, each one listed with its reason | ✅ Phase 3b (removals); the four no list names in Phase 4b |
+| | Curators' corrections applied, each one listed with its reason | ✅ Phase 3b (removals), ✅ the last four in Phase 4b |
 | **Science** | Three molecular layers joined: genes, proteins (enzymes), molecules | ✅ Phase 3 (entries with gene records), ✅ every cluster in Phase 3b |
 | | One node per real thing across all sources, with every alias kept | ✅ Phase 4 |
 | | An organism that is also a crop pathogen as one node, with both roles | ✅ Phase 4 |
@@ -1275,9 +1329,10 @@ so far, and what the plan does about each:
 | What | Noticed | Plan |
 |---|---|---|
 | **MIBiG 4.0.1** on Zenodo (record 14835872) | Phase 1, by the probe | Stay on 4.0, which every count in the guides comes from. Not worth an upgrade on its own, given 5.0 below |
-| **MIBiG 5.0 release candidate** (`mibig_json_5.0rc1.tar.bz2`, 21 September 2026) on MIBiG's download server | Phase 3b, by the probe | When 5.0 is final and on Zenodo, upgrade as a change of its own (`feat(mibig): upgrade to MIBiG 5.0`), archive and protein file together, following [`03-ingestion-mibig.md`, section 16](03-ingestion-mibig.md#16-upgrading-mibig-later): capture and survey first, new pins, fixtures, a comparison of old and new counts in the changelog. If it's final before Phase 9, the upgrade happens before Phase 9, so release 1.0 ships the current MIBiG |
+| **MIBiG 5.0 release candidate** (`mibig_json_5.0rc1.tar.bz2`, 21 September 2026) on MIBiG's download server | Phase 3b, by the probe | When 5.0 is final and on Zenodo, upgrade as a change of its own (`feat(mibig): upgrade to MIBiG 5.0`), archive, protein file and GenBank file together, following [`03-ingestion-mibig.md`, section 16](03-ingestion-mibig.md#16-upgrading-mibig-later): capture and survey first, new pins, fixtures, a comparison of old and new counts in the changelog. If it's final before Phase 9, the upgrade happens before Phase 9, so release 1.0 ships the current MIBiG |
 | **UniProt releases** (`2026_03` used in Phases 3 and 3b) | Every fetch records the release | A new release only needs a new fetch; the snapshot keeps the old one for comparison. From Phase 12 Airflow refetches monthly |
 | **GitHub's `ubuntu-latest`** moves to Ubuntu 26 from 19 October 2026 | GitHub's notice, after Phase 3 | Nothing unless an Ubuntu job fails; then pin `ubuntu-24.04` in `.github/workflows/ci.yml` and say so in the docs that describe CI |
+| **PubChem's request limits** (at most 5 requests a second and 400 a minute) | Phase 4b: a survey asking four names a second was refused after about 400 names, and the refusals (HTTP 429) went on for hours | The name search asks one name a second and slows down when PubChem's traffic light turns yellow; a refusal stops it cleanly and the next run carries on. Never retry a 429 in a loop |
 
 Running `python -m microbegraph.fetch --probe` at the start of each phase is the
 habit that keeps this table current.

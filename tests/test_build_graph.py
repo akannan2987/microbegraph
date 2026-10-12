@@ -20,7 +20,7 @@ from microbegraph.resolve import resolve
 
 
 def _build(staging: Path, out: Path) -> tuple[dict, Path]:
-    resolve(staging, out)
+    resolve(staging, out, staging / "curation")
     db = out / "microbegraph.duckdb"
     counts = build(out / "nodes.csv", out / "edges.csv", out / "resolution_ledger.csv",
                    out / "resolve_summary.json", db)

@@ -20,38 +20,50 @@ import hashlib
 
 import pytest
 import requests
-from conftest import FakeResponse, FakeSession, build_archive, md5_of, protein_file_bytes
+from conftest import (
+    FakeResponse,
+    FakeSession,
+    build_archive,
+    genbank_file_bytes,
+    md5_of,
+    protein_file_bytes,
+)
 
 from microbegraph import provenance
 from microbegraph.sources import mibig
 from microbegraph.sources.base import ChecksumMismatch, LockerConflict, SourceError
 
 PROTEINS = protein_file_bytes()
+GENBANK = genbank_file_bytes()                    # Phase 4b: three records, packed as MIBiG packs them
 
 
 @pytest.fixture
 def served(tmp_path, monkeypatch):
     """
     Archive bytes on a fake server, with the pinned MD5 set to match them,
-    and the protein file sample with the pinned SHA-256 set to match it.
+    and the protein file and GenBank samples with the pinned SHA-256s set to
+    match them.
     """
     payload = build_archive(tmp_path / "server" / mibig.FILENAME)
     monkeypatch.setattr(mibig, "EXPECTED_MD5", md5_of(payload))
     monkeypatch.setattr(mibig, "PROTEIN_FILE_SHA256", hashlib.sha256(PROTEINS).hexdigest())
+    monkeypatch.setattr(mibig, "GENBANK_FILE_SHA256", hashlib.sha256(GENBANK).hexdigest())
     return payload
 
 
-def with_proteins(archive_answers: list, protein_answers: list | None = None) -> dict:
-    """A fake server script: the archive answers given, and the protein file served once."""
+def with_proteins(archive_answers: list, protein_answers: list | None = None,
+                  genbank_answers: list | None = None) -> dict:
+    """A fake server script: the archive answers given; the protein and GenBank files served once."""
     return {mibig.DOWNLOAD_URL: archive_answers,
-            mibig.PROTEIN_FILE_URL: protein_answers or [FakeResponse(body=PROTEINS)]}
+            mibig.PROTEIN_FILE_URL: protein_answers or [FakeResponse(body=PROTEINS)],
+            mibig.GENBANK_FILE_URL: genbank_answers or [FakeResponse(body=GENBANK)]}
 
 
 def test_fetch_downloads_verifies_files_and_logs(make_adapter, served):
     session = FakeSession(with_proteins([FakeResponse(body=served)]))
     adapter = make_adapter(session=session)
 
-    archive, proteins = adapter.fetch()
+    archive, proteins, genbank = adapter.fetch()
 
     assert archive.outcome == "downloaded"
     assert archive.local_path.read_bytes() == served
@@ -60,8 +72,11 @@ def test_fetch_downloads_verifies_files_and_logs(make_adapter, served):
     assert proteins.local_path.name == mibig.PROTEIN_FILE
     assert proteins.local_path.read_bytes() == PROTEINS
     assert proteins.n_records == 43                         # proteins in the sample
+    assert genbank.outcome == "downloaded"
+    assert genbank.local_path.name == mibig.GENBANK_FILE
+    assert genbank.n_records == 3                           # GenBank records in the sample
     assert not list(adapter.locker.glob("*.part"))          # no half-files left behind
-    archive_row, protein_row = provenance.read(adapter.provenance_log)
+    archive_row, protein_row, genbank_row = provenance.read(adapter.provenance_log)
     assert archive_row["outcome"] == "downloaded"
     assert archive_row["md5"] == md5_of(served)
     assert archive_row["licence"] == "CC-BY-4.0"
@@ -70,6 +85,9 @@ def test_fetch_downloads_verifies_files_and_logs(make_adapter, served):
     assert protein_row["sha256"] == hashlib.sha256(PROTEINS).hexdigest()
     assert protein_row["n_records"] == "43"
     assert protein_row["licence"] == "CC-BY-4.0"
+    assert genbank_row["url"] == mibig.GENBANK_FILE_URL
+    assert genbank_row["sha256"] == hashlib.sha256(GENBANK).hexdigest()
+    assert genbank_row["n_records"] == "3"
 
 
 def test_second_fetch_costs_no_download(make_adapter, served):
@@ -77,11 +95,12 @@ def test_second_fetch_costs_no_download(make_adapter, served):
     adapter = make_adapter(session=session)
     adapter.fetch()
     again = adapter.fetch()
-    assert [result.outcome for result in again] == ["already_present", "already_present"]
+    assert [result.outcome for result in again] == ["already_present"] * 3
     assert session.calls.count(mibig.DOWNLOAD_URL) == 1
     assert session.calls.count(mibig.PROTEIN_FILE_URL) == 1
+    assert session.calls.count(mibig.GENBANK_FILE_URL) == 1
     assert [r["outcome"] for r in provenance.read(adapter.provenance_log)] == [
-        "downloaded", "downloaded", "already_present", "already_present"]
+        "downloaded"] * 3 + ["already_present"] * 3
 
 
 def test_a_protein_file_that_is_not_the_pinned_one_is_thrown_away(make_adapter, served):
@@ -134,8 +153,9 @@ def test_an_uncompressed_archive_is_counted(make_adapter, tmp_path, monkeypatch)
     payload = build_archive(tmp_path / "server" / mibig.FILENAME, compression="")
     monkeypatch.setattr(mibig, "EXPECTED_MD5", md5_of(payload))
     monkeypatch.setattr(mibig, "PROTEIN_FILE_SHA256", hashlib.sha256(PROTEINS).hexdigest())
+    monkeypatch.setattr(mibig, "GENBANK_FILE_SHA256", hashlib.sha256(GENBANK).hexdigest())
     adapter = make_adapter(session=FakeSession(with_proteins([FakeResponse(body=payload)])))
-    archive, _ = adapter.fetch()
+    archive, _, _ = adapter.fetch()
     assert archive.n_records == 4
 
 
@@ -162,7 +182,7 @@ def test_temporary_trouble_is_retried(make_adapter, served):
         FakeResponse(status=503), requests.ConnectionError("Wi-Fi blinked"),
         FakeResponse(body=served),
     ]))
-    archive, _ = make_adapter(session=session).fetch()
+    archive, _, _ = make_adapter(session=session).fetch()
     assert archive.outcome == "downloaded"
     assert session.calls.count(mibig.DOWNLOAD_URL) == 3
 
@@ -173,7 +193,7 @@ def test_a_download_that_breaks_halfway_starts_again(make_adapter, served):
         [FakeResponse(body=PROTEINS, break_after=len(PROTEINS) // 2), FakeResponse(body=PROTEINS)],
     ))
     adapter = make_adapter(session=session)
-    _, proteins = adapter.fetch()
+    _, proteins, _ = adapter.fetch()
     assert proteins.outcome == "downloaded"
     assert session.calls.count(mibig.PROTEIN_FILE_URL) == 2
     assert not list(adapter.locker.glob("*.part"))
@@ -262,20 +282,27 @@ LISTING = (b'<a href="mibig_json_4.0.tar.gz">mibig_json_4.0.tar.gz</a>'
            b'<a href="mibig_json_5.0rc1.tar.bz2">mibig_json_5.0rc1.tar.bz2</a>')
 
 
+GENBANK_SIZE = {"Content-Length": str(mibig.GENBANK_FILE_BYTES),
+                "Last-Modified": "Fri, 15 Nov 2024 08:50:00 GMT"}
+
+
 def test_probe_checks_the_protein_file_without_downloading_it(make_adapter):
     size = {"Content-Length": str(mibig.PROTEIN_FILE_BYTES),
             "Last-Modified": "Fri, 15 Nov 2024 12:35:03 GMT"}
     session = FakeSession({
         mibig.RECORD_API_URL: [FakeResponse(json_body=zenodo_record())],
         mibig.PROTEIN_FILE_URL: [FakeResponse(body=b">BGC", headers=size)],
+        mibig.GENBANK_FILE_URL: [FakeResponse(body=b"\x1f\x8b", headers=GENBANK_SIZE)],
         mibig.DOWNLOAD_SERVER: [FakeResponse(body=LISTING)],
     })
     report = make_adapter(session=session).probe()
     text = "\n".join(report.facts)
     assert f"{mibig.PROTEIN_FILE_BYTES:,} bytes, the pinned size" in text
+    assert f"{mibig.GENBANK_FILE_BYTES:,} bytes, the pinned size" in text     # Phase 4b
     assert "also offers mibig_json_5.0rc1.tar.bz2" in text
     assert "mibig_prot_seqs_3.1" not in text                 # older releases aren't news
-    assert session.streamed == [mibig.PROTEIN_FILE_URL]       # headers only, then hang up
+    # headers only, then hang up, for both files
+    assert session.streamed == [mibig.PROTEIN_FILE_URL, mibig.GENBANK_FILE_URL]
     assert not report.warnings
 
 
@@ -283,10 +310,35 @@ def test_probe_warns_if_the_protein_file_changed_size(make_adapter):
     session = FakeSession({
         mibig.RECORD_API_URL: [FakeResponse(json_body=zenodo_record())],
         mibig.PROTEIN_FILE_URL: [FakeResponse(headers={"Content-Length": "12345"})],
+        mibig.GENBANK_FILE_URL: [FakeResponse(headers=GENBANK_SIZE)],
         mibig.DOWNLOAD_SERVER: [FakeResponse(body=LISTING)],
     })
     report = make_adapter(session=session).probe()
     assert any("12,345 bytes" in w and "Do not fetch" in w for w in report.warnings)
+
+
+def test_probe_warns_if_the_genbank_file_changed_size(make_adapter):
+    session = FakeSession({
+        mibig.RECORD_API_URL: [FakeResponse(json_body=zenodo_record())],
+        mibig.PROTEIN_FILE_URL: [FakeResponse(headers={
+            "Content-Length": str(mibig.PROTEIN_FILE_BYTES)})],
+        mibig.GENBANK_FILE_URL: [FakeResponse(headers={"Content-Length": "999"})],
+        mibig.DOWNLOAD_SERVER: [FakeResponse(body=LISTING)],
+    })
+    report = make_adapter(session=session).probe()
+    [warning] = report.warnings
+    assert mibig.GENBANK_FILE in warning and "999 bytes" in warning and "Do not fetch" in warning
+
+
+def test_a_genbank_file_that_is_not_the_pinned_one_is_thrown_away(make_adapter, served):
+    changed = genbank_file_bytes({"BGC9999903.gbk": b"LOCUS       BGC9999903\n//\n"})
+    session = FakeSession(with_proteins([FakeResponse(body=served)],
+                                        genbank_answers=[FakeResponse(body=changed)]))
+    adapter = make_adapter(session=session, max_attempts=1)
+    with pytest.raises(ChecksumMismatch, match="pinned"):
+        adapter.fetch()
+    assert not (adapter.locker / mibig.GENBANK_FILE).exists()
+    assert (adapter.locker / mibig.PROTEIN_FILE).exists()     # the files before it are kept
 
 
 def test_newer_release_files_reads_the_server_listing():

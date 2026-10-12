@@ -3,7 +3,9 @@ Tests for the PubChem adapter and the snapshot machinery it shares with
 NCBI Taxonomy and KEGG (src/microbegraph/sources/api.py).
 
 Every answer the fake server gives is a real one, captured from PubChem on
-2026-10-12 (tests/fixtures/README.md).
+2026-10-12 (tests/fixtures/README.md), except where a test says otherwise.
+From Phase 4b the fetch has three rounds: the numbers MIBiG gives, a name
+search, and the numbers the name search found.
 """
 
 from __future__ import annotations
@@ -18,8 +20,9 @@ from conftest import FakeResponse, FakeSession, fixture_bytes, make_snapshot, wr
 
 from microbegraph import provenance
 from microbegraph.sources.api import MANIFEST
-from microbegraph.sources.base import SourceError
+from microbegraph.sources.base import NODE_COLUMNS, SourceError, write_table
 from microbegraph.sources.pubchem import (
+    NAME_SEARCH_URL,
     PROPERTIES_URL,
     SYNONYMS_URL,
     PubchemSource,
@@ -32,6 +35,16 @@ CIDS = {"mg.compound:itaconic-acid": "811", "mg.compound:c-1027": "5281917",
         "mg.compound:not-in-pubchem": "406870990", "mg.compound:no-cid": None}
 
 
+@pytest.fixture(autouse=True)
+def no_review_file(tmp_path, monkeypatch):
+    """The fetch also asks about numbers in the review file; these tests use none."""
+    from microbegraph.sources import pubchem
+    monkeypatch.setattr(pubchem, "REVIEW_FILE", tmp_path / "no_such_file.csv")
+
+
+NOT_FOUND = FakeResponse(status=404, body=fixture_bytes("pubchem", "name_search_not_found.json"))
+
+
 def _server() -> FakeSession:
     green = {"X-Throttling-Control": "Request Count status: Green (0%), Request Time "
                                      "status: Green (0%), Service status: Green (20%)"}
@@ -40,6 +53,7 @@ def _server() -> FakeSession:
                                       headers=green)],
         SYNONYMS_URL: [FakeResponse(body=fixture_bytes("pubchem", "synonyms_001.json"),
                                     headers=green)],
+        NAME_SEARCH_URL: [NOT_FOUND],          # Phase 4b: every name searched is unknown here
     })
 
 
@@ -60,7 +74,7 @@ def test_fetch_saves_each_answer_and_a_manifest(make_source, tmp_path):
     folder = result.local_path
     assert ":" not in folder.name                       # Windows-safe folder name
     assert sorted(p.name for p in folder.iterdir()) == [
-        MANIFEST, "properties_001.json", "synonyms_001.json"]
+        MANIFEST, "names_001.json", "properties_001.json", "synonyms_001.json"]
     # Saved byte for byte, exactly as the server sent them.
     assert (folder / "properties_001.json").read_bytes() == fixture_bytes(
         "pubchem", "properties_001.json")
@@ -78,8 +92,9 @@ def test_fetch_logs_one_provenance_row_per_answer(make_source, tmp_path):
     make_source(PubchemSource, session=_server()).fetch()
 
     rows = provenance.read(tmp_path / "raw" / "provenance.csv")
-    assert [r["outcome"] for r in rows] == ["downloaded", "downloaded"]
+    assert [r["outcome"] for r in rows] == ["downloaded"] * 3
     assert rows[0]["url"] == PROPERTIES_URL
+    assert rows[2]["url"] == NAME_SEARCH_URL
     assert rows[0]["n_records"] == "4"                  # 406870990 came back empty
     assert rows[0]["local_path"].endswith("properties_001.json")
     assert len(rows[0]["sha256"]) == 64
@@ -142,6 +157,7 @@ def test_fetch_slows_down_when_the_light_is_not_green(make_source, tmp_path, mon
         PROPERTIES_URL: [FakeResponse(body=fixture_bytes("pubchem", "properties_001.json"),
                                       headers=yellow)],
         SYNONYMS_URL: [FakeResponse(body=fixture_bytes("pubchem", "synonyms_001.json"))],
+        NAME_SEARCH_URL: [NOT_FOUND],
     })
     source = make_source(PubchemSource, session=session)
     factors: list[float] = []
@@ -149,7 +165,9 @@ def test_fetch_slows_down_when_the_light_is_not_green(make_source, tmp_path, mon
 
     source.fetch()
 
-    assert factors == [4.0, 1.0]
+    # Round 1 slows down after the yellow light; each name search waits four
+    # pauses (one a second at the real pace), and three names are searched.
+    assert factors == [4.0, 1.0, 4.0, 4.0, 4.0]
 
 
 # --------------------------------------------------------------------------- tidy
@@ -225,3 +243,197 @@ def test_a_fault_instead_of_an_answer_stops_the_fetch_after_logging_it(make_sour
     rows = provenance.read(tmp_path / "raw" / "provenance.csv")
     assert len(rows) == 1 and rows[0]["n_records"] == ""      # logged, then stopped
     assert source.snapshots() == []                           # unfinished, so tidy ignores it
+
+
+# --------------------------------------------------------------- Phase 4b: the name search
+def _mibig_compounds(staging: Path, rows: list[tuple[str, str, dict]]) -> None:
+    """A small mibig_nodes.csv: (compound id, name, properties) for each compound."""
+    write_table(staging / "mibig_nodes.csv", NODE_COLUMNS, [
+        {"node_id": node_id, "node_type": "Compound", "name": name,
+         "properties": json.dumps(props), "source": "mibig", "retrieved_at": "2026-10-12"}
+        for node_id, name, props in rows])
+
+
+def _found(cid: int) -> FakeResponse:
+    """A name-search hit, shaped like the real one in name_search_found.json."""
+    return FakeResponse(json_body={"IdentifierList": {"CID": [cid]}})
+
+
+def test_round_two_asks_only_names_that_can_change_a_decision(make_source, tmp_path):
+    _mibig_compounds(tmp_path / "staging", [
+        # its number lists its name (Itaconic acid), so there's nothing to search
+        ("mg.compound:itaconic-acid", "itaconic acid", {"pubchem_cid": 811}),
+        # its number doesn't list its name: searched
+        ("mg.compound:c-1027-x", "C-1027 X", {"pubchem_cid": 5281917, "formula": "C1"}),
+        # no number, but a formula a name match could be checked against: searched
+        ("mg.compound:itaconate", "itaconate", {"formula": "C5H6O4"}),
+        # no number and no formula: a name match could never be confirmed, so skipped
+        ("mg.compound:mystery", "mystery", {}),
+    ])
+    session = _server()
+    make_source(PubchemSource, session=session).fetch()
+
+    asked = [body["name"] for method, url, body in session.sent if url == NAME_SEARCH_URL]
+    assert asked == ["C-1027 X", "itaconate"]
+
+
+def test_a_number_the_name_search_finds_is_described_in_round_three(make_source, tmp_path):
+    _mibig_compounds(tmp_path / "staging", [
+        ("mg.compound:c-1027-x", "C-1027 X", {"pubchem_cid": 5281917}),
+        ("mg.compound:itaconate", "itaconate", {"formula": "C5H6O4"}),
+    ])
+    session = FakeSession({
+        PROPERTIES_URL: [FakeResponse(body=fixture_bytes("pubchem", "properties_001.json"))],
+        SYNONYMS_URL: [FakeResponse(body=fixture_bytes("pubchem", "synonyms_001.json"))],
+        NAME_SEARCH_URL: [NOT_FOUND, _found(811)],      # C-1027 X: no; itaconate: 811
+    })
+    source = make_source(PubchemSource, session=session)
+    [result] = source.fetch()
+
+    cids_sent = [body["cid"] for method, url, body in session.sent if url == PROPERTIES_URL]
+    assert cids_sent == ["5281917", "811"]               # round 1, then round 3
+    tidied = source.tidy()
+    nodes = {r["node_id"]: json.loads(r["properties"]) for r in _rows(tidied.nodes_path)}
+    itaconic = nodes["pubchem.compound:811"]
+    assert itaconic["found_by_name"] == "mg.compound:itaconate"
+    assert "mibig_compound_ids" not in itaconic           # no MIBiG entry gives 811 here
+    assert itaconic["names_matching_mibig"] == "itaconate"     # name 2 of the 95
+    assert itaconic["synonym_count"] == 95                # the full list, though synonyms keeps 20
+    assert tidied.counts["names_searched"] == 2
+    assert tidied.counts["names_found_one_number"] == 1
+    assert tidied.counts["names_not_found"] == 1
+    assert tidied.counts["cids_found_by_name"] == 1
+
+
+def test_a_busy_pubchem_stops_the_search_cleanly_and_the_next_run_carries_on(
+        make_source, tmp_path):
+    _mibig_compounds(tmp_path / "staging", [
+        ("mg.compound:a-one", "a one", {"formula": "C1"}),
+        ("mg.compound:b-two", "b two", {"formula": "C2"}),
+        ("mg.compound:c-three", "c three", {"formula": "C3"}),
+    ])
+    busy = FakeResponse(status=429, body=b"<html>429 Too Many Requests</html>")
+    session = FakeSession({NAME_SEARCH_URL: [NOT_FOUND, busy]})
+    source = make_source(PubchemSource, session=session, max_attempts=2)
+
+    with pytest.raises(SourceError, match="after 1 of 3 names"):
+        source.fetch()
+    [partial] = source.snapshots()                        # finished, so tidy can read it
+    manifest = json.loads((partial / MANIFEST).read_text(encoding="utf-8"))
+    assert manifest["complete"] is False
+    assert manifest["notes"]["names_not_asked"] == ["mg.compound:b-two", "mg.compound:c-three"]
+
+    session = FakeSession({NAME_SEARCH_URL: [NOT_FOUND]})
+    source = make_source(PubchemSource, session=session)
+    [result] = source.fetch()
+
+    asked = [body["name"] for method, url, body in session.sent if url == NAME_SEARCH_URL]
+    assert asked == ["b two", "c three"]                   # "a one" was carried over
+    assert (result.local_path / "names_carried_over.json").exists()
+    rows = provenance.read(tmp_path / "raw" / "provenance.csv")
+    assert [r["outcome"] for r in rows if "carried" in r["local_path"]] == ["already_present"]
+    assert source.tidy().counts["names_searched"] == 3
+
+
+def test_a_refusal_in_round_three_keeps_the_name_search_for_the_next_run(make_source, tmp_path):
+    _mibig_compounds(tmp_path / "staging", [
+        ("mg.compound:c-1027-x", "C-1027 X", {"pubchem_cid": 5281917}),
+        ("mg.compound:itaconate", "itaconate", {"formula": "C5H6O4"}),
+    ])
+    busy = FakeResponse(status=429, body=b"<html>429 Too Many Requests</html>")
+    session = FakeSession({
+        PROPERTIES_URL: [FakeResponse(body=fixture_bytes("pubchem", "properties_001.json")), busy],
+        SYNONYMS_URL: [FakeResponse(body=fixture_bytes("pubchem", "synonyms_001.json"))],
+        NAME_SEARCH_URL: [NOT_FOUND, _found(811)],      # itaconate is found under 811
+    })
+    source = make_source(PubchemSource, session=session, max_attempts=2)
+    with pytest.raises(SourceError, match="in round 3"):
+        source.fetch()
+    [partial] = source.snapshots()
+    manifest = json.loads((partial / MANIFEST).read_text(encoding="utf-8"))
+    assert manifest["complete"] is False
+    assert manifest["notes"]["names_not_asked"] == ["mg.compound:itaconate"]
+    # tidy never uses half an answer: 811 wasn't described, so nothing points at it
+    assert source.tidy().counts["cids_found_by_name"] == 0
+
+    session = _server()
+    source = make_source(PubchemSource, session=session)
+    source.fetch()
+    assert [b for m, u, b in session.sent if u == NAME_SEARCH_URL] == []    # all carried over
+    cids_sent = [b["cid"] for m, u, b in session.sent if u == PROPERTIES_URL]
+    assert cids_sent == ["5281917", "811"]                                  # round 3 again
+    assert source.tidy().counts["cids_found_by_name"] == 1
+
+
+def test_after_a_stop_in_round_two_round_three_is_left_for_the_next_run(make_source, tmp_path):
+    _mibig_compounds(tmp_path / "staging", [
+        ("mg.compound:itaconate", "itaconate", {"formula": "C5H6O4"}),
+        ("mg.compound:zzz", "zzz", {"formula": "C1"}),
+    ])
+    busy = FakeResponse(status=429, body=b"<html>429 Too Many Requests</html>")
+    session = FakeSession({
+        PROPERTIES_URL: [FakeResponse(body=fixture_bytes("pubchem", "properties_001.json"))],
+        SYNONYMS_URL: [FakeResponse(body=fixture_bytes("pubchem", "synonyms_001.json"))],
+        NAME_SEARCH_URL: [_found(811), busy],           # itaconate: 811; then PubChem refuses
+    })
+    source = make_source(PubchemSource, session=session, max_attempts=2)
+    with pytest.raises(SourceError, match="after 1 of 2 names"):
+        source.fetch()
+    # no round 3: asking a server that is refusing only prolongs the block
+    assert [u for m, u, b in session.sent if u == PROPERTIES_URL] == []
+    [partial] = source.snapshots()
+    manifest = json.loads((partial / MANIFEST).read_text(encoding="utf-8"))
+    assert manifest["notes"]["names_not_asked"] == ["mg.compound:zzz", "mg.compound:itaconate"]
+
+
+def test_a_dropped_line_in_round_three_also_keeps_the_name_search(make_source, tmp_path):
+    _mibig_compounds(tmp_path / "staging", [
+        ("mg.compound:c-1027-x", "C-1027 X", {"pubchem_cid": 5281917}),
+        ("mg.compound:itaconate", "itaconate", {"formula": "C5H6O4"}),
+    ])
+    session = FakeSession({
+        PROPERTIES_URL: [FakeResponse(body=fixture_bytes("pubchem", "properties_001.json")),
+                         requests.ConnectionError("the line dropped")],
+        SYNONYMS_URL: [FakeResponse(body=fixture_bytes("pubchem", "synonyms_001.json"))],
+        NAME_SEARCH_URL: [NOT_FOUND, _found(811)],
+    })
+    source = make_source(PubchemSource, session=session, max_attempts=2)
+    with pytest.raises(SourceError, match="in round 3"):
+        source.fetch()
+    [partial] = source.snapshots()
+    manifest = json.loads((partial / MANIFEST).read_text(encoding="utf-8"))
+    assert manifest["complete"] is False
+
+
+def test_numbers_in_the_review_file_are_asked_about(make_source, tmp_path, monkeypatch):
+    from microbegraph.sources import pubchem
+    review = tmp_path / "resolution_decisions.csv"
+    review.write_text("identifier,other_identifier,decision,reason,citation,decided_on\n"
+                      "mg.compound:x,pubchem.compound:16132390,join,r,doi:10.1/x,2026-10-12\n",
+                      encoding="utf-8")
+    monkeypatch.setattr(pubchem, "REVIEW_FILE", review)
+    _mibig_compounds(tmp_path / "staging", [("mg.compound:x", "x", {"pubchem_cid": 811})])
+    session = _server()
+    make_source(PubchemSource, session=session).fetch()
+    assert session.sent[0][2] == {"cid": "811,16132390"}
+
+
+def test_every_number_an_entry_gives_is_asked_about(make_source, tmp_path):
+    _mibig_compounds(tmp_path / "staging", [(
+        "mg.compound:2-methylisoborneol", "2-methylisoborneol",
+        {"pubchem_cid": "9237955",
+         "pubchem_cid_by_entry": "BGC0000657: 9237955|BGC0000658: 16913|BGC0000659: 16913"})])
+    session = _server()
+    make_source(PubchemSource, session=session).fetch()
+    assert session.sent[0][2] == {"cid": "16913,9237955"}
+
+
+def test_a_refusal_in_round_one_says_so_in_plain_words(make_source, tmp_path):
+    """What happened on 2026-10-12: PubChem answered 429 to every request for hours."""
+    _mibig_compounds(tmp_path / "staging", [("mg.compound:x", "x", {"pubchem_cid": 811})])
+    busy = FakeResponse(status=429, body=b"<html>429 Too Many Requests</html>")
+    source = make_source(PubchemSource, session=FakeSession({PROPERTIES_URL: [busy]}),
+                         max_attempts=2)
+    with pytest.raises(SourceError, match="refusing requests from this computer for now"):
+        source.fetch()
+    assert source.snapshots() == []              # nothing half-done for tidy to trip over

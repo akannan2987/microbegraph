@@ -55,15 +55,11 @@ POLITENESS: HOW TO BE A GOOD GUEST ON SOMEONE ELSE'S SERVER
 
 from __future__ import annotations
 
-import csv
 import hashlib
-import io
-import re
 import sys
 import tarfile
-import unicodedata
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -79,6 +75,21 @@ from tenacity import (
 from microbegraph import __version__
 from microbegraph.paths import PROVENANCE_LOG, RAW_DIR, STAGING_DIR
 
+# The table shapes, the error type and the safe writers live in
+# src/microbegraph/tables.py from Phase 4b (that file says why). They are
+# imported here too, so `from microbegraph.sources.base import NODE_COLUMNS`
+# still works everywhere it's used.
+from microbegraph.tables import (  # noqa: F401  (re-exported on purpose)
+    EDGE_COLUMNS,
+    NODE_COLUMNS,
+    SourceError,
+    TidyResult,
+    slugify,
+    table_text,
+    write_files_together,
+    write_table,
+)
+
 # --- How we introduce ourselves to every server -----------------------------
 USER_AGENT = f"MicrobeGraph/{__version__} (+https://github.com/akannan2987/microbegraph)"
 
@@ -86,24 +97,8 @@ USER_AGENT = f"MicrobeGraph/{__version__} (+https://github.com/akannan2987/micro
 # A big download is fine; a download that goes silent for a minute is not.
 TIMEOUT = (15, 60)
 
-# --- The two table shapes every adapter writes -------------------------------
-# These are the columns of nodes.csv and edges.csv in
-# docs/02-ontology-and-data-model.md, section 7. Same names, same order.
-NODE_COLUMNS: tuple[str, ...] = (
-    "node_id", "node_type", "name", "properties", "source", "retrieved_at",
-)
-EDGE_COLUMNS: tuple[str, ...] = (
-    "source_id", "target_id", "edge_type", "evidence_level", "source",
-    "source_record_id", "citation", "confidence", "retrieved_at",
-)
-
-
 # --- Errors with a message a person can act on ----------------------------------
-class SourceError(Exception):
-    """Something went wrong in a way the person running the command can fix.
-    The message always says what happened AND what to do next."""
-
-
+# SourceError itself is defined in src/microbegraph/tables.py (imported above).
 class TransientHTTPError(SourceError):
     """The server said 'busy' (429) or 'broken right now' (5xx), so trying again may help."""
 
@@ -154,16 +149,6 @@ class FetchResult:
     outcome: str          # "downloaded" or "already_present"
     n_bytes: int
     n_records: int
-
-
-@dataclass
-class TidyResult:
-    """What one tidy wrote to the staging folder, and the counts behind it."""
-
-    source: str
-    nodes_path: Path
-    edges_path: Path
-    counts: dict[str, int]
 
 
 # --- The socket itself -------------------------------------------------------------
@@ -265,7 +250,8 @@ class Source(ABC):
                                       allow_redirects=allow_redirects)
         raise AssertionError("unreachable: tenacity either returns or re-raises")
 
-    def http_post(self, url: str, data: dict[str, str]) -> requests.Response:
+    def http_post(self, url: str, data: dict[str, str],
+                  accept: tuple[int, ...] = ()) -> requests.Response:
         """
         One polite POST request, with the same retry rules as http_get().
 
@@ -274,10 +260,15 @@ class Source(ABC):
         too long for an address, and a key in the body never appears in an
         error message, a log or a browser history, while a key in an address
         can turn up in all three.
+
+        accept lists refusals that are really answers for this question (from
+        Phase 4b, PubChem's name search answers 404 for "no compound has this
+        name"), so they come back like any answer instead of stopping the run.
         """
         for attempt in self._retrying():
             with attempt:
-                return self._check(url, self.session.post(url, data=data, timeout=TIMEOUT))
+                return self._check(url, self.session.post(url, data=data, timeout=TIMEOUT),
+                                   accept=accept)
         raise AssertionError("unreachable: tenacity either returns or re-raises")
 
     def _get_once(self, url: str, *, params: dict[str, str] | None = None,
@@ -287,13 +278,16 @@ class Source(ABC):
                                                  allow_redirects=allow_redirects,
                                                  timeout=TIMEOUT))
 
-    def _check(self, url: str, response: requests.Response) -> requests.Response:
+    def _check(self, url: str, response: requests.Response,
+               accept: tuple[int, ...] = ()) -> requests.Response:
         """
         Turn an HTTP refusal into an error a person can act on.
 
         The message names the address WITHOUT its query or body, so nothing
         sent along with the request (an identifier list, a key) is repeated.
         """
+        if response.status_code in accept:
+            return response
         if response.status_code == 429 or response.status_code >= 500:
             response.close()
             raise TransientHTTPError(
@@ -486,95 +480,3 @@ def count_tar_json(archive: Path) -> int:
     """How many .json records an archive holds, without unpacking it."""
     with tarfile.open(archive, mode=_ARCHIVE_MODE) as tar:
         return sum(1 for m in tar if m.isfile() and m.name.endswith(".json"))
-
-
-# Greek letters appear in compound names (delta-cadinene, beta-lactam...).
-# Spelling them out keeps identifiers readable and plain ASCII.
-_GREEK = {
-    "α": "alpha", "β": "beta", "γ": "gamma", "δ": "delta", "ε": "epsilon",
-    "ζ": "zeta", "η": "eta", "θ": "theta", "ι": "iota", "κ": "kappa",
-    "λ": "lambda", "μ": "mu", "ν": "nu", "ξ": "xi", "ο": "omicron", "π": "pi",
-    "ρ": "rho", "σ": "sigma", "ς": "sigma", "τ": "tau", "υ": "upsilon",
-    "φ": "phi", "χ": "chi", "ψ": "psi", "ω": "omega",
-}
-
-
-def slugify(text: str) -> str:
-    """
-    Turn a name into the local part of an identifier: lowercase, plain
-    letters and digits, words joined by single hyphens.
-
-        "surfactin"          -> "surfactin"
-        "Bacillomycin D"     -> "bacillomycin-d"
-        "δ-cadinene"         -> "delta-cadinene"
-        "(-)-menthol"        -> "minus-menthol"
-        "(+)-menthol"        -> "plus-menthol"
-
-    Why spell out (+) and (-)? They mark mirror-image molecules, which can
-    behave very differently. Dropping the sign would quietly merge two
-    different chemicals into one node.
-    """
-    s = unicodedata.normalize("NFKC", text).strip().lower()
-    s = s.replace("−", "-")                       # the true minus sign
-    for sign, word in (("(+/-)", " rac "), ("(±)", " rac "),
-                       ("(+)", " plus "), ("(-)", " minus ")):
-        s = s.replace(sign, word)
-    s = "".join(_GREEK.get(ch, ch) for ch in s)
-    # Accented letters become their plain form (e.g. an accented e becomes e).
-    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
-    return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
-
-
-def write_files_together(contents: dict[Path, str]) -> None:
-    """
-    Write several text files so that they change together: every file is first
-    written to "<name>.tmp", and only when ALL of them are written are they
-    renamed into place. If anything fails while writing, the .tmp files are
-    removed and the old files are left exactly as they were.
-
-    The reason: a nodes table from today sitting next to an edges table from
-    yesterday is the kind of mismatch nobody would spot by eye.
-    """
-    tmps: list[tuple[Path, Path]] = []
-    try:
-        for path, text in contents.items():
-            path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = path.with_name(path.name + ".tmp")
-            tmp.write_text(text, encoding="utf-8", newline="")
-            tmps.append((tmp, path))
-        for tmp, path in tmps:
-            tmp.replace(path)
-    except BaseException:
-        for tmp, _ in tmps:
-            tmp.unlink(missing_ok=True)
-        raise
-
-
-def table_text(columns: Iterable[str], rows: Iterable[dict[str, object]]) -> str:
-    """Rows as CSV text with a fixed column order (the csv module handles quoting)."""
-    buffer = io.StringIO()
-    writer = csv.DictWriter(buffer, fieldnames=list(columns), lineterminator="\n")
-    writer.writeheader()
-    writer.writerows(rows)
-    return buffer.getvalue()
-
-
-def write_table(path: Path, columns: Iterable[str], rows: Iterable[dict[str, object]]) -> int:
-    """
-    Write rows to a CSV file with a fixed column order. Returns the row count.
-
-    Written to "<name>.tmp" first and renamed at the end, for the same reason
-    downloads are: a crash halfway must never leave a half-written table that
-    a later step would trust.
-    """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    n = 0
-    with tmp.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(columns), lineterminator="\n")
-        writer.writeheader()
-        for row in rows:
-            writer.writerow(row)
-            n += 1
-    tmp.replace(path)
-    return n

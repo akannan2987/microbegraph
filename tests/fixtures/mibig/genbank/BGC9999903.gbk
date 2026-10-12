@@ -1,0 +1,16 @@
+LOCUS       BGC9999903              2200 bp    DNA     linear   BCT 01-JAN-2026
+DEFINITION  Made-up test record for MicrobeGraph (no real organism).
+ACCESSION   BGC9999903
+VERSION     BGC9999903
+KEYWORDS    .
+SOURCE      Testus imaginarius
+FEATURES             Location/Qualifiers
+     CDS             1..900
+                     /gene="prdA"
+                     /locus_tag="TESTI_00020"
+                     /product="sugar phosphate cyclase"
+     CDS             complement(1001..2200)
+                     /product="transporter"
+                     /protein_id="XYZ99970.1"
+ORIGIN
+//

@@ -24,8 +24,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from microbegraph.sources.base import SourceError
 from microbegraph.staging import properties_of, read_table, staging_path
+from microbegraph.tables import SourceError
 
 # The sources in the order they run (the same order as `fetch --all`).
 SOURCE_ORDER: tuple[str, ...] = ("mibig", "pubchem", "ncbi_taxonomy", "kegg", "uniprot",

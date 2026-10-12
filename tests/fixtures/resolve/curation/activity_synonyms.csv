@@ -1,0 +1,5 @@
+activity,same_as,reason,citation,added_on
+antitumor (duplicate of anticancer),anticancer,MIBiG's own label says this name is a duplicate of anticancer (used in BGC0001979).,doi:10.5281/zenodo.14169073,2026-10-12
+antitumor,anticancer,"MIBiG marks antitumor as a duplicate of anticancer in its own label 'antitumor (duplicate of anticancer)', so the two words record the same activity (antitumor is used in 11 entries, anticancer in 12).",doi:10.5281/zenodo.14169073,2026-10-12
+antineoplastic,anticancer,"Antineoplastic means acting against neoplasms (tumours), the activity MIBiG records as anticancer; MeSH files substances with this action under the heading Antineoplastic Agents (D000970). Used in one entry, BGC0000028.",mesh:D000970,2026-10-12
+antibacterial (gram-negative),anti-gram-negative,"Two spellings of activity against Gram-negative bacteria: the plain-text style (one entry, BGC0000581) and the object style MIBiG 4.0 uses elsewhere (7 entries).",doi:10.5281/zenodo.14169073,2026-10-12

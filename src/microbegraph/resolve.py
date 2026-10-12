@@ -5,13 +5,14 @@ USAGE (from the repository root, with .venv active)
 
     python -m microbegraph.resolve
 
-    It reads data/processed/staging/ (all six sources, from Phases 1 to 3b),
-    decides which records are the same thing, and writes:
+    It reads data/processed/staging/ (all six sources, from Phases 1 to 4b)
+    and two hand-written lists in curation/ (Phase 4b), decides which records
+    are the same thing, and writes:
 
         data/processed/nodes.csv              one row per node of the graph
         data/processed/edges.csv              one row per arrow
         data/processed/resolution_ledger.csv  every decision, with its grounds
-        data/processed/resolve_summary.json   the counts, and lists for Phase 4b
+        data/processed/resolve_summary.json   the counts, and what is still open
 
     It needs no network: everything it reads is already on your disk. Run
     `python -m microbegraph.build_graph` next, to load the result into DuckDB
@@ -20,14 +21,18 @@ USAGE (from the repository root, with .venv active)
 WHAT HAPPENS, IN ORDER
     1. read every source's tables into one pool             resolution/pool.py
     2. move organisms whose NCBI number was merged          resolution/organisms.py
-    3. join MIBiG's compounds to PubChem's, where confirmed resolution/compounds.py
-    4. join protein numbers to UniProt, identical
+    3. fold activity words that mean the same thing         resolution/activities.py
+       (curation/activity_synonyms.csv, Phase 4b)
+    4. apply the decisions a person made                    resolution/reviewed.py
+       (curation/resolution_decisions.csv, Phase 4b)
+    5. join MIBiG's compounds to PubChem's, where confirmed resolution/compounds.py
+    6. join protein numbers to UniProt, identical
        sequences, and gene records by gene name            resolution/proteins.py
-    5. one node per group, arrows re-pointed               resolution/combine.py
-    6. the twelve rules on the merged tables, and a check that every
+    7. one node per group, arrows re-pointed               resolution/combine.py
+    8. the twelve rules on the merged tables, and a check that every
        identifier that disappeared has a ledger row; if either fails,
        nothing is written
-    7. write the four files together
+    9. write the four files together
 
 WHY THE TWELVE RULES RUN AGAIN
     Each source passed them on its own, but merging can break them: two
@@ -61,6 +66,7 @@ from pathlib import Path
 from typing import Any
 
 from microbegraph.paths import (
+    CURATION_DIR,
     EDGES_FILE,
     LEDGER_FILE,
     NODES_FILE,
@@ -70,6 +76,7 @@ from microbegraph.paths import (
     relative_to_repo,
 )
 from microbegraph.provenance import utc_now
+from microbegraph.resolution.activities import fold_activities, read_synonyms
 from microbegraph.resolution.combine import ResolutionError, combine_edges, combine_nodes
 from microbegraph.resolution.compounds import join_pubchem, join_same_npatlas
 from microbegraph.resolution.groups import Groups
@@ -82,7 +89,8 @@ from microbegraph.resolution.proteins import (
     join_identical_sequences,
     join_uniprot,
 )
-from microbegraph.sources.base import (
+from microbegraph.resolution.reviewed import apply_decisions, read_decisions
+from microbegraph.tables import (
     EDGE_COLUMNS,
     NODE_COLUMNS,
     SourceError,
@@ -103,21 +111,31 @@ class ResolveResult:
     summary: dict[str, Any] = field(default_factory=dict)
 
 
-def resolve(staging_dir: Path = STAGING_DIR, out_dir: Path = PROCESSED_DIR) -> ResolveResult:
-    """Run every rule, check the result, and write the four files (see the notes above)."""
+def resolve(staging_dir: Path = STAGING_DIR, out_dir: Path = PROCESSED_DIR,
+            curation_dir: Path = CURATION_DIR) -> ResolveResult:
+    """
+    Run every rule, check the result, and write the four files (see the notes
+    above). curation_dir holds activity_synonyms.csv and
+    resolution_decisions.csv; a missing file means an empty list.
+    """
     pool = Pool.read(staging_dir)
     ledger = Ledger()
     groups = Groups()
     notes: dict[str, list[str]] = defaultdict(list)                # added to a node
     renames: dict[str, dict[str, str]] = defaultdict(dict)        # property renamed
+    synonyms = read_synonyms(curation_dir / "activity_synonyms.csv")
+    decisions = read_decisions(curation_dir / "resolution_decisions.csv")
 
     moves = move_merged_numbers(pool, ledger)
-    join_pubchem(pool, groups, ledger, notes, renames)
-    join_same_npatlas(pool, groups, ledger)
+    folded = fold_activities(pool, ledger, synonyms)
+    moves.update(folded)
+    reviewed = apply_decisions(pool, groups, ledger, decisions)
+    join_pubchem(pool, groups, ledger, notes, renames, reviewed)
+    join_same_npatlas(pool, groups, ledger, reviewed)
     facts = ProteinFacts(pool, moves)
-    join_uniprot(pool, groups, ledger, facts, notes)
-    join_identical_sequences(pool, groups, ledger, facts)
-    gene_records_left = join_gene_names(pool, groups, ledger)
+    join_uniprot(pool, groups, ledger, facts, notes, reviewed)
+    join_identical_sequences(pool, groups, ledger, facts, reviewed)
+    gene_records_left = join_gene_names(pool, groups, ledger, reviewed)
     groups.settle()
 
     def final_id(identifier: str) -> str:
@@ -147,6 +165,13 @@ def resolve(staging_dir: Path = STAGING_DIR, out_dir: Path = PROCESSED_DIR) -> R
             f"{', '.join(unexplained[:10])}"
         )
     summary = _summary(pool, nodes, edges, edge_counts, ledger, left_out, gene_records_left)
+    summary["curation"] = {
+        "activity_synonyms": len(synonyms),
+        "activity_synonyms_applied": len(folded),
+        "activity_synonyms_not_applied": [s.activity for s in synonyms
+                                          if s.old_id not in folded],
+        "decisions_by_hand": len(decisions),
+    }
 
     paths = {name: out_dir / path.name for name, path in (
         ("nodes", NODES_FILE), ("edges", EDGES_FILE), ("ledger", LEDGER_FILE),
@@ -194,9 +219,20 @@ def _summary(pool: Pool, nodes: list[dict[str, Any]], edges: list[dict[str, Any]
         "nodes_by_type": dict(sorted(by_type.items())),
         "edges_by_type": dict(sorted(by_edge.items())),
         "rules": ledger.counts(),
-        "for_phase_4b": {
+        # What the rules left for a person (Phase 4b: the review file is where
+        # a decision about any of these goes; docs/06b-closing-the-gaps.md).
+        "still_open": {
             "gene_records_without_a_protein_number": gene_records_left,
             "curators_removals_not_found": mibig.get("to_delete_not_found", []),
+            "pubchem_joins_on_the_formula_alone": sum(
+                1 for r in ledger.rows if r["decision"] == "merged"
+                and r["grounds"].endswith("Confirmed by the formula alone.")),
+            "compounds_kept_apart_from_pubchem": len({
+                r["identifier"] for r in ledger.rows if r["decision"] == "kept_apart"
+                and r["rule"].startswith("pubchem_")}),
+            "protein_numbers_with_tied_uniprot_entries": sorted(
+                r["identifier"] for r in ledger.rows if r["rule"] == "uniprot_cross_reference"
+                and r["decision"] == "kept_apart"),
         },
     }
 
@@ -215,7 +251,8 @@ def _parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
-        print(f"[resolve] reading {relative_to_repo(STAGING_DIR)}/ (six sources)")
+        print(f"[resolve] reading {relative_to_repo(STAGING_DIR)}/ (six sources) and "
+              f"{relative_to_repo(CURATION_DIR)}/")
         result = resolve()
     except (SourceError, ResolutionError, OSError, ValueError, KeyError) as error:
         if args.debug:
@@ -223,6 +260,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n[resolve] FAILED: {error}\n  (add --debug to see the full error)")
         return 1
     print(report(result.summary))
+    curation = result.summary["curation"]
+    print(f"[resolve] curation/: {curation['activity_synonyms_applied']} of "
+          f"{curation['activity_synonyms']} activity synonyms applied, "
+          f"{curation['decisions_by_hand']} decisions by hand")
+    for word in curation["activity_synonyms_not_applied"]:
+        print(f"  note: no source uses the activity '{word}' yet, so its synonym row waits")
     written = ", ".join(p.name for p in (result.nodes_path, result.edges_path,
                                           result.ledger_path, result.summary_path))
     print("[resolve] the twelve rules pass on the merged tables")

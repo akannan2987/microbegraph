@@ -1,6 +1,7 @@
 """
 MicrobeGraph, the MIBiG adapter (Phase 1; gene records from Phase 3; every
-cluster's proteins from Phase 3b).
+cluster's proteins from Phase 3b; the GenBank file and every value of a
+disputed property from Phase 4b).
 
 WHAT MIBiG IS
     MIBiG (Minimum Information about a Biosynthetic Gene Cluster) is a public,
@@ -33,6 +34,10 @@ WHICH VERSION, EXACTLY
     download server. That server publishes no checksum, so the file is pinned
     by a SHA-256 fingerprint this project recorded from its first download,
     and every later download must match it.
+
+    From Phase 4b a third file joins them, from the same server and the same
+    release: MIBiG's GenBank file (mibig_gbk_4.0.tar.gz), pinned the same
+    way. src/microbegraph/sources/mibig_genbank.py reads it.
 
     Cite: Zdouc MM et al. (2025) MIBiG 4.0: advancing biosynthetic gene
     cluster curation through global collaboration. Nucleic Acids Research
@@ -101,6 +106,15 @@ EVERY CLUSTER'S PROTEINS (added in Phase 3b)
          the file's details (position, sequence length and fingerprint) and
          its ENCODES arrow is the same arrow, not a second one.
 
+    From Phase 4b, a gene record or a removal that steps 1 and 2 can't place
+    is looked up once more, in MIBiG's GenBank file, which lists every name
+    each gene goes by (gene name, locus tag, NCBI gene number) beside its
+    protein number. That places the last 21 gene records (baeI in the
+    bacillaene cluster, for example) and the 4 maize genes removed from
+    BGC0002390. A gene record still needs exactly one protein; a removal
+    removes every protein the name leads to. Both are counted as found
+    "by genbank".
+
     Genes the curators added ("to_add") are already in the file, with a
     sequence even where the JSON has none, so they arrive through step 3 and
     are counted. CATALYZES still comes only from gene records, because only
@@ -129,6 +143,22 @@ HOW EVIDENCE AND CONFIDENCE ARE SET (two separate questions)
         MIBiG grades every entry: high, medium, low or questionable.
         We carry that grade through instead of inventing our own:
         high 0.95, medium 0.85, low 0.70, questionable 0.50.
+
+WHEN TWO ENTRIES DISAGREE (Phase 4b)
+    One compound can appear in several entries, and the entries don't always
+    agree: geldanamycin has one formula in BGC0000066 and another in
+    BGC0000067, and 2-methylisoborneol has PubChem number 9237955 in
+    BGC0000657 but 16913 in BGC0000658 and BGC0000659. The node keeps the
+    first value it met under the property's own name (formula, mass, smiles,
+    pubchem_cid...), as it always did, and from Phase 4b it also gets a
+    second property listing every value with the entry that gave it:
+
+        pubchem_cid_by_entry   BGC0000657: 9237955|BGC0000658: 16913|BGC0000659: 16913
+
+    Nothing is decided here. The list makes the disagreement visible, the
+    PubChem adapter asks about every number in it, and the resolver chooses
+    between them with evidence (docs/06b-closing-the-gaps.md). The summary
+    still counts the disagreements (property_conflicts).
 
 WHAT tidy() LEAVES OUT ON PURPOSE
     * Entries whose status is not "active" (retired, pending, embargoed).
@@ -176,6 +206,12 @@ from microbegraph.sources.base import (
     table_text,
     write_files_together,
 )
+from microbegraph.sources.mibig_genbank import (
+    CodingSequence,
+    count_entries,
+    find_in_genbank,
+    read_genbank_file,
+)
 from microbegraph.sources.mibig_proteins import (
     ProteinRecord,
     count_records,
@@ -205,6 +241,13 @@ PROTEIN_FILE_URL = DOWNLOAD_SERVER + PROTEIN_FILE
 PROTEIN_FILE_SHA256 = "4b196343ed82d49f2b8f3babe89d512b92f0e026040fa50b15eeb97950717e8b"
 PROTEIN_FILE_BYTES = 31_833_799
 
+# MIBiG's GenBank file (Phase 4b), the same release on the same server, also
+# with no published checksum. Measured on its first download (2026-10-12).
+GENBANK_FILE = "mibig_gbk_4.0.tar.gz"
+GENBANK_FILE_URL = DOWNLOAD_SERVER + GENBANK_FILE
+GENBANK_FILE_SHA256 = "43543f9c85316bc44e555dd2c6c37331b1a56150218b204dc14e623ea66e834b"
+GENBANK_FILE_BYTES = 83_652_126
+
 # How the download server names MIBiG's files, to spot a newer release there.
 _RELEASE_FILE = re.compile(r"mibig_(?:json|prot_seqs|gbk)_(\d+)\.(\d+)(rc\d+)?[^\"'<>\s]*")
 
@@ -223,6 +266,13 @@ QUALITY_CONFIDENCE: dict[str, float] = {
 PREDICTION_METHODS = frozenset({
     "Homology-based prediction",
     "Synthetic-bioinformatic natural product (syn-BNP)",
+})
+
+# Properties that hold a list (values joined with "|"): repeats are combined,
+# never counted as a disagreement.
+LIST_PROPERTIES = frozenset({
+    "synonyms", "database_ids", "loci", "bgc_class", "activity_notes", "functions",
+    "function_evidence", "locations", "found_in", "locus_tags",
 })
 
 # The three gene jobs that carry out a step in making the molecule (Phase 3).
@@ -384,6 +434,35 @@ class MibigSource(Source):
         else:
             report.facts.append("in your locker : not yet (run the fetch)")
 
+        self._probe_genbank_file(report)
+
+    def _probe_genbank_file(self, report: ProbeReport) -> None:
+        """Phase 4b: the same questions about the GenBank file (size and date, then the locker)."""
+        report.facts.append(f"genbank file   : {GENBANK_FILE} from {DOWNLOAD_SERVER}")
+        try:
+            response = self.http_get(GENBANK_FILE_URL, stream=True)
+            size = int(response.headers.get("Content-Length") or 0)
+            changed = response.headers.get("Last-Modified", "?")
+            response.close()
+            if size == GENBANK_FILE_BYTES:
+                report.facts.append(f"size           : {size:,} bytes, the pinned size "
+                                    f"(last changed {changed})")
+            else:
+                report.warnings.append(
+                    f"The download server lists {GENBANK_FILE} at {size:,} bytes, but this "
+                    f"project pinned {GENBANK_FILE_BYTES:,}. MIBiG may have replaced the file. "
+                    f"Do not fetch until you know why.")
+        except (requests.RequestException, SourceError, ValueError) as error:
+            report.warnings.append(f"Could not ask MIBiG's download server about the GenBank "
+                                   f"file ({error}). Check your connection.")
+        local = self.locker / GENBANK_FILE
+        if local.exists():
+            n_bytes, _, sha256 = file_digests(local)
+            state = "verified" if sha256 == GENBANK_FILE_SHA256 else "DOES NOT MATCH the pinned SHA-256"
+            report.facts.append(f"in your locker : yes, {n_bytes / 1_048_576:.1f} MB, {state}")
+        else:
+            report.facts.append("in your locker : not yet (run the fetch)")
+
     def _newer_version(self, record: dict[str, Any]) -> tuple[str, str]:
         """
         Work out whether Zenodo holds a newer release than the pinned one.
@@ -422,11 +501,39 @@ class MibigSource(Source):
     # ======================================================================
     def fetch(self) -> list[FetchResult]:
         """
-        Download the pinned archive and (from Phase 3b) the pinned protein
-        file into data/raw/mibig/, with one provenance row for each.
+        Download the pinned archive, (from Phase 3b) the pinned protein file
+        and (from Phase 4b) the pinned GenBank file into data/raw/mibig/, with
+        one provenance row for each. A file already in the locker and
+        matching its pin isn't downloaded again.
         """
         archive = self._fetch_archive()
-        return [archive, self._fetch_protein_file()]
+        return [archive, self._fetch_protein_file(), self._fetch_genbank_file()]
+
+    def _fetch_genbank_file(self) -> FetchResult:
+        """The GenBank file (Phase 4b): pinned by our own SHA-256, like the protein file."""
+        path, outcome, n_bytes, md5, sha256 = self.download_to_locker(
+            GENBANK_FILE_URL, GENBANK_FILE, None, expected_sha256=GENBANK_FILE_SHA256
+        )
+        n_records = count_entries(path)
+        provenance.append(
+            {
+                "retrieved_at": provenance.utc_now(),
+                "source": self.name,
+                "source_version": MIBIG_VERSION,
+                "url": GENBANK_FILE_URL,
+                "local_path": relative_to_repo(path),
+                "n_bytes": n_bytes,
+                "md5": md5,
+                "sha256": sha256,
+                "n_records": n_records,
+                "licence": self.licence,
+                "outcome": outcome,
+            },
+            log_path=self.provenance_log,
+        )
+        self.say(f"  [{self.name}] {outcome}: {relative_to_repo(path)} "
+                 f"({n_bytes / 1_048_576:.1f} MB, {n_records} GenBank records), provenance logged")
+        return FetchResult(self.name, path, outcome, n_bytes, n_records)
 
     def _fetch_protein_file(self) -> FetchResult:
         """The protein file: same safety rules as the archive, checked against our own SHA-256."""
@@ -515,8 +622,19 @@ class MibigSource(Source):
                 f"  The JSON archive is already there, so only the protein file is downloaded."
             )
 
+        genbank_file = self.locker / GENBANK_FILE
+        if not genbank_file.exists():
+            raise SourceError(
+                f"{relative_to_repo(genbank_file)} is not in the evidence locker yet "
+                f"(the tidy reads it from Phase 4b).\n"
+                f"  Run:  python -m microbegraph.fetch --source mibig\n"
+                f"  The other two files are already there, so only the GenBank file is "
+                f"downloaded (about 80 MB)."
+            )
+
         retrieved_at = self._retrieved_date(archive)
-        builder = _GraphBuilder(retrieved_at, read_protein_file(protein_file))
+        builder = _GraphBuilder(retrieved_at, read_protein_file(protein_file),
+                                read_genbank_file(genbank_file))
 
         # Read every entry in the order the archive stores them (fast), keep only
         # the fields we use (small), then sort by file name (same order on every
@@ -556,6 +674,7 @@ class MibigSource(Source):
             "source_version": MIBIG_VERSION,
             "archive": relative_to_repo(archive),
             "protein_file": relative_to_repo(protein_file),
+            "genbank_file": relative_to_repo(genbank_file),
             "retrieved_at": retrieved_at,
             "counts": counts,
             # Phase 3b: every decision about the protein file that a person may
@@ -610,13 +729,16 @@ class _GraphBuilder:
     """
 
     def __init__(self, retrieved_at: str,
-                 protein_file: dict[str, list[ProteinRecord]] | None = None) -> None:
+                 protein_file: dict[str, list[ProteinRecord]] | None = None,
+                 genbank: dict[str, list[CodingSequence]] | None = None) -> None:
         self.retrieved_at = retrieved_at
         self.nodes: dict[str, dict[str, Any]] = {}
         self.edges: dict[tuple[str, str, str], dict[str, Any]] = {}
         # Phase 3b: the protein file, grouped by entry (empty when a test
         # builds entries without one), and the decisions worth listing.
         self.protein_file = protein_file or {}
+        # Phase 4b: the GenBank file's names, grouped by entry (empty when absent)
+        self.genbank = genbank or {}
         self._entries_read: set[str] = set()
         self.removed: list[dict[str, str]] = []
         self.removals_not_found: list[dict[str, str]] = []
@@ -642,9 +764,16 @@ class _GraphBuilder:
             "to_delete_not_found": 0,
             "genes_found_by_id": 0, "genes_found_by_product": 0, "genes_not_in_protein_file": 0,
             "genes_given_a_protein_number": 0, "entries_with_proteins": 0,
+            # Phase 4b: the GenBank file
+            "genbank_cds": sum(len(c) for c in self.genbank.values()),
+            "genes_found_by_genbank": 0, "removals_found_by_genbank": 0,
         }
         # slug -> the exact (case-folded) name that first claimed it
         self._slug_owner: dict[str, str] = {}
+        # Phase 4b: every value each single-value property was given, and by
+        # which entries: (node id, property) -> {value as text: {accessions}}
+        self._entry = ""
+        self._values: dict[tuple[str, str], dict[str, set[str]]] = {}
 
     # ---------------------------------------------------------------- entries
     def add_entry(self, raw: Any) -> None:
@@ -659,6 +788,7 @@ class _GraphBuilder:
         self.counts["entries_active"] += 1
 
         accession = str(raw["accession"])
+        self._entry = accession               # remembered with every value from here on
         quality = str(raw.get("quality", "questionable"))
         confidence = QUALITY_CONFIDENCE.get(quality, QUALITY_CONFIDENCE["questionable"])
         entry_refs = _entry_references(raw)
@@ -804,6 +934,14 @@ class _GraphBuilder:
             name = str(item.get("id") or "").strip()
             reason = str(item.get("reason") or "").strip()
             found, how = find_removed(name, records) if name else ([], "")
+            if not found and name:
+                # Phase 4b: every protein of this entry that the GenBank file
+                # gives under that name (a removal takes them all).
+                numbers = set(find_in_genbank(name, self.genbank.get(accession, [])))
+                found = [i for i, r in enumerate(records) if r.protein_id in numbers]
+                how = "genbank" if found else ""
+                if found:
+                    self.counts["removals_found_by_genbank"] += 1
             if not found:
                 self.counts["to_delete_not_found"] += 1
                 self.removals_not_found.append({"entry": accession, "to_delete": name,
@@ -865,6 +1003,12 @@ class _GraphBuilder:
 
         # Phase 3b: which protein in the file is this? Its number names the node.
         index, how = find_gene(raw_id, records or [])
+        if index is None:
+            # Phase 4b: the GenBank file may give this name a protein number.
+            numbers = find_in_genbank(raw_id, self.genbank.get(accession, []))
+            matches = [i for i, r in enumerate(records or []) if r.protein_id in numbers]
+            if len({(records or [])[i].protein_id for i in matches}) == 1:
+                index, how = matches[0], "genbank"
         if index is None:
             self.counts["genes_not_in_protein_file"] += 1
             self.genes_not_found.append(f"{accession}: {raw_id}")
@@ -937,23 +1081,27 @@ class _GraphBuilder:
 
     def _add_node(self, node_id: str, node_type: str, name: str, props: dict[str, Any]) -> None:
         clean = {k: v for k, v in props.items() if v not in (None, "", [])}
+        for key, value in clean.items():
+            if key not in LIST_PROPERTIES:
+                # Phase 4b: remember which entry gave which value, so a
+                # disagreement can be shown in full (see node_rows()).
+                (self._values.setdefault((node_id, key), {})
+                 .setdefault(str(value), set()).add(self._entry))
         existing = self.nodes.get(node_id)
         if existing is None:
             self.nodes[node_id] = {"node_type": node_type, "name": name, "properties": clean}
             return
         merged = existing["properties"]
         for key, value in clean.items():
-            if key in ("synonyms", "database_ids", "loci", "bgc_class", "activity_notes",
-                       "functions", "function_evidence", "locations", "found_in",
-                       "locus_tags"):
+            if key in LIST_PROPERTIES:
                 parts = set(str(merged.get(key, "")).split("|")) | set(str(value).split("|"))
                 merged[key] = "|".join(sorted(p for p in parts if p))
             elif key not in merged:
                 merged[key] = value
             elif merged[key] != value:
-                # Two entries disagree (e.g. two masses for one compound). Keep
-                # the first and count the disagreement. Phase 4b keeps the other
-                # value too, so a person can review it (docs/ROADMAP.md).
+                # Two entries disagree (e.g. two masses for one compound). The
+                # first value stays; node_rows() adds <key>_by_entry with every
+                # value and the entry it came from (WHEN TWO ENTRIES DISAGREE).
                 self.counts["property_conflicts"] += 1
         if name != existing["name"]:
             others = set(str(merged.get("other_names", "")).split("|")) | {name}
@@ -974,7 +1122,18 @@ class _GraphBuilder:
             existing["evidence_level"] = level      # lower rank = stronger evidence
 
     # ---------------------------------------------------------------- output
+    def _add_disagreements(self) -> None:
+        """Phase 4b: <key>_by_entry for every property given more than one value."""
+        for (node_id, key), values in self._values.items():
+            if len(values) < 2:
+                continue
+            listed = sorted((entry, value) for value, entries in values.items()
+                            for entry in entries)
+            self.nodes[node_id]["properties"][f"{key}_by_entry"] = "|".join(
+                f"{entry}: {value}" for entry, value in listed)
+
     def node_rows(self) -> list[dict[str, Any]]:
+        self._add_disagreements()
         rows = [
             {
                 "node_id": node_id,

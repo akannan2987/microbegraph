@@ -16,55 +16,85 @@ WHY A SHARED NUMBER ISN'T ENOUGH
     PubChem's "Bacillomycin Fc", a relative with a different formula, and it
     gives "minutissamide B" and "minutissamide C" the number of
     "Minutissamide D". Joining on the number alone would quietly move facts
-    about one molecule onto another.
+    about one molecule onto another. So a number needs a second, independent
+    clue before two records become one node.
 
-    So a number has to be confirmed by a second, independent piece of
-    evidence before two records become one node:
+THE CLUES, FROM STRONGEST TO WEAKEST (Phase 4, extended in Phase 4b)
+    For each MIBiG compound the candidates are every PubChem number its
+    entries give (from Phase 4b, all of them, not only the first; see
+    pubchem_cid_by_entry in mibig.py) and every number PubChem's name search
+    returned for its name (Phase 4b, see pubchem.py). Each candidate is
+    judged on these clues, and the strongest decides:
 
-    rule pubchem_number_confirmed
-        MIBiG's name is one of PubChem's names for that number (its title or a
-        synonym), OR the two formulas agree. Either one is enough.
+    1. name     MIBiG gives the number, and PubChem lists MIBiG's name under
+                it: as the title, in the first 20 synonyms, or (Phase 4b)
+                anywhere in its full list of names; or PubChem's name search
+                returns this very number. Two independent sources agree.
 
-        The formula is the weaker clue. It is only independent of the number
-        if MIBiG worked it out on its own; where MIBiG copied the structure
-        from the PubChem record the number points at, the formulas agree
-        whether the number is right or not (MIBiG's "2-methylisoborneol"
-        carries a bromine compound's formula, C15H16BrN3O4S). On the real data
-        325 joins rest on the formula alone. Their ledger rows say "PubChem
-        doesn't list the name", and Phase 4b checks each one against
-        PubChem's full list of names.
+    2. same structure  (Phase 4b) MIBiG gives the number, PubChem files the
+                name under a DIFFERENT number, and the two records share the
+                first block of their InChIKey. An InChIKey is a fingerprint
+                of a structure in three blocks; the first block encodes the
+                atoms and how they connect, and leaves out the 3D arrangement.
+                PubChem often keeps one record per way of drawing a molecule
+                (with its 3D arrangement, without it, with an unusual
+                isotope...), and only one of them carries the name. A salt
+                isn't one of these: its metal is part of the first block. Two library copies of one book,
+                one with a library stamp on the cover and one without, are
+                still the same book.
 
-    rule pubchem_number_shared
-        When several MIBiG compounds give the same number, a matching formula
-        proves nothing: minutissamides B, C and D all have the formula
-        C55H91N13O16 but are different molecules (isomers, the same atoms
-        arranged differently). So each needs its own NAME confirmed.
+    3. name search  (Phase 4b) MIBiG gives no number that passes 1 or 2, but
+                PubChem's name search finds the name under exactly one
+                number whose formula agrees with MIBiG's.
 
-    rule pubchem_number_unknown
-        PubChem has no compound with the number MIBiG gives. Nothing to join.
+    4. formula alone  MIBiG gives the number and the formulas agree, but
+                PubChem lists the name nowhere. This was enough in Phase 4,
+                and 325 joins rested on it. From Phase 4b it no longer is in
+                two cases: when the name search points at a different molecule
+                (a different first InChIKey block), and when MIBiG's own
+                entries give the compound different formulas (formula_by_entry),
+                since one of them agreeing proves little. MIBiG's
+                "2-methylisoborneol" carries a bromine compound's number,
+                formula and structure in one entry, so its formula agrees for
+                the wrong reason; MIBiG's two formulas for ferrichrome (with and
+                without its iron) would let it join PubChem's record of a
+                radioactive form of iron in ferrichrome.
 
-    rule npatlas_and_formula
-        Two MIBiG compounds that share a number from NPAtlas (the Natural
-        Products Atlas, a database of microbial natural products) AND have the
-        same formula are one compound recorded twice under two names
-        (lovastatin and monacolin K, for example). A shared NPAtlas number
-        without the same formula on both sides stays apart; on the real data
-        every such pair has one record with no formula at all.
+    A number several MIBiG compounds give (rule pubchem_number_shared) is
+    only joined on clue 1: minutissamides B, C and D share a formula but are
+    different molecules, so neither a formula nor a shared structure key
+    can tell them apart.
 
-    Whatever stays apart is written to the ledger as kept_apart, with the
-    reason. The MIBiG compound keeps a note saying so, and its unconfirmed
-    number moves from pubchem_cid to pubchem_cid_not_confirmed, so nobody
+    Two candidates on the same level that are different records stay apart
+    from the compound, and the ledger lists both: choosing would be a guess.
+
+THE RULES IN THE LEDGER
+    pubchem_number_confirmed  one number from MIBiG; clue 1, 2 or 4
+    pubchem_number_shared     a number several MIBiG compounds give; clue 1 only
+    pubchem_numbers_differ    (Phase 4b) MIBiG's entries give different numbers
+    pubchem_name_search       (Phase 4b) a number only the name search found
+    pubchem_number_unknown    a number PubChem doesn't have
+    npatlas_and_formula       two MIBiG compounds with one NPAtlas number and one formula
+
+    Every candidate that isn't joined gets a kept_apart row with the reason.
+    The MIBiG compound keeps a note saying so, and an unconfirmed number from
+    MIBiG moves from pubchem_cid to pubchem_cid_not_confirmed, so nobody
     filtering on pubchem_cid mistakes it for a confirmed one.
+
+    A pair a person has settled in curation/resolution_decisions.csv
+    (reviewed.py) is left alone by every rule here.
 """
 
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass, field
 
 from microbegraph.resolution.groups import Groups, rank_key
 from microbegraph.resolution.ledger import Ledger
 from microbegraph.resolution.names import compare_formulas, name_key, split_list
 from microbegraph.resolution.pool import Pool
+from microbegraph.resolution.reviewed import Reviewed
 
 FORMULA_WORDS = {
     "agrees": "the formulas agree ({a})",
@@ -72,6 +102,10 @@ FORMULA_WORDS = {
     "differs": "the formulas differ (MIBiG {a}, PubChem {b})",
     "missing": "there's no formula to compare",
 }
+GOOD_FORMULA = ("agrees", "agrees_but_charge")
+
+# How strong each clue is (lower is stronger), and the words the ledger uses.
+NAME, SAME_STRUCTURE, NAME_SEARCH, FORMULA_ONLY, NONE = range(5)
 
 
 def _mibig_names(pool: Pool, node_id: str) -> set[str]:
@@ -83,81 +117,290 @@ def _mibig_names(pool: Pool, node_id: str) -> set[str]:
 
 
 def _pubchem_names(pool: Pool, node_id: str) -> set[str]:
-    """The name keys PubChem gives a compound: its title and its listed synonyms."""
-    names = [pool.name(node_id, "pubchem")] + split_list(pool.props(node_id, "pubchem")
-                                                         .get("synonyms"))
+    """
+    The name keys PubChem gives a compound: its title, its first 20 synonyms
+    and (Phase 4b) the names further down its full list that match a MIBiG name.
+    """
+    props = pool.props(node_id, "pubchem")
+    names = ([pool.name(node_id, "pubchem")] + split_list(props.get("synonyms"))
+             + split_list(props.get("names_matching_mibig")))
     return {key for key in map(name_key, names) if key}
 
 
+def _skeleton(pool: Pool, pubchem_id: str) -> str:
+    """The first block of a PubChem record's InChIKey ("" if it has none)."""
+    return str(pool.props(pubchem_id, "pubchem").get("inchikey") or "").split("-")[0]
+
+
+@dataclass
+class Candidate:
+    """One PubChem record a MIBiG compound might be, and what the evidence says."""
+
+    pubchem_id: str
+    given: bool                       # MIBiG gives this number
+    found: bool                       # the name search returned it
+    shared: bool                      # several MIBiG compounds give it
+    named: bool                       # PubChem lists the name, or the search found it here
+    formula: str                      # "agrees", "differs"...
+    formula_text: str
+    formulas: list[str] = field(default_factory=list)  # MIBiG's formulas for this number
+    entries: list[str] = field(default_factory=list)   # the entries that give it
+    others: list[str] = field(default_factory=list)    # other MIBiG compounds giving it
+    level: int = NONE
+    why: str = ""
+
+    @property
+    def cid(self) -> str:
+        return self.pubchem_id.split(":", 1)[1]
+
+
+def _formulas_for(pool: Pool, mibig_id: str, entries: list[str]) -> list[str]:
+    """
+    The formulas MIBiG gives this compound, from the entries named (all of
+    them when none are named). From Phase 4b a compound can carry several
+    (formula_by_entry); otherwise it's the one formula.
+    """
+    props = pool.props(mibig_id, "mibig")
+    by_entry = [item.partition(": ") for item in split_list(props.get("formula_by_entry"))]
+    if by_entry:
+        chosen = [f for entry, _, f in by_entry if not entries or entry in entries]
+        return list(dict.fromkeys(chosen)) or [str(props.get("formula") or "")]
+    return [str(props.get("formula") or "")]
+
+
+def _given_entries(pool: Pool, mibig_id: str) -> dict[str, list[str]]:
+    """CID -> the entries that give it, from pubchem_cid_by_entry (empty if they all agree)."""
+    found: dict[str, list[str]] = defaultdict(list)
+    for item in split_list(pool.props(mibig_id, "mibig").get("pubchem_cid_by_entry")):
+        entry, _, cid = item.partition(": ")
+        found[cid.strip()].append(entry.strip())
+    return dict(found)
+
+
+def _candidates(pool: Pool, mibig_id: str, given: list[str], found: list[str],
+                claims: dict[str, list[str]]) -> list[Candidate]:
+    """Every PubChem record this compound might be, each judged on the clues."""
+    ours = _mibig_names(pool, mibig_id)
+    entries = _given_entries(pool, mibig_id)
+    result = []
+    for pubchem_id in sorted(set(given) | set(found), key=rank_key):
+        cid = pubchem_id.split(":", 1)[1]
+        props = pool.props(pubchem_id, "pubchem")
+        theirs = props.get("formula")
+        formulas = _formulas_for(pool, mibig_id, entries.get(cid, []) if pubchem_id in given else [])
+        states = [compare_formulas(f, theirs) for f in formulas]
+        state = next((s for s in states if s in GOOD_FORMULA), states[0] if states else "missing")
+        shown = next((f for f, s in zip(formulas, states, strict=True) if s == state), formulas[0] if formulas else "")
+        is_found = pubchem_id in found
+        result.append(Candidate(
+            pubchem_id=pubchem_id, given=pubchem_id in given, found=is_found,
+            shared=len(claims.get(pubchem_id, [])) > 1,
+            named=bool(ours & _pubchem_names(pool, pubchem_id)) or is_found,
+            formula=state, formula_text=FORMULA_WORDS[state].format(a=shown, b=theirs),
+            formulas=[f for f in formulas if f], entries=entries.get(cid, []),
+            others=[pool.name(m, "mibig") for m in claims.get(pubchem_id, []) if m != mibig_id]))
+    return result
+
+
+def _judge(pool: Pool, mibig_id: str, candidates: list[Candidate],
+           name_search_ran: bool = True) -> None:
+    """Set each candidate's level (the strongest clue it has) and the words for the ledger."""
+    name = pool.name(mibig_id, "mibig")
+    found_elsewhere = [c for c in candidates if c.found and c.named]
+    several_given = sum(1 for c in candidates if c.given) > 1
+    for c in candidates:
+        title = pool.name(c.pubchem_id, "pubchem")
+        if c.given and c.named:
+            c.level = NAME
+            how = (f"PubChem's name search returns this number for '{name}'" if c.found
+                   else f"PubChem lists the name '{name}'")
+            c.why = f"{how}; {c.formula_text}"
+            continue
+        if c.given and not c.shared:
+            twin = next((f for f in found_elsewhere if f.pubchem_id != c.pubchem_id
+                         and _skeleton(pool, f.pubchem_id)
+                         and _skeleton(pool, f.pubchem_id) == _skeleton(pool, c.pubchem_id)), None)
+            if twin is not None:
+                c.level = SAME_STRUCTURE
+                c.why = (f"PubChem doesn't list the name '{name}' under CID {c.cid} (its title "
+                         f"is '{title}'), but files it under CID {twin.cid}, the same molecule "
+                         f"drawn another way: both InChIKeys start "
+                         f"{_skeleton(pool, c.pubchem_id)}; {c.formula_text}")
+                continue
+            elsewhere = [f for f in found_elsewhere if f.pubchem_id != c.pubchem_id]
+            disputed = len(set(c.formulas)) > 1
+            if c.formula in GOOD_FORMULA and disputed and not elsewhere:
+                c.why = (f"PubChem doesn't list the name '{name}' (its title is '{title}'); "
+                         f"MIBiG's entries give it different formulas "
+                         f"({', '.join(dict.fromkeys(c.formulas))}), so one of them agreeing "
+                         f"with PubChem's ({pool.props(c.pubchem_id, 'pubchem').get('formula')}) "
+                         f"can't confirm the number")
+                continue
+            if c.formula in GOOD_FORMULA and not elsewhere and not several_given:
+                c.level = FORMULA_ONLY
+                searched = (", and its name search finds the name under no other number"
+                            if name_search_ran else "")
+                c.why = (f"PubChem doesn't list the name '{name}' (its title is '{title}')"
+                         f"{searched}; {c.formula_text}")
+                continue
+            if c.formula in GOOD_FORMULA and elsewhere:
+                others = ", ".join(f"CID {f.cid}" for f in elsewhere)
+                c.why = (f"PubChem doesn't list the name '{name}' (its title is '{title}') "
+                         f"and files it under {others}, a different molecule (another "
+                         f"structure key), so the formula alone isn't trusted; {c.formula_text}")
+                continue
+            c.why = (f"PubChem doesn't list the name '{name}' (its title is '{title}'); "
+                     f"{c.formula_text}")
+            continue
+        if c.given:          # shared, and the name isn't listed
+            c.why = (f"PubChem doesn't list the name '{name}', and with several MIBiG "
+                     f"compounds on one number a formula can't tell isomers apart; "
+                     f"{c.formula_text}")
+            continue
+        if c.formula in GOOD_FORMULA:
+            c.level = NAME_SEARCH
+            c.why = (f"PubChem's name search finds '{name}' under CID {c.cid} ('{title}'); "
+                     f"{c.formula_text}")
+        else:
+            c.why = (f"PubChem's name search finds '{name}' under CID {c.cid} ('{title}'), "
+                     f"but {c.formula_text}")
+
+
+def _rule_for(c: Candidate, several_given: bool) -> str:
+    if not c.given:
+        return "pubchem_name_search"
+    if c.shared:
+        return "pubchem_number_shared"
+    return "pubchem_numbers_differ" if several_given else "pubchem_number_confirmed"
+
+
 def join_pubchem(pool: Pool, groups: Groups, ledger: Ledger, notes: dict[str, list[str]],
-                 renames: dict[str, dict[str, str]]) -> None:
-    """Apply the three PubChem rules (see the module notes)."""
+                 renames: dict[str, dict[str, str]], reviewed: Reviewed | None = None) -> None:
+    """Apply the PubChem rules to every MIBiG compound (see the module notes)."""
+    reviewed = reviewed or Reviewed([])
+    claims: dict[str, list[str]] = {}               # pubchem id -> MIBiG compounds giving it
+    found_by: dict[str, list[str]] = defaultdict(list)
     for pubchem_id in pool.ids("pubchem.compound"):
         props = pool.props(pubchem_id, "pubchem")
-        title = pool.name(pubchem_id, "pubchem")
-        claims = [m for m in split_list(props.get("mibig_compound_ids")) if m in pool.rows]
-        shared = len(claims) > 1
-        their_names = _pubchem_names(pool, pubchem_id)
-        for mibig_id in claims:
-            mibig_name = pool.name(mibig_id, "mibig")
-            name_ok = bool(_mibig_names(pool, mibig_id) & their_names)
-            ours = pool.props(mibig_id, "mibig").get("formula")
-            formula = compare_formulas(ours, props.get("formula"))
-            formula_text = FORMULA_WORDS[formula].format(a=ours, b=props.get("formula"))
-            formula_ok = formula in ("agrees", "agrees_but_charge")
-            cid = str(props.get("pubchem_cid", pubchem_id.split(":", 1)[1]))
+        claims[pubchem_id] = [m for m in split_list(props.get("mibig_compound_ids"))
+                              if m in pool.rows]
+        for mibig_id in split_list(props.get("found_by_name")):
+            if mibig_id in pool.rows:
+                found_by[mibig_id].append(pubchem_id)
+    # Was the name search part of the PubChem fetch these tables came from (Phase 4b),
+    # and was this compound's name asked? A search PubChem stopped halfway lists the
+    # compounds it never reached, and the ledger mustn't claim anything about them.
+    summary = pool.summaries["pubchem"]
+    name_search_ran = "name_search_complete" in summary
+    not_asked = set(summary.get("names_not_asked") or [])
+    given_to: dict[str, list[str]] = defaultdict(list)
+    for pubchem_id, mibig_ids in claims.items():
+        for mibig_id in mibig_ids:
+            given_to[mibig_id].append(pubchem_id)
 
-            if shared:
-                rule = "pubchem_number_shared"
-                others = ", ".join(f"'{pool.name(m, 'mibig')}'" for m in claims if m != mibig_id)
-                confirmed = name_ok
-                why = (f"MIBiG gives CID {cid} to '{mibig_name}' and also to {others}. "
-                       f"PubChem's title is '{title}'. ")
-                why += ("PubChem lists the name '{n}', so this one is confirmed; {f}."
-                        if name_ok else
-                        "PubChem doesn't list the name '{n}', and with several names on one "
-                        "number a formula can't tell isomers apart; {f}.").format(
-                            n=mibig_name, f=formula_text)
-            else:
-                rule = "pubchem_number_confirmed"
-                confirmed = name_ok or formula_ok
-                checks = []
-                checks.append(f"PubChem lists the name '{mibig_name}'" if name_ok
-                              else f"PubChem doesn't list the name '{mibig_name}' "
-                                   f"(its title is '{title}')")
-                checks.append(formula_text)
-                why = (f"MIBiG gives CID {cid}; " + "; ".join(checks) + ". "
-                       + ("Confirmed." if confirmed else "Nothing besides the number confirms "
-                          "it, so the two stay apart."))
-                if confirmed and formula == "differs":
-                    why += " PubChem's formula is kept, MIBiG's stays as mibig_formula."
-
-            if confirmed:
-                groups.join(mibig_id, pubchem_id)
-                ledger.add(rule, "merged", mibig_id, "Compound", why, compared_with=pubchem_id,
-                           sources="mibig|pubchem")
-            else:
-                ledger.add(rule, "kept_apart", mibig_id, "Compound", why,
-                           compared_with=pubchem_id, sources="mibig|pubchem")
-                notes[mibig_id].append(f"{mibig_name}: PubChem CID {cid} not joined, not "
-                                       f"confirmed by name or formula (see the ledger)")
-                renames[mibig_id]["pubchem_cid"] = "pubchem_cid_not_confirmed"
+    for mibig_id in sorted(set(given_to) | set(found_by)):
+        settled = [p for p in given_to[mibig_id] + found_by[mibig_id]
+                   if reviewed.settled(mibig_id, p)]
+        if any(reviewed.settled(mibig_id, p).decision == "join" for p in settled):
+            continue                                # a person joined it to one of them
+        given = [p for p in given_to[mibig_id] if p not in settled]
+        found = [p for p in found_by[mibig_id] if p not in settled]
+        candidates = _candidates(pool, mibig_id, given, found, claims)
+        if not candidates:
+            _unconfirmed(pool, mibig_id, settled, notes, renames)
+            continue
+        _judge(pool, mibig_id, candidates, name_search_ran and mibig_id not in not_asked)
+        _decide(pool, groups, ledger, notes, renames, mibig_id, candidates)
 
     unknown = set(map(str, pool.summaries["pubchem"].get("cids_not_in_pubchem", [])))
     for mibig_id in pool.ids("mg.compound"):
-        cid = str(pool.props(mibig_id, "mibig").get("pubchem_cid", ""))
-        if cid and cid in unknown:
+        props = pool.props(mibig_id, "mibig")
+        mine = {str(props.get("pubchem_cid", ""))} | set(_given_entries(pool, mibig_id))
+        for cid in sorted(c for c in mine if c and c in unknown):
             ledger.add("pubchem_number_unknown", "kept_apart", mibig_id, "Compound",
                        f"MIBiG gives CID {cid} for '{pool.name(mibig_id, 'mibig')}', but "
                        f"PubChem has no compound with that number.",
                        compared_with=f"pubchem.compound:{cid}", sources="mibig|pubchem")
             notes[mibig_id].append(f"{pool.name(mibig_id, 'mibig')}: PubChem has no "
                                    f"compound {cid}")
-            renames[mibig_id]["pubchem_cid"] = "pubchem_cid_not_confirmed"
+            if str(props.get("pubchem_cid", "")) == cid:
+                renames[mibig_id]["pubchem_cid"] = "pubchem_cid_not_confirmed"
 
 
-def join_same_npatlas(pool: Pool, groups: Groups, ledger: Ledger) -> None:
+def _decide(pool: Pool, groups: Groups, ledger: Ledger, notes: dict[str, list[str]],
+            renames: dict[str, dict[str, str]], mibig_id: str,
+            candidates: list[Candidate]) -> None:
+    """Join the one candidate with the strongest clue, if exactly one has it; record the rest."""
+    several_given = sum(1 for c in candidates if c.given) > 1
+    best = min(c.level for c in candidates)
+    top = [c for c in candidates if c.level == best] if best != NONE else []
+    chosen = top[0] if len(top) == 1 else None
+    if chosen is not None and not groups.can_join(mibig_id, chosen.pubchem_id):
+        chosen.why += (". It is already one with another PubChem compound, or a person kept "
+                       "them apart, so it stays apart")
+        chosen = None
+    name = pool.name(mibig_id, "mibig")
+    for c in candidates:
+        rule = _rule_for(c, several_given)
+        lead = _lead(c, name, candidates)
+        if c is chosen:
+            groups.join(mibig_id, c.pubchem_id)
+            how = {NAME: "Confirmed by name.", SAME_STRUCTURE: "Confirmed by name, through the "
+                   "same structure.", NAME_SEARCH: "Confirmed by name and formula.",
+                   FORMULA_ONLY: "Confirmed by the formula alone."}[c.level]
+            extra = (" PubChem's formula is kept, MIBiG's stays as mibig_formula."
+                     if c.formula == "differs" else "")
+            ledger.add(rule, "merged", mibig_id, "Compound", f"{lead}{c.why}. {how}{extra}",
+                       compared_with=c.pubchem_id, sources="mibig|pubchem")
+            continue
+        if not c.given and c.level == NONE and chosen is not None:
+            continue          # a stray name-search hit for a compound already joined: no row needed
+        if len(top) > 1 and c in top:
+            others = ", ".join(f"CID {o.cid}" for o in top if o is not c)
+            reason = (f" {others} {'is' if len(top) == 2 else 'are'} just as well supported, so "
+                      f"choosing one would be a guess.")
+        else:
+            reason = " Nothing else confirms it, so the two stay apart." if chosen is None else (
+                f" CID {chosen.cid} is better supported, so this one stays apart.")
+        ledger.add(rule, "kept_apart", mibig_id, "Compound", f"{lead}{c.why}.{reason}",
+                   compared_with=c.pubchem_id, sources="mibig|pubchem")
+        if c.given:
+            notes[mibig_id].append(f"{name}: PubChem CID {c.cid} not joined, not confirmed "
+                                   f"(see the ledger)")
+    joined = chosen.cid if chosen is not None else ""
+    if str(pool.props(mibig_id, "mibig").get("pubchem_cid", "")) not in ("", joined):
+        renames[mibig_id]["pubchem_cid"] = "pubchem_cid_not_confirmed"
+
+
+def _lead(c: Candidate, name: str, candidates: list[Candidate]) -> str:
+    """The start of the ledger sentence: which number, and where it came from."""
+    if not c.given:
+        return ""
+    if c.shared:
+        others = ", ".join(f"'{o}'" for o in c.others)
+        return f"MIBiG gives CID {c.cid} to '{name}' and also to {others}. "
+    if sum(1 for o in candidates if o.given) > 1:
+        others = ", ".join(f"{o.cid} ({', '.join(o.entries) or 'its first entry'})"
+                           for o in candidates if o.given and o is not c)
+        return (f"MIBiG's entries disagree: {', '.join(c.entries) or 'one entry'} "
+                f"give{'s' if len(c.entries) == 1 else ''} CID {c.cid}, others give {others}. ")
+    return f"MIBiG gives CID {c.cid}; "
+
+
+def _unconfirmed(pool: Pool, mibig_id: str, settled: list[str], notes: dict[str, list[str]],
+                 renames: dict[str, dict[str, str]]) -> None:
+    """Every candidate was settled by hand as different: MIBiG's number stays unconfirmed."""
+    cid = str(pool.props(mibig_id, "mibig").get("pubchem_cid", ""))
+    if cid and f"pubchem.compound:{cid}" in settled:
+        renames[mibig_id]["pubchem_cid"] = "pubchem_cid_not_confirmed"
+        notes[mibig_id].append(f"{pool.name(mibig_id, 'mibig')}: PubChem CID {cid} kept apart "
+                               f"by hand (see the ledger)")
+
+
+def join_same_npatlas(pool: Pool, groups: Groups, ledger: Ledger,
+                      reviewed: Reviewed | None = None) -> None:
     """Join MIBiG compounds that share an NPAtlas number and a formula (see above)."""
+    reviewed = reviewed or Reviewed([])
     by_number: dict[str, list[str]] = defaultdict(list)
     for mibig_id in pool.ids("mg.compound"):
         for ref in split_list(pool.props(mibig_id, "mibig").get("database_ids")):
@@ -168,12 +411,27 @@ def join_same_npatlas(pool: Pool, groups: Groups, ledger: Ledger) -> None:
         if len(members) < 2:
             continue
         first, *rest = sorted(members, key=rank_key)
-        first_formula = pool.props(first, "mibig").get("formula")
+        first_props = pool.props(first, "mibig")
+        first_formula = first_props.get("formula")
         for other in rest:
-            other_formula = pool.props(other, "mibig").get("formula")
+            if reviewed.settled(first, other):
+                continue
+            other_props = pool.props(other, "mibig")
+            other_formula = other_props.get("formula")
             names = f"'{pool.name(first, 'mibig')}' and '{pool.name(other, 'mibig')}'"
+            disputed = [pool.name(m, "mibig") for m, p in ((first, first_props),
+                                                          (other, other_props))
+                        if p.get("formula_by_entry")]
             state = compare_formulas(first_formula, other_formula)
-            if state != "agrees":
+            if disputed:
+                # Phase 4b: desosamine's first entry carries methymycin's formula and
+                # NPAtlas number, so a formula the entries disagree about can't confirm.
+                ledger.add("npatlas_and_formula", "kept_apart", other, "Compound",
+                           f"{names} share {number}, but MIBiG's entries disagree about the "
+                           f"formula of {' and '.join(repr(d) for d in disputed)} "
+                           f"(formula_by_entry), so the formula can't confirm the number.",
+                           compared_with=first, sources="mibig")
+            elif state != "agrees":
                 why = {
                     "missing": "one of them has no formula, so nothing confirms the number",
                     "agrees_but_charge": f"their formulas differ in charge ({first_formula} and "
@@ -186,6 +444,12 @@ def join_same_npatlas(pool: Pool, groups: Groups, ledger: Ledger) -> None:
                            compared_with=first, sources="mibig")
             elif groups.same(first, other):
                 continue
+            elif groups.kept_apart_by_hand(first, other):
+                ledger.add("npatlas_and_formula", "kept_apart", other, "Compound",
+                           f"{names} share {number} and the formula {first_formula}, but "
+                           f"joining them would bring together records a person decided "
+                           f"are different (see their reviewed_by_hand rows).",
+                           compared_with=first, sources="mibig")
             elif not groups.can_join(first, other):
                 ledger.add("npatlas_and_formula", "kept_apart", other, "Compound",
                            f"{names} share {number} and the formula {first_formula}, but "

@@ -20,6 +20,7 @@ real ones.
 | `BGC9999902.json` | Made up: a retired entry, which the adapter must skip. |
 | `BGC9999903.json` | Made up: an entry whose only evidence is a prediction, so its arrows must be `database_assertion`. Its one gene record shares a locus tag with BGC9999901, to prove the two stay separate proteins. From Phase 3b it shares one protein number with BGC9999901 in the protein file sample, to prove that is one protein in two clusters. |
 | `mibig_prot_seqs_sample.fasta` | Phase 3b: a sample of MIBiG's protein file. Surfactin's 23 real records first, then made-up ones (see below). |
+| `genbank/` | Phase 4b: samples of MIBiG's GenBank file, one record per file (see below). |
 
 The made-up entries use numbers from 9999901 up, which MIBiG doesn't use, and
 a DOI prefix (10.0000) that belongs to no publisher. Each one says so in its
@@ -155,14 +156,47 @@ Expected: `23 surfactin records, identical in the sample: True`.
 seven-part shape, every gene added with `to_add` already present, and some genes
 removed with `to_delete` still present.
 
-## `resolve/` (Phase 4)
+## `mibig/genbank/` (Phase 4b)
 
-A real slice of all six sources' staging tables, cut on **2026-10-12** from the
-tables of the first full run by
-[`capture_resolution_samples.py`](capture_resolution_samples.py). It holds the
-18 files the resolver reads (`<source>_nodes.csv`, `<source>_edges.csv` and
-`<source>_summary.json` for each source), about 380 KB, and every arrow in it
-points at a node in it. Three things differ from the originals, all on purpose:
+The tests pack these three records into a `.tar.gz` of the same shape as MIBiG's
+GenBank file, the way they do with the JSON samples.
+
+| File | What it is | SHA-256 (first 16 characters) |
+|---|---|---|
+| `BGC0000433.gbk` | Surfactin's real record from `mibig_gbk_4.0.tar.gz`, cut down by `capture_gap_samples.py --fixture`: the header, the features the reader looks at and the CDS lines it uses. Lines are removed, never edited, so every line left is byte for byte the real one | `42a8fdddc14f0319` |
+| `BGC9999901.gbk` | Made up, matching the made-up JSON entry and the protein file sample: CDS with and without gene names, locus tags and protein numbers, a gene named `LOC999001` with its NCBI gene number (`GeneID:999001`) on two isoforms, one protein number listed twice, and a CDS with no protein number | `c631f51a4bf94577` |
+| `BGC9999903.gbk` | Made up: a second record sharing a locus tag (`TESTI_00020`) and a protein number with BGC9999901, so the tests can check that a name is looked up in its own entry | `c71a7664d45fe7f4` |
+
+Two more cases, a `/gene_synonym` holding two names and a wrapped `/note` whose
+second line starts with `/gene=` (which the reader must not take for a gene
+name), are written inside the test that needs them,
+`tests/test_closing_the_gaps.py`.
+
+## `pubchem/name_search_*.json` (Phase 4b)
+
+Two real answers from PubChem's name search
+(`POST https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/cids/JSON`),
+captured on **2026-10-12** by `capture_gap_samples.py`:
+
+| File | The name that was asked | SHA-256 (first 16 characters) |
+|---|---|---|
+| `pubchem/name_search_found.json` | `1233A`: PubChem files it under CID 54144091 | `84f618383365e9e9` |
+| `pubchem/name_search_not_found.json` | A name PubChem doesn't know: the real "No CID found" answer (HTTP 404) | `b4e8d861301a4d4b` |
+
+## `resolve/` (Phase 4, extended in Phase 4b)
+
+A real slice of all six sources' staging tables, cut on **2026-10-12** by
+[`capture_resolution_samples.py`](capture_resolution_samples.py), last from the
+tables of the Phase 4b run (MIBiG read with its GenBank file). It holds the 18
+files the resolver reads (`<source>_nodes.csv`, `<source>_edges.csv` and
+`<source>_summary.json` for each source), plus, since Phase 4b, a `curation/`
+folder with the two files the resolver reads from the project's own
+`curation/`: the activity synonyms as they are, and the rows of the review file
+whose two records are both in the slice (today all five). About 570 KB in all:
+593 MIBiG nodes and 792 arrows, 304 UniProt entries, 112 NCBI Taxonomy nodes,
+23 PubChem compounds, 5 KEGG pathways and the bridge's 5 nodes. Every arrow in
+it points at a node in it. Three things differ from the originals, all on
+purpose:
 
 * the summaries keep only what the resolver reads (the source's version and
   date, and the lists of merged taxids, unknown PubChem numbers and curators'
@@ -172,13 +206,13 @@ points at a node in it. Three things differ from the originals, all on purpose:
 * UniProt's `function` text is cut to its first sentence, because the resolver
   never reads it.
 
-The slice is cut around these 22 clusters, each there for a case the resolver
-must handle:
+The slice is cut around these 34 clusters, each there for a case the resolver
+must handle (the last 12 since Phase 4b):
 
 | Cluster | What it is | The case it brings |
 |---|---|---|
 | `BGC0000433` | surfactin, *Bacillus velezensis* FZB42 | The worked example: srfAA joins UniProt entry Q70KJ7; surfactin against grey mould on jujube |
-| `BGC0001089` | bacillaene, FZB42 | Gene records named only by a gene name (`baeB`, `baeJ`...), joined through UniProt's gene names; `baeI` isn't |
+| `BGC0001089` | bacillaene, FZB42 | Gene records named only by a gene name (`baeB`, `baeJ`...); in Phase 4 joined through UniProt's gene names, since Phase 4b given their protein numbers by MIBiG's GenBank file |
 | `BGC0001090` | bacillomycin D, FZB42 | A PubChem number that belongs to another molecule (Bacillomycin Fc): kept apart |
 | `BGC0000054`, `BGC0000055` | erythromycin, erythromycin A | One PubChem number, both names confirmed: one node |
 | `BGC0001952`, `BGC0001953` | minutissamides | One number given to minutissamides B and C, names not confirmed: kept apart |
@@ -194,16 +228,21 @@ must handle:
 | `BGC0002005` | RaxX, *Xanthomonas oryzae* pv. *oryzae* | A RefSeq "WP_" number with two UniProt entries, decided by the cluster's organism |
 | `BGC0000546` | SAL-2242, *Streptomyces albidoflavus* | The same sequence listed twice in one cluster |
 | `BGC0001238`, `BGC0001239` | two biotin clusters | One UniProt entry encoded by two clusters |
+| `BGC0000657`, `BGC0000658` | 2-methylisoborneol | One entry gives a bromine compound's number, formula and structure, the other 16913: values kept by entry, and the wrong join kept apart by hand |
+| `BGC0000898` | desosamine | An entry giving desosamine methymycin's number, formula and NPAtlas number: kept apart by hand from both |
+| `BGC0002390` | zealexins, maize | Four genes the curators removed and gene records named `LOC...`, all placed through the GenBank file |
+| `BGC0000038`, `BGC0000849` | two *Streptomyces coelicolor* entries | One protein (CAB60184.1) named SCO6265 by one entry and scbR by the other: a disagreement kept by entry |
+| `BGC0001979`, `BGC0000028`, `BGC0000090`, `BGC0000224`, `BGC0000581`, `BGC0000185` | six clusters with the activity words that are folded | antitumor, its duplicate label and antineoplastic folded into anticancer; antibacterial (gram-negative) into anti-gram-negative |
 
 Cases the real data doesn't contain (an arrow to nowhere, a KEGG arrow from a
 PubChem record that gets left out, two sources stating one arrow) are added as
 made-up rows inside the test that needs them, and the test says so.
 
-The 18 files' SHA-256, taken together in name order, is
-`f3732a8138fa94b511e4dde7376fec9f6b38482bf8a9573091e5b7e2967b1967`. To check it:
+The 20 files' SHA-256, taken together in path order, is
+`50e4eb195eda3a62a4110d4321fe806020c49185b68b768ff83b295c1ef8a47f`. To check it:
 
 ```bash
-python -c "import hashlib, pathlib; h = hashlib.sha256(); [h.update(p.read_bytes()) for p in sorted(pathlib.Path('tests/fixtures/resolve').iterdir())]; print(h.hexdigest())"
+python -c "import hashlib, pathlib; h = hashlib.sha256(); [h.update(p.read_bytes()) for p in sorted(pathlib.Path('tests/fixtures/resolve').rglob('*')) if p.is_file()]; print(h.hexdigest())"
 ```
 
 Cutting the slice again from the same staging tables gives the same bytes.
@@ -218,6 +257,7 @@ python tests/fixtures/capture_samples.py                 # PubChem, NCBI Taxonom
 python tests/fixtures/capture_uniprot_samples.py         # MIBiG's gene records and UniProt
 python tests/fixtures/capture_mibig_protein_samples.py   # MIBiG's protein file
 python tests/fixtures/capture_resolution_samples.py      # the resolver's slice (Phase 4)
+python tests/fixtures/capture_gap_samples.py --fixture   # surfactin's GenBank record (Phase 4b)
 ```
 
 The new answers land in `data/samples/<date>/`, which never goes to GitHub.

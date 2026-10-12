@@ -119,13 +119,18 @@ class Snapshot:
         self.answers: list[dict[str, Any]] = []
 
     def save(self, filename: str, body: bytes, *, url: str, method: str,
-             sent: dict[str, Any], n_records: int | str, source_version: str) -> Path:
+             sent: dict[str, Any], n_records: int | str, source_version: str,
+             outcome: str = "downloaded") -> Path:
         """
         File one answer exactly as it arrived and log it.
 
         `url` is the address WITHOUT anything secret, and `sent` describes
         what went with the request, with any key shown only as "set" or
         "not set". Neither ever holds a key itself.
+
+        outcome is "downloaded" for an answer that just arrived, and
+        "already_present" for answers carried over from an earlier,
+        unfinished fetch (Phase 4b, PubChem's name search).
         """
         self.folder.mkdir(parents=True, exist_ok=True)
         path = self.folder / filename
@@ -145,7 +150,7 @@ class Snapshot:
                 "sha256": sha256,
                 "n_records": n_records,
                 "licence": self.source.licence,
-                "outcome": "downloaded",
+                "outcome": outcome,
             },
             log_path=self.source.provenance_log,
         )
@@ -153,8 +158,14 @@ class Snapshot:
                              "n_bytes": n_bytes, "sha256": sha256, "n_records": n_records})
         return path
 
-    def finish(self, source_version: str, notes: dict[str, Any] | None = None) -> list[FetchResult]:
-        """Write manifest.json, which marks the snapshot as complete."""
+    def finish(self, source_version: str, notes: dict[str, Any] | None = None,
+               complete: bool = True) -> list[FetchResult]:
+        """
+        Write manifest.json, which marks the snapshot as finished. A snapshot
+        finished with complete=False (Phase 4b) holds everything that arrived
+        before the service stopped answering; tidy can read it, and the next
+        fetch carries its answers over instead of asking again.
+        """
         manifest = {
             "source": self.source.name,
             "started_at": self.started_at,
@@ -165,6 +176,7 @@ class Snapshot:
             "context": self.context,
             "answers": self.answers,
             "notes": notes or {},
+            "complete": complete,
         }
         self.folder.mkdir(parents=True, exist_ok=True)
         path = self.folder / MANIFEST
@@ -243,7 +255,7 @@ class ApiSource(Source):
             manifest = self.read_manifest(folder)
             if not str(manifest.get("started_at", "")).startswith(utc_today()):
                 return None                              # the newest is older than today
-            if manifest.get("asked_for") != wanted:
+            if manifest.get("asked_for") != wanted or manifest.get("complete") is False:
                 continue
             path = folder / MANIFEST
             n_bytes, md5, sha256 = file_digests(path)

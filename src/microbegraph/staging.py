@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Any
 
 from microbegraph.paths import relative_to_repo
-from microbegraph.sources.base import (
+from microbegraph.tables import (
     EDGE_COLUMNS,
     NODE_COLUMNS,
     SourceError,

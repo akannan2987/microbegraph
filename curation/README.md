@@ -1,9 +1,27 @@
-[← Handbook](../docs/HANDBOOK.md) · [Phase 2 guide](../docs/04-more-sources-secrets.md) · [Glossary](../docs/GLOSSARY.md)
+[← Handbook](../docs/HANDBOOK.md) · [Phase 2 guide](../docs/04-more-sources-secrets.md) · [Phase 4b guide](../docs/06b-closing-the-gaps.md) · [Glossary](../docs/GLOSSARY.md)
 
-# The curated bridge
+# The curated files
 
-`compound_pathogen_crop.csv` is the one data file in this project written by
-hand. Each row records one finding from a published paper: **this compound
+Three files in this folder are written by hand. Everything else in the graph
+comes from public databases, so these are the places where a person's reading
+of a paper or a record enters the project, and each row carries its source.
+
+| File | What one row says | Since | Read by |
+|---|---|---|---|
+| [`compound_pathogen_crop.csv`](compound_pathogen_crop.csv) | A published finding: this compound acts against this pathogen, which causes this disease on this crop | Phase 2 | [`sources/curation.py`](../src/microbegraph/sources/curation.py) |
+| [`resolution_decisions.csv`](resolution_decisions.csv) | A decision about two records: they are the same thing, or different things | Phase 4b | [`resolution/reviewed.py`](../src/microbegraph/resolution/reviewed.py) |
+| [`activity_synonyms.csv`](activity_synonyms.csv) | An activity word that means the same as another | Phase 4b | [`resolution/activities.py`](../src/microbegraph/resolution/activities.py) |
+
+Open them in VS Code, not a spreadsheet program, which can change the quoting or
+the date format when it saves. Git's history is their provenance log: it records
+who added each row, when and why.
+
+---
+
+## 1. The curated bridge
+
+`compound_pathogen_crop.csv` is the only file here that adds facts to the
+graph. Each row records one finding from a published paper: **this compound
 was shown to act against this plant pathogen, which causes this disease on this
 crop**, with the paper's DOI or PubMed number.
 
@@ -21,7 +39,7 @@ mg.compound:surfactin --INHIBITS--> ncbitaxon:40559 --INFECTS--> mg.crop:jujube
      (from MIBiG)                    (Botrytis cinerea)          (grey mould)
 ```
 
-## The columns
+### The columns
 
 | Column | What goes in it | Example |
 |---|---|---|
@@ -41,7 +59,7 @@ mg.compound:surfactin --INHIBITS--> ncbitaxon:40559 --INFECTS--> mg.crop:jujube
 | `added_on` | The day you added the row, `YYYY-MM-DD` | `2026-10-12` |
 | `notes` | Optional: the paper in a sentence, and any name the paper used that differs from NCBI's | `Xiao et al. 2023 (PMID 37118318): ...` |
 
-## How confident is a row?
+### How confident is a row?
 
 Confidence says how directly the paper shows the effect **on the crop**. I use
 this scale, and the notes column says which step a row is on:
@@ -55,7 +73,7 @@ this scale, and the notes column says which step a row is on:
 
 Below 0.70, I don't add the row yet.
 
-## Adding a row, step by step
+### Adding a row, step by step
 
 1. **Read the paper.** Note the compound, the pathogen, the crop and what was
    measured. Decide the confidence from the scale above.
@@ -96,3 +114,120 @@ Below 0.70, I don't add the row yet.
 Git's history is this file's provenance log: it records who added each row,
 when and why. That's why a row is never edited silently. If a row turns out to
 be wrong, change it in its own commit that says so.
+
+---
+
+## 2. The review file: decisions made by a person
+
+![A decision by hand, column by column, and where it lands in the ledger](../docs/img/review_row.svg)
+
+`resolution_decisions.csv` holds the decisions the resolver's rules can't make
+correctly: two records the rules would join that are really different things,
+or two they can't join that are really one. The resolver applies every decision
+before the rules that join compounds and proteins, and the ledger records it
+under the rule
+`reviewed_by_hand`, so nobody mistakes a person's decision for a rule's. The
+whole story, with the five real cases, is in
+[`docs/06b-closing-the-gaps.md`, Step 7](../docs/06b-closing-the-gaps.md#11-step-7-the-review-file-decisions-made-by-a-person).
+
+| Column | What goes in it | Example |
+|---|---|---|
+| `identifier` | One record, as the graph names it (`prefix:local`) | `mg.compound:desosamine` |
+| `other_identifier` | The other record | `mg.compound:methymycin` |
+| `decision` | `join` (the same thing) or `keep_apart` (different things) | `keep_apart` |
+| `reason` | Why, in a sentence or two a reader can check | `Desosamine is the sugar part of methymycin, not another name for it. ...` |
+| `citation` | Where to check it: `doi:`, `pubmed:`, or a database record such as `pubchem.compound:9237955` or `uniprot:P0CU77` | `pubmed:9770448` |
+| `decided_on` | The day you decided, `YYYY-MM-DD` | `2026-10-12` |
+
+**What a decision does.** `keep_apart` means the two records can never end up in
+one node, by any rule or any chain of joins. `join` makes them one node at once;
+it is refused if the node would hold two PubChem compounds or two UniProt
+entries, because those databases say their own records are different things.
+
+### Adding a decision, step by step
+
+1. **Find the two records.** Recipe R5 in the
+   [query cookbook](../docs/QUERY_COOKBOOK.md#r5-what-did-an-old-identifier-become)
+   finds the node for any identifier, and the ledger rows for a node show what
+   the rules decided and why (recipe R6).
+2. **Read the source** that settles it, and note its DOI, PubMed number or
+   database record. Without a source, don't add the row: an override nobody can
+   check is worse than the gap it closes.
+3. **Add the row** at the end of the file in VS Code. Put the reason in double
+   quotes if it contains a comma.
+4. **Run the resolver and the build:**
+
+   ```bash
+   python -m microbegraph.resolve
+   python -m microbegraph.build_graph
+   ```
+
+   The resolver checks every row first and names the line of anything wrong: an
+   empty cell, a decision other than `join` or `keep_apart`, a date not written
+   `YYYY-MM-DD`, the same pair twice, or an identifier no source has (a typo,
+   or a PubChem compound not fetched yet; the next
+   `python -m microbegraph.fetch --source pubchem` asks about every PubChem
+   number in this file). Nothing is written until every row passes.
+5. **Look for your row** with recipe R20:
+
+   ```bash
+   python -m microbegraph.query --recipe 20
+   ```
+
+6. **Run the tests**, then commit the row on its own:
+
+   ```bash
+   pytest
+   git add curation/resolution_decisions.csv
+   git commit -m "feat: keep <record> apart from <record>, decided by hand"
+   ```
+
+---
+
+## 3. Activity words that mean the same thing
+
+`activity_synonyms.csv` lists activity words to fold into another word that
+means the same, such as `antitumor` into `anticancer`. The resolver moves each
+word's node into the other's, the way an old NCBI number moves to the current
+one, and keeps the old word as another name of the node.
+
+| Column | What goes in it | Example |
+|---|---|---|
+| `activity` | The word to fold away, exactly as MIBiG writes it | `antineoplastic` |
+| `same_as` | The word it means the same as, exactly as MIBiG writes it | `anticancer` |
+| `reason` | Why they mean the same thing | `Antineoplastic means acting against neoplasms (tumours), ...` |
+| `citation` | Where to check it | `mesh:D000970` |
+| `added_on` | The day you added the row, `YYYY-MM-DD` | `2026-10-12` |
+
+**Only words that really mean the same.** Words that sound alike often don't:
+"cytotoxic" (kills cells, any cells) isn't "anticancer", and "antiplasmodial"
+(acts on the malaria parasite in a dish) isn't "antimalarial" (treats the
+disease). When in doubt, leave the two words apart.
+
+### Adding a synonym, step by step
+
+1. **Check both spellings** against the activities in the graph:
+
+   ```bash
+   python -m microbegraph.query "SELECT name FROM nodes WHERE node_type = 'Activity' ORDER BY name"
+   ```
+
+2. **Add the row** in VS Code. Point every word straight at the word it means
+   the same as: a chain (a to b, then b to c) is refused, and so is a word
+   listed twice or mapped to itself.
+3. **Run the resolver.** Near the end it says how many synonyms were applied; a
+   word no source uses yet is named, and its row waits:
+
+   ```
+   [resolve] curation/: 4 of 4 activity synonyms applied, 5 decisions by hand
+   ```
+
+4. **Check the result** with recipe R22, run the tests, and commit the row on
+   its own:
+
+   ```bash
+   python -m microbegraph.query --recipe 22
+   pytest
+   git add curation/activity_synonyms.csv
+   git commit -m "feat: fold <activity> into <activity>"
+   ```

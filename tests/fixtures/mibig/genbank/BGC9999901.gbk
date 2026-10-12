@@ -1,0 +1,73 @@
+LOCUS       BGC9999901             15300 bp    DNA     linear   BCT 01-JAN-2026
+DEFINITION  Made-up test record for MicrobeGraph (no real organism).
+ACCESSION   BGC9999901
+VERSION     BGC9999901
+KEYWORDS    .
+SOURCE      Testus imaginarius
+FEATURES             Location/Qualifiers
+     CDS             1..3000
+                     /gene="tstA"
+                     /locus_tag="TESTI_00010"
+                     /product="nonribosomal peptide synthetase"
+                     /protein_id="WP_999999901.1"
+     CDS             3101..4300
+                     /gene="tstB"
+                     /locus_tag="TESTI_00020"
+                     /product="cytochrome P450"
+     CDS             4401..5600
+                     /locus_tag="TESTI_00030"
+                     /product="aminotransferase"
+     CDS             complement(5701..6600)
+                     /gene="tstR"
+                     /locus_tag="TESTI_00040"
+                     /product="regulator with a methyltransferase domain"
+     CDS             6701..7400
+                     /gene="tstP"
+                     /locus_tag="TESTI_00050"
+                     /product="phosphopantetheinyl transferase"
+     CDS             7501..8400
+                     /gene="tstU"
+                     /locus_tag="TESTI_00060"
+                     /product="ABC transporter permease"
+                     /protein_id="XYZ99960.1"
+     CDS             complement(8501..9700)
+                     /product="transporter"
+                     /protein_id="XYZ99970.1"
+     CDS             9801..10400
+                     /product="TstQ"
+                     /protein_id="XYZ99980.1"
+     CDS             10501..11100
+                     /product="TstY"
+                     /protein_id="XYZ99981.1"
+     CDS             11201..11800
+                     /product="TstY"
+                     /protein_id="XYZ99982.1"
+     CDS             11901..12500
+                     /product="hypothetical protein"
+                     /protein_id="XYZ99990.1"
+     CDS             complement(12601..13200)
+                     /gene="tstD"
+                     /product="TstD"
+                     /protein_id="XYZ99991.1"
+     CDS             13301..13900
+                     /gene="LOC999001"
+                     /product="uncharacterized protein LOC999001 isoform X1"
+                     /protein_id="XYZ99992.1"
+                     /db_xref="GeneID:999001"
+     CDS             13301..14200
+                     /gene="LOC999001"
+                     /product="uncharacterized protein LOC999001 isoform X2"
+                     /protein_id="XYZ99993.1"
+                     /db_xref="GeneID:999001"
+     CDS             complement(14301..14390)
+                     /locus_tag="TESTI_00070"
+                     /product="small peptide"
+                     /protein_id="WP_999999970.1"
+     CDS             complement(14501..14590)
+                     /locus_tag="TESTI_00071"
+                     /product="small peptide"
+                     /protein_id="WP_999999970.1"
+     CDS             15001..15300
+                     /locus_tag="ctg1_orf7"
+ORIGIN
+//

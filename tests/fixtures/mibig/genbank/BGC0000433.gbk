@@ -1,0 +1,154 @@
+LOCUS       BGC0000433             41884 bp    DNA     linear   BCT 15-APR-2005
+DEFINITION  Bacillus amyloliquefaciens yciC gene, yx01 gene, yckc gene, yckD
+            gene, yckE gene, nin gene, nuc gene, hxlB gene, hxlA gene, hxlR
+            gene, xy02 gene, srfAA gene, srfAB gene, comS gene, srfAC gene,
+            srfAD gene, aat gene, ycxc gene, ycxD gene, sfp gene, yczE gene,
+            yckI gene and yckJ gene.
+ACCESSION   BGC0000433
+VERSION     BGC0000433
+KEYWORDS    .
+SOURCE      Bacillus velezensis FZB42
+  ORGANISM  Bacillus velezensis FZB42
+            Bacteria; Bacillota; Bacilli; Bacillales; Bacillaceae; Bacillus;
+            Bacillus amyloliquefaciens group.
+FEATURES             Location/Qualifiers
+     CDS             64..1341
+                     /codon_start=1
+                     /gene="yciC"
+                     /product="YciC protein"
+                     /protein_id="CAE02619.1"
+                     /transl_table=11
+     CDS             1406..2542
+                     /codon_start=1
+                     /gene="yx01"
+                     /product="Yx01 protein"
+                     /protein_id="CAE02620.1"
+                     /transl_table=11
+     CDS             2557..2991
+                     /codon_start=1
+                     /gene="yckC"
+                     /product="YckC protein"
+                     /protein_id="CAE02621.1"
+                     /transl_table=11
+     CDS             3064..3387
+                     /codon_start=1
+                     /gene="yckD"
+                     /product="YckD protein"
+                     /protein_id="CAE02622.1"
+                     /transl_table=11
+     CDS             3491..4927
+                     /codon_start=1
+                     /gene="yckE"
+                     /product="YckE protein"
+                     /protein_id="CAE02623.1"
+                     /transl_table=11
+     CDS             complement(4968..5366)
+                     /codon_start=1
+                     /gene="nin"
+                     /product="Nin"
+                     /protein_id="CAE02624.1"
+                     /transl_table=11
+     CDS             complement(5387..5833)
+                     /codon_start=1
+                     /gene="nuc"
+                     /product="NucA"
+                     /protein_id="CAE02625.1"
+                     /transl_table=11
+     CDS             complement(6183..6740)
+                     /codon_start=1
+                     /gene="hxlB"
+                     /product="HxlB protein"
+                     /protein_id="CAE02626.1"
+                     /transl_table=11
+     CDS             complement(6737..7372)
+                     /codon_start=1
+                     /gene="hxlA"
+                     /product="HxlA protein"
+                     /protein_id="CAE02627.1"
+                     /transl_table=11
+     CDS             7604..7966
+                     /codon_start=1
+                     /gene="hxlR"
+                     /product="transcriptional regulator"
+                     /protein_id="CAE02628.1"
+                     /transl_table=11
+     CDS             complement(8150..8494)
+                     /codon_start=1
+                     /gene="xy02"
+                     /product="Xy02 protein"
+                     /protein_id="CAE02629.1"
+                     /transl_table=11
+     CDS             8558..19312
+                     /codon_start=1
+                     /gene="srfAA"
+                     /product="surfactin synthetase A"
+                     /protein_id="CAE02630.1"
+                     /transl_table=11
+     CDS             19334..30094
+                     /codon_start=1
+                     /gene="srfAB"
+                     /product="surfactin synthetase B"
+                     /protein_id="CAE02631.1"
+                     /transl_table=11
+     CDS             22467..22607
+                     /codon_start=1
+                     /gene="comS"
+                     /product="ComS protein"
+                     /protein_id="CAE02632.1"
+                     /transl_table=11
+     CDS             30129..33965
+                     /codon_start=1
+                     /gene="srfAC"
+                     /product="surfactin synthetase C"
+                     /protein_id="CAE02633.1"
+                     /transl_table=11
+     CDS             33985..34716
+                     /codon_start=1
+                     /gene="srfAD"
+                     /product="SrfAD protein"
+                     /protein_id="CAE02634.1"
+                     /transl_table=11
+     CDS             34820..36148
+                     /codon_start=1
+                     /gene="aat"
+                     /product="amino transferase"
+                     /protein_id="CAE02635.1"
+                     /transl_table=11
+     CDS             complement(36719..37855)
+                     /codon_start=1
+                     /gene="ycxc"
+                     /product="Ycxc protein"
+                     /protein_id="CAE02636.1"
+                     /transl_table=11
+     CDS             37800..39110
+                     /codon_start=1
+                     /gene="ycxD"
+                     /product="YcxD protein"
+                     /protein_id="CAE02637.1"
+                     /transl_table=11
+     CDS             complement(39105..39779)
+                     /codon_start=1
+                     /gene="sfp"
+                     /product="Sfp protein"
+                     /protein_id="CAE02638.1"
+                     /transl_table=11
+     CDS             complement(39878..40525)
+                     /codon_start=1
+                     /gene="yczE"
+                     /product="YczE protein"
+                     /protein_id="CAE02639.1"
+                     /transl_table=11
+     CDS             complement(40607..41350)
+                     /codon_start=1
+                     /gene="yckI"
+                     /product="YckI protein"
+                     /protein_id="CAE02640.1"
+                     /transl_table=11
+     CDS             complement(41363..41869)
+                     /codon_start=1
+                     /gene="yckJ"
+                     /product="YckJ protein"
+                     /protein_id="CAE02641.1"
+                     /transl_table=11
+ORIGIN
+//

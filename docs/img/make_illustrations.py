@@ -1770,6 +1770,289 @@ def two_shapes() -> str:
                f"{PHASE4['nodes']:,} nodes and {PHASE4['edges']:,} arrows.")
 
 
+# =============================================================================
+# Phase 4b: closing the gaps
+# =============================================================================
+def _waiting(cx: float, cy: float, r: float = 9, color: str = MUTED) -> str:
+    """A small clock: built, waiting for a run (never meaning 'done')."""
+    return (f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{color}"/>'
+            f'<path d="M{cx} {cy - r * 0.55:.1f} L{cx} {cy:.1f} L{cx + r * 0.45:.1f} {cy + r * 0.3:.1f}" '
+            f'stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" '
+            f'stroke-linejoin="round"/>')
+
+
+def gaps_closed() -> str:
+    """Phase 4b: each gap Phase 4 left, what closed it, and the real counts (2026-10-12)."""
+    blue, aqua, orange = LAYER["genomics"], LAYER["metabolomics"], LAYER["proteomics"]
+    kinds = {"evidence": ("more evidence", blue), "kept": ("nothing thrown away", aqua),
+             "person": ("a person's decision", orange), "waiting": ("built, waiting for PubChem", MUTED)}
+    parts = [t(32, 46, "Closing the gaps Phase 4 left", size=22, weight=700),
+             t(32, 70, "Phase 4's rules refused every join they couldn't confirm and listed what "
+               "was left. Phase 4b works through that list.", size=14, fill=INK2)]
+    x = 32
+    for label, colour in kinds.values():
+        parts.append(chip(x, 86, label, colour))
+        x += len(label) * 12 * 0.58 + 46
+    parts.append(t(42, 140, "WHAT PHASE 4 LEFT", size=12, weight=700, fill=MUTED))
+    parts.append(t(452, 140, "WHAT CLOSED IT", size=12, weight=700, fill=MUTED))
+    parts.append(t(842, 140, "THE RESULT", size=12, weight=700, fill=MUTED))
+    rows = [
+        ("21 gene records named only by a gene name", "no list gave their protein number",
+         "MIBiG's GenBank file", "every name each gene goes by", "evidence",
+         "all 59 such records placed", "before the resolver runs", "done"),
+        ("4 genes the curators removed", "named LOC100272490 and so on",
+         "MIBiG's GenBank file", "GeneID ties LOC names to proteins", "evidence",
+         "4 of 4 removed", "22 removals in all, none left", "done"),
+        ("275 values MIBiG's entries disagree on", "only the first one was kept",
+         "every value, with its entry", "<property>_by_entry", "kept",
+         "278 kept, on 120 nodes", "showed why two joins were wrong", "done"),
+        ("2 wrong joins", "2-methylisoborneol, desosamine",
+         "the review file", "a reason and a source on each row", "person",
+         "kept apart, 5 decisions", "recorded as reviewed_by_hand", "done"),
+        ("activity words meaning the same", "antitumor, anticancer...",
+         "activity_synonyms.csv", "4 rows, each with a source", "person",
+         "74 activities became 70", "the old words kept as names", "done"),
+        ("325 joins on the formula alone", "and 2,656 compounds with no number",
+         "PubChem's name search", "one name a second, resumable", "waiting",
+         "322 to review, 1,660 names", "first step before Phase 5", "waiting"),
+        ("42 protein numbers with tied entries", "UniProt couldn't choose one",
+         "the review file", "one number at a time", "person",
+         "1 decided, 1 removed", "40 still open", "partial"),
+    ]
+    y = 152
+    for left1, left2, mid1, mid2, kind, right1, right2, status in rows:
+        colour = kinds[kind][1]
+        parts.append(rect(32, y, 1136, 58, fill=SURFACE, stroke=HAIR, rx=10))
+        parts.append(t(48, y + 25, left1, size=13.5, weight=700))
+        parts.append(t(48, y + 44, left2, size=12, fill=INK2))
+        parts.append(line(398, y + 29, 436, y + 29, color=INK2, sw=2))
+        parts.append(rect(446, y + 8, 352, 42, fill=SURFACE, stroke=colour, rx=8, sw=2,
+                          dash="6 4" if kind == "waiting" else ""))
+        parts.append(f'<circle cx="464" cy="{y + 29}" r="6" fill="{colour}"/>')
+        parts.append(t(478, y + 25, mid1, size=13, weight=600))
+        parts.append(t(478, y + 42, mid2, size=11.5, fill=INK2,
+                       family=MONO if mid2.startswith("<") else FONT))
+        parts.append(line(800, y + 29, 834, y + 29, color=INK2, sw=2))
+        mark = (check_mark(856, y + 29, 10) if status == "done"
+                else _waiting(856, y + 29, 10) if status == "waiting"
+                else check_mark(856, y + 29, 10, color=MUTED))
+        parts.append(mark)
+        parts.append(t(876, y + 25, right1, size=13.5, weight=700))
+        parts.append(t(876, y + 44, right2, size=12, fill=INK2))
+        y += 66
+    parts.append(t(32, y + 18, "Also fixed: a circular import (two files that each needed the other "
+                   "to load). The shared table helpers moved to src/microbegraph/tables.py.",
+                   size=12.5, fill=INK2))
+    parts.append(t(32, y + 40, "Counts from the run of 2026-10-12, with PubChem's snapshot from "
+                   "Phase 2: PubChem refused requests that day, so its name search runs next.",
+                   size=12.5, fill=MUTED))
+    return svg(1200, int(y + 64), "".join(parts), "Closing the gaps Phase 4 left",
+               "Seven gaps Phase 4 left and what closed each one. MIBiG's GenBank file placed all "
+               "59 gene records named only by a gene name, and the 4 genes the curators removed. "
+               "Every value MIBiG's entries disagree on is now kept with its entry: 278 on 120 "
+               "nodes. The review file keeps two wrong joins apart with five decisions, each with "
+               "a source. Four activity words are folded, so 74 activities became 70. PubChem's "
+               "name search is built and waits for PubChem to accept requests: 322 formula-only "
+               "joins to review and 1,660 names to ask. Of 42 protein numbers with tied UniProt "
+               "entries, one is decided by hand, one left with a removed protein, and 40 are "
+               "still open. The circular import is fixed.")
+
+
+def genbank_record() -> str:
+    """Phase 4b: one real CDS from MIBiG's GenBank file, line by line, and what is read."""
+    blue, orange = LAYER["genomics"], LAYER["proteomics"]
+    parts = [t(32, 46, "One gene, as MIBiG's GenBank file describes it", size=22, weight=700),
+             t(32, 70, "A real CDS feature from entry BGC0002390 (zealexins, maize), without its "
+               "protein sequence. Each line starting with / is a qualifier.", size=14, fill=INK2)]
+    lines = [
+        ("CDS  complement(join(63720..63793,63898..64033,73837..73862,", "where the gene sits",
+         "opposite strand, seven pieces", "skip", INK2),
+        ("     74207..74251,74359..74474,74580..74676,74787..75168))", "", "the location wraps "
+         "onto a second line", "skip", INK2),
+        ('/codon_start=1', "how to start reading the DNA", "", "skip", MUTED),
+        ('/db_xref="GeneID:100272490"', "NCBI's gene number", "LOC100272490 is this number",
+         "read", blue),
+        ('/gene="LOC100272490"', "the gene's name", "what MIBiG's curators wrote", "read", blue),
+        ('/gene_synonym="GRMZM2G134862"', "another name", "split on ; when there are several",
+         "read", blue),
+        ('/note="Derived by automated computational analysis using', "a note", "", "skip", MUTED),
+        ('      gene prediction method: BestRefSeq."', "", "still the note: never read as a name",
+         "skip", MUTED),
+        ('/product="translin"', "the protein's name", "the protein file has it too",
+         "skip", INK2),
+        ('/protein_id="NP_001140431.1"', "the protein's number", "where every name above leads",
+         "read", orange),
+    ]
+    y = 100
+    parts.append(rect(32, y, 640, 34 * len(lines) + 20, fill=PLANE, rx=10))
+    for k, (code, what, note, status, colour) in enumerate(lines):
+        yy = y + 32 + k * 34
+        parts.append(rect(40, yy - 18, 5, 26, fill=colour, rx=2))
+        indent = (len(code) - len(code.lstrip(" "))) * 7.5     # SVG drops leading spaces
+        parts.append(t(56 + indent, yy, code.lstrip(" "), size=12.5, family=MONO,
+                       fill=INK if status == "read" else INK2))
+        if status == "read":
+            parts.append(check_mark(700, yy - 5, 9, GOOD))
+        else:
+            parts.append(f'<circle cx="700" cy="{yy - 5}" r="9" fill="none" stroke="{BASE}" '
+                         f'stroke-width="2"/>')
+        parts.append(t(720, yy, what, size=13, weight=600))
+        if note:
+            parts.append(t(912 if what else 720, yy, note, size=12, fill=INK2))
+    y_end = y + 34 * len(lines) + 40
+    parts.append(check_mark(42, y_end - 4, 8, GOOD))
+    parts.append(t(58, y_end, "read by src/microbegraph/sources/mibig_genbank.py", size=12.5))
+    parts.append(f'<circle cx="420" cy="{y_end - 4}" r="8" fill="none" stroke="{BASE}" '
+                 f'stroke-width="2"/>')
+    parts.append(t(436, y_end, "skipped, wrapped lines included", size=12.5))
+    # how it is used
+    y2 = y_end + 30
+    parts.append(t(32, y2, "HOW MICROBEGRAPH USES IT", size=12, weight=700, fill=MUTED))
+    steps = [("MIBiG's curators remove", '"LOC100272490"', INK2),
+             ("the GenBank file", "GeneID:100272490", blue),
+             ("names the protein", "NP_001140431.1", orange),
+             ("so the cluster loses it", "removal 4 of 4", GOOD)]
+    x = 32
+    for k, (top, value, colour) in enumerate(steps):
+        parts.append(rect(x, y2 + 14, 252, 58, fill=SURFACE, stroke=colour, rx=10, sw=2))
+        parts.append(t(x + 14, y2 + 38, top, size=12.5, fill=INK2))
+        parts.append(t(x + 14, y2 + 60, value, size=13.5, weight=700, family=MONO))
+        if k < len(steps) - 1:
+            parts.append(line(x + 254, y2 + 43, x + 286, y2 + 43, color=INK2, sw=2))
+        x += 290
+    parts.append(t(32, y2 + 100, "The same lookup gives the 59 gene records named only by a gene "
+                   "name (baeI, agqA, SCO6265...) their protein numbers.", size=12.5, fill=INK2))
+    return svg(1200, int(y2 + 124), "".join(parts), "One gene, as MIBiG's GenBank file describes it",
+               "A real CDS from MIBiG entry BGC0002390: a location that wraps onto two lines, "
+               "codon_start, db_xref GeneID:100272490, gene LOC100272490, gene_synonym "
+               "GRMZM2G134862, a note that wraps onto a second line, product translin and "
+               "protein_id NP_001140431.1. The reader keeps the gene number, the names and the "
+               "protein number, and skips the rest, including wrapped lines. MIBiG's curators "
+               "remove LOC100272490; the GenBank file ties it to NP_001140431.1, so that protein "
+               "leaves the cluster.")
+
+
+def clue_ladder() -> str:
+    """Phase 4b: the four clues that confirm a PubChem number, strongest first."""
+    aqua = LAYER["metabolomics"]
+    parts = [t(32, 46, "Four clues for a compound's PubChem number", size=22, weight=700),
+             t(32, 70, "Every number MIBiG gives, and every number PubChem's name search finds, is "
+               "a candidate. The strongest clue present decides.", size=14, fill=INK2)]
+    rungs = [
+        ("1", "name", "MIBiG gives the number, and PubChem lists MIBiG's name under it",
+         "(its title or any of its names), or the name search returns that very number",
+         "780 joins on 2026-10-12", "erythromycin A and CID 12560"),
+        ("2", "same structure", "MIBiG gives the number; PubChem files the name under another",
+         "record with the same first InChIKey block: the same molecule, drawn another way",
+         "needs the name search", "with or without its 3D shape"),
+        ("3", "name search", "MIBiG gives no number that passes 1 or 2, but the name search finds",
+         "the name under exactly one number whose formula agrees with MIBiG's",
+         "needs the name search", "for the 1,254 with a formula, no number"),
+        ("4", "formula alone", "MIBiG gives one number and the formulas agree; nothing above",
+         "points elsewhere. The weakest clue, so two things switch it off:",
+         "322 joins on 2026-10-12", "R19 lists them"),
+    ]
+    y = 98
+    for k, (num, name, l1, l2, count, example) in enumerate(rungs):
+        weight = 4 - k
+        parts.append(rect(32, y, 760, 76, fill=SURFACE, stroke=aqua, rx=10, sw=1 + weight * 0.6))
+        parts.append(f'<circle cx="62" cy="{y + 38}" r="18" fill="{aqua}" opacity="{0.4 + weight * 0.15:.2f}"/>')
+        parts.append(t(62, y + 44, num, size=16, weight=700, fill=SURFACE, anchor="middle"))
+        parts.append(t(94, y + 26, name, size=15, weight=700))
+        parts.append(t(94, y + 46, l1, size=12.5, fill=INK2))
+        parts.append(t(94, y + 64, l2, size=12.5, fill=INK2))
+        parts.append(t(808, y + 32, count, size=13, weight=700))
+        parts.append(t(808, y + 52, example, size=12, fill=MUTED))
+        y += 88
+    # the two stops on rung 4
+    stops = [("the name search files the name under a different molecule",
+              "2-methylisoborneol: its MIBiG number is a bromine compound's"),
+             ("MIBiG's entries disagree about the formula",
+              "ferrichrome (with and without iron), lasalocid (salt and acid)")]
+    for k, (head, example) in enumerate(stops):
+        yy = y + k * 56
+        parts.append(rect(94, yy, 698, 48, fill=SURFACE, stroke=CRITICAL, rx=8, sw=1.6))
+        parts.append(cross_mark(116, yy + 24, 9))
+        parts.append(t(134, yy + 20, head, size=13, weight=600))
+        parts.append(t(134, yy + 38, example, size=12, fill=INK2))
+    y += 2 * 56 + 16
+    notes = ["Before any clue: a person's decision in the review file wins, and says so.",
+             "Two candidates equally strong and different: kept apart, both named in the ledger.",
+             "A number several MIBiG compounds share: clue 1 only (isomers share formulas).",
+             "The ledger names the clue that decided: \"Confirmed by name.\", \"Confirmed by the "
+             "formula alone.\""]
+    for k, note in enumerate(notes):
+        parts.append(f'<circle cx="40" cy="{y + k * 22 - 4}" r="3" fill="{INK2}"/>')
+        parts.append(t(52, y + k * 22, note, size=12.5, fill=INK2))
+    return svg(1060, int(y + 4 * 22 + 12), "".join(parts), "Four clues for a compound's PubChem number",
+               "Four clues, strongest first. 1, name: PubChem lists MIBiG's name under the number, "
+               "780 joins. 2, same structure: the name is filed under another record with the same "
+               "first InChIKey block. 3, name search: the name is found under exactly one number "
+               "with an agreeing formula. 4, formula alone: 322 joins, switched off when the name "
+               "search points at a different molecule or MIBiG's entries disagree about the "
+               "formula, as for 2-methylisoborneol, ferrichrome and lasalocid. A person's "
+               "decision comes first; ties stay apart; shared numbers need clue 1.")
+
+
+def review_row() -> str:
+    """Phase 4b: one real row of the review file, column by column, and its ledger row."""
+    orange = LAYER["proteomics"]
+    parts = [t(32, 46, "A decision by hand, written down", size=22, weight=700),
+             t(32, 70, "A real row of curation/resolution_decisions.csv, read column by column, "
+               "and the ledger row the resolver writes from it.", size=14, fill=INK2)]
+    cols = [
+        ("identifier", ["mg.compound:desosamine"], "one record"),
+        ("other_identifier", ["mg.compound:methymycin"], "the other record"),
+        ("decision", ["keep_apart"], "join, or keep_apart"),
+        ("reason", ["Desosamine is the sugar part of methymycin, not another name",
+                    "for it. The two share an NPAtlas number only because entry",
+                    "BGC0000898 gives desosamine methymycin's records."], "why, so anyone can check"),
+        ("citation", ["pubmed:9770448"], "where to check it"),
+        ("decided_on", ["2026-10-12"], "when"),
+    ]
+    y = 96
+    for k, (name, values, meaning) in enumerate(cols):
+        height = 12 + 22 * len(values)
+        if k % 2 == 1:
+            parts.append(rect(32, y, 1036, height, fill=PLANE, rx=6))
+        parts.append(t(46, y + 23, name, size=13, weight=700, family=MONO))
+        for i, value in enumerate(values):
+            parts.append(t(210, y + 23 + i * 22, value, size=12.5, family=MONO))
+        parts.append(t(860, y + 23, meaning, size=12, fill=INK2))
+        y += height + 4
+    parts.append(line(550, y + 8, 550, y + 44, color=orange, sw=2.5))
+    parts.append(t(566, y + 32, "python -m microbegraph.resolve applies it before the rules "
+                   "that join compounds and proteins", size=12.5, fill=INK2))
+    y += 56
+    parts.append(rect(32, y, 1036, 156, fill=SURFACE, stroke=orange, rx=10, sw=2))
+    parts.append(t(48, y + 26, "THE LEDGER ROW IT BECOMES", size=12, weight=700, fill=MUTED))
+    for x, label, value in ((48, "rule", "reviewed_by_hand"), (250, "decision", "kept_apart"),
+                            (420, "identifier", "mg.compound:desosamine"),
+                            (660, "compared_with", "mg.compound:methymycin")):
+        parts.append(t(x, y + 50, label, size=11.5, weight=700, fill=INK2, family=MONO))
+        parts.append(t(x, y + 70, value, size=12.5, family=MONO))
+    parts.append(t(48, y + 98, "grounds", size=11.5, weight=700, fill=INK2, family=MONO))
+    grounds = ["Decided by hand on 2026-10-12: mg.compound:desosamine and mg.compound:methymycin "
+               "are different things.",
+               "Desosamine is the sugar part of methymycin, ... Source: pubmed:9770448 "
+               "(curation/resolution_decisions.csv, line 4)."]
+    for i, g in enumerate(grounds):
+        parts.append(t(48, y + 118 + i * 20, g, size=12.5, family=MONO, fill=INK2))
+    y += 174
+    parts.append(t(32, y + 14, "keep_apart: the two can never end up in one node, by any rule or any "
+                   "chain of joins. join: they become one node at once.", size=12.5, fill=INK2))
+    parts.append(t(32, y + 36, "Recipe R20 in the query cookbook lists every decision by hand.",
+                   size=12.5, fill=INK2))
+    return svg(1100, int(y + 58), "".join(parts), "A decision by hand, written down",
+               "A row of the review file: identifier mg.compound:desosamine, other_identifier "
+               "mg.compound:methymycin, decision keep_apart, a reason saying desosamine is the "
+               "sugar part of methymycin, citation pubmed:9770448, decided on 2026-10-12. The "
+               "resolver applies it before the rules that join compounds and proteins and "
+               "writes a ledger row with rule "
+               "reviewed_by_hand, decision kept_apart, and grounds that quote the reason and the "
+               "source.")
+
+
 FIGURES = {
     "logo_microbegraph.svg": logo,
     "cover_microbegraph.svg": cover,
@@ -1798,6 +2081,10 @@ FIGURES = {
     "uniprot_choice.svg": uniprot_choice,
     "ledger_row.svg": ledger_row,
     "two_shapes.svg": two_shapes,
+    "gaps_closed.svg": gaps_closed,
+    "genbank_record.svg": genbank_record,
+    "clue_ladder.svg": clue_ladder,
+    "review_row.svg": review_row,
 }
 
 

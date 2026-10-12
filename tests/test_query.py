@@ -26,7 +26,7 @@ from microbegraph.resolve import resolve
 def database(tmp_path_factory) -> Path:
     from conftest import RESOLVE_FIXTURES
     out = tmp_path_factory.mktemp("processed")
-    resolve(RESOLVE_FIXTURES, out)
+    resolve(RESOLVE_FIXTURES, out, RESOLVE_FIXTURES / "curation")
     db = out / "microbegraph.duckdb"
     build(out / "nodes.csv", out / "edges.csv", out / "resolution_ledger.csv",
           out / "resolve_summary.json", db)
@@ -84,6 +84,12 @@ def test_recipe_answers_on_the_slice(database):
             "curated_literature", "doi:10.1186/s13568-023-01543-w") in chains
     assert answer(10) == [("Bacillus velezensis FZB42", "mibig:BGC0000433")]
     assert [row[0] for row in answer(11)] == ["srfAA", "srfAB", "srfAC", "srfAD"]
+    # Phase 4b's recipes: the slice holds the real review file and activity words.
+    assert ("mg.compound:desosamine", "mg.compound:methymycin", "kept_apart") in answer(20)
+    assert len(answer(20)) == 5
+    assert ("2-methylisoborneol",
+            "BGC0000657: 9237955|BGC0000658: 16913|BGC0000659: 16913") in answer(21)
+    assert ("mg.activity:antitumor", "mg.activity:anticancer") in answer(22)
 
 
 def test_the_command_runs_a_recipe_and_your_own_sql(database, monkeypatch, capsys):

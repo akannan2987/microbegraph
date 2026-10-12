@@ -629,6 +629,21 @@ the handful of properties we filter
 on most as plain columns. Start simple, and promote a property once there's a
 reason to.
 
+**When a source disagrees with itself** (Phase 4b). Two MIBiG entries can give
+one compound two different values: two formulas, two PubChem numbers. The
+property keeps the first value under its usual name, so everything that reads
+it keeps working, and a second property, named after the first with
+`_by_entry` added, lists every value with the record that gave it:
+
+```
+pubchem_cid             9237955
+pubchem_cid_by_entry    BGC0000657: 9237955|BGC0000658: 16913|BGC0000659: 16913
+```
+
+Nothing is thrown away, and anyone can see the disagreement and who said what.
+The resolver reads these lists too: a formula the entries disagree about can't
+confirm a join on its own ([`06b-closing-the-gaps.md`, Step 4](06b-closing-the-gaps.md#8-step-4-when-mibigs-entries-disagree-keep-every-value)).
+
 ### `data/processed/edges.csv`
 
 One row per arrow.
@@ -889,7 +904,9 @@ one for winter jujube, so the example now follows the study I can cite.
 | CURIE identifiers everywhere | Unique across sources; `mg.` visibly marks what we invented | Slightly verbose to type |
 | `Pathogen` separate from `Organism`, as a kind of it (Phase 4) | Every query in this project is oriented helpful → harmful; one type would mean a role filter in every query | Queries about every organism must include pathogens (the `organisms` view does) |
 | Properties as a JSON column | Nine types with different properties; a wide table would be mostly empty | Querying inside JSON is more awkward; the most-used properties are plain columns in the database's views (Phase 4) |
-| Join records only with independent confirmation (Phase 4) | A wrong merge silently attaches facts to the wrong thing; a missed one is a visible gap | Some true matches wait, listed, for more evidence or a person's review (Phase 4b) |
+| Join records only with independent confirmation (Phase 4) | A wrong merge silently attaches facts to the wrong thing; a missed one is a visible gap | Some true matches wait, listed, for more evidence or a person's review |
+| A person's decisions in a file of their own, applied before the matching rules (Phase 4b) | Some questions need someone who has read the paper; a decision slipped in quietly would make the graph untrustworthy | Every decision needs a reason and a source, and it is visible in the ledger as `reviewed_by_hand` |
+| Every value kept when a source disagrees with itself (Phase 4b) | Keeping only the first value hides the disagreement, and once hid the cause of two wrong joins | Some nodes carry an extra `<property>_by_entry` list |
 | Evidence level on every edge, no default | Forces every adapter to state what it knows; no fact enters anonymously | Slightly more work per adapter, by design |
 | Citation required for curated edges | An uncited hand-added fact is the thing that erodes trust fastest | Curation is slower; the bridge layer stays small and good rather than large and vague |
 | Loader refuses instead of warns | Warnings get ignored; a broken graph is worse than no graph | Occasionally blocks you until you fix the data |

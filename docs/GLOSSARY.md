@@ -54,6 +54,11 @@ DNA that together build one specific molecule. If the genome is a cookbook, a
 BGC is several consecutive pages describing one complicated recipe. Abbreviated
 BGC throughout.
 
+**CDS (coding sequence)**: the stretch of DNA that is read to make one protein.
+In a GenBank record each one is a feature of its own, followed by qualifiers
+that give the gene's names and the protein's number (Phase 4b). See
+[`img/genbank_record.svg`](img/genbank_record.svg).
+
 **Charge (of a molecule)**: a molecule with an electric charge is an **ion**,
 and its formula ends in a sign: `C10H16NO4-` has one negative charge. Databases
 don't always write the sign, so the same atoms can appear as `C10H16NO4` in one
@@ -103,6 +108,11 @@ resistance/immunity. Only the first three carry out a step in making the
 molecule, so only they give a `CATALYZES` arrow. See
 [`img/gene_jobs.svg`](img/gene_jobs.svg).
 
+**Gene name**: the short name the scientists who described a gene gave it, such
+as `srfAA` or `baeI`. Meaningful within one paper or genome, not worldwide; the
+same protein can have a gene name, a **locus tag**, an **NCBI gene number** and
+a **protein id**, and a GenBank record lists them side by side.
+
 **Genome**: the complete set of an organism's DNA. In the cookbook comparison,
 it's the entire book rather than any one recipe.
 
@@ -128,6 +138,11 @@ so they share a molecular formula and can still behave completely differently,
 like two models built from the same box of bricks. Minutissamides B, C and D are
 isomers, which is why a matching formula alone never proves that two records
 are one molecule.
+
+**Isotope**: a version of an atom with a different weight. Most iron is iron-56;
+iron-55 is a radioactive isotope. PubChem keeps a separate record for a
+molecule built with an unusual isotope, such as "[55Fe] Ferrichrome", which is
+why a matching formula can point at the wrong record (Phase 4b).
 
 **Jujube** (*Ziziphus jujuba*): a fruit tree grown widely in China, whose fruit
 rots easily after harvest. It's the crop in the running example, because Xiao
@@ -217,6 +232,13 @@ three molecular layers this project joins together.
 order, class, phylum, kingdom, domain. NCBI also uses in-between ranks such as
 "species group" and "clade"; MicrobeGraph makes nodes only for the main ones.
 
+**Salt (of a molecule)**: an acid with its hydrogen swapped for a metal, such as
+the sodium salt of lasalocid (C34H53NaO8, against C34H54O8 for the acid).
+Chemically it's the same active molecule, but PubChem keeps it as a separate
+record, its InChIKey has a first block of its own (that block also encodes the
+formula, sodium included), and MIBiG's entries don't always agree on which one
+they describe.
+
 **Secondary metabolite**: a molecule an organism makes that isn't needed for
 basic survival but gives it an advantage, such as a weapon, a signal or a
 defence. Most antibiotics are secondary metabolites. Also called a *specialised
@@ -241,6 +263,12 @@ MicrobeGraph keeps it in a protein's `locations` (Phase 3b).
 **Species / genus / family**: rungs on the ladder that classifies life, from
 specific to general. *Bacillus subtilis* is a species; *Bacillus* is its genus.
 A postal address climbs the same way: street → city → region → country.
+
+**Stereochemistry**: how a molecule's atoms are arranged in space, not just
+which are connected to which. Your left and right hands show the idea: the same
+parts, connected the same way, yet a left glove won't go on a right hand. PubChem
+often has one record with the 3D arrangement spelled out and one without; the
+first block of the **InChIKey** is the same for both.
 
 **Strain**: one specific isolate within a species. If "species" is a car model,
 a strain is one particular car with its own history and quirks, and two strains
@@ -271,6 +299,11 @@ hierarchy it produces.
 
 ## Graphs and knowledge
 
+**Activity synonym**: two activity words that mean the same thing, such as
+"antitumor" and "anticancer". Since Phase 4b they're listed, each with a reason
+and a source, in `curation/activity_synonyms.csv`, and the resolver folds one
+word's node into the other's, keeping the old word as another name.
+
 **Alias**: another identifier for the same node. Since Phase 4,
 `ncbiprotein:CAE02630.1` is an alias of `uniprot:Q70KJ7`: the node lists its
 aliases, and the database's `aliases` view finds the node from any of them, the
@@ -297,6 +330,11 @@ system the number belongs to, much as the country code on a phone number does.
 **Cypher**: the query language for graph databases, doing for graphs what SQL
 does for tables. Its patterns look like little drawings: `(a)-[:PRODUCES]->(b)`.
 It arrives in Release 2.0, together with Apache AGE.
+
+**Decision by hand**: a join or a refusal that a person made, after reading the
+source, because no rule could make it correctly. Since Phase 4b it goes in the
+**review file**, with a reason and a citation, and the ledger records it under
+its own rule, `reviewed_by_hand`, so it's never mistaken for a rule's decision.
 
 **Degree**: how many arrows touch a node, which you can read as its "popularity"
 score.
@@ -355,6 +393,11 @@ and what relationships are allowed between them. A family tree has one built in:
 it allows *parent-of* and *married-to*, but not *borrowed-a-lawnmower-from*. An
 ontology is that kind of decision, made explicitly.
 
+**Override**: a decision that wins over the normal rule. An override nobody can
+see is a hidden fault; one written down with its reason, like a referee's
+decision with the replay attached, can be checked. The review file is this
+project's only override, and every use of it is in the ledger.
+
 **Path**: a sequence of arrows leading from one node to another. Paths are the
 core output of this project, because each one is an evidence chain.
 
@@ -378,6 +421,12 @@ track of which items belong together while groups are joined one pair at a
 time. If A joins B and later B joins C, it knows that A and C are in one group
 without anyone comparing them. Phase 4's resolver groups records of the same
 thing with it (`src/microbegraph/resolution/groups.py`).
+
+**Values by entry** (`<property>_by_entry`): when two records of one source give
+one node different values, the node keeps the first under the property's name
+and lists every value with the record that gave it, e.g.
+`pubchem_cid_by_entry` = `BGC0000657: 9237955|BGC0000658: 16913`. Like signed
+witness statements: the disagreement stays visible (Phase 4b).
 
 **Weakest link**: the least certain arrow along a path. A chain of evidence is only
 as strong as its weakest arrow, so the cookbook's recipe R9, and the analytics
@@ -436,6 +485,12 @@ must have `probe`, `fetch` and `tidy`.
 
 **Argument**: a value you hand to a function. In `round(3.7)`, `3.7` is the
 argument.
+
+**Circular import**: two Python files that each need the other before they can
+finish loading, so neither can, like two people at a door each waiting for the
+other to go first. The fix is to move what both need into a third file that
+needs neither (Phase 4b moved the shared table helpers into
+`src/microbegraph/tables.py`).
 
 **Dataclass**: a Python class whose only job is to hold a few named values
 together, like a printed form with labelled boxes. `ProteinRecord` in
@@ -814,7 +869,11 @@ CID, their properties or synonyms) and the CIDs themselves in a POST body.
 
 **Rate limit**: a cap on how many requests you may make per second. Exceed it
 and you get blocked; respecting it is basic politeness to a free service.
-PubChem allows 5 a second, NCBI 3 (10 with a key) and KEGG 3.
+PubChem allows 5 a second and 400 a minute, NCBI 3 a second (10 with a key) and
+KEGG 3. A block can outlast the burst that caused it: in Phase 4b, a survey
+asking PubChem four names a second was answered **429 Too Many Requests** after
+about 400 names, and PubChem went on refusing for hours. So the name search
+asks one name a second.
 
 **Redirect**: an answer that says "what you want is over there", with the new
 address in a header called `Location`. HTTP 303 is one kind. Programs usually
@@ -830,13 +889,22 @@ upgrading ([`ROADMAP.md`, *Watching the sources*](ROADMAP.md#watching-the-source
 the web address. Error messages, logs and browser histories show addresses, not
 bodies, which is why a key belongs in the body.
 
+**Resume (a search)**: carry on from where an interrupted run stopped instead of
+starting again. When PubChem stops answering partway through the name search,
+the adapter keeps what arrived in a snapshot marked incomplete, and the next run
+carries those answers over and asks only the rest, like a long trip with rest
+stops where you pick up from the last stop, not from home.
+
 **Retry with backoff**: when a request fails, waiting a moment and trying
 again, waiting longer each time. *Everyday example:* the phone is engaged; you
 don't redial forty times a second.
 
 **Snapshot**: one fetch from a web API, kept as a dated folder in the evidence
 locker: every answer exactly as it arrived, plus a manifest. A new day or a new
-set of questions makes a new snapshot; older ones are kept for comparison. See
+set of questions makes a new snapshot; older ones are kept for comparison. From
+Phase 4b a snapshot can be finished incomplete (the manifest says
+`"complete": false`) when the service stopped answering, so the next run can
+resume it. See
 [`img/api_snapshot.svg`](img/api_snapshot.svg).
 
 **Source adapter**: the small piece of code that connects one data source to the
@@ -850,7 +918,8 @@ standard columns but not yet merged with the others. Written by `tidy()` to
 `data/processed/staging/`. dbt (Phase 10) uses the same word for the same idea.
 
 **Status code**: a number a server returns describing the outcome. 200 = fine.
-404 = not found. 403 = refused. 429 = you're going too fast. 500 = the server
+404 = not found. 403 = refused. 429 = Too Many Requests: you're going too fast,
+so wait, longer each time, and never retry in a quick loop. 500 = the server
 broke.
 
 **Throttling**: a service slowing down or refusing requests that arrive too fast.
@@ -887,13 +956,23 @@ aren't part of the cluster, each with a reason (14 names, 18 proteins). From
 Phase 3b the removals are applied and each one is listed in
 `mibig_summary.json`.
 
+**GenBank record**: the text format NCBI and its partners have used since the
+1980s to describe a piece of DNA: a header, a **FEATURES** table saying what sits
+where (each gene that codes for a protein is a **CDS**), and the DNA itself.
+MIBiG publishes one per entry, in its GenBank file.
+
 **ID mapping**: UniProt's service for translating identifiers from another
 database (an INSDC or RefSeq protein number, for example) into UniProt
 accessions. It runs as a job. An id it can't translate doesn't appear in
 the results, so this project compares what it asked with what came back.
 
 **InChIKey**: a 27-character fingerprint of a chemical structure, the same in
-every database, which makes it handy for matching compounds across sources.
+every database, which makes it handy for matching compounds across sources. It
+has three blocks: the **first** encodes the atoms and how they connect, the
+second the 3D arrangement and isotopes, the third the charge. Two PubChem records
+with the same first block are the same molecule drawn in different ways (Phase
+4b uses this to tell "another record of the same molecule" from "another
+molecule").
 
 **INSDC** (International Nucleotide Sequence Database Collaboration): GenBank
 (USA), the European Nucleotide Archive (Europe) and DDBJ (Japan), three public
@@ -913,6 +992,12 @@ experimentally shown to produce a particular molecule, published under CC-BY on
 Zenodo with a permanent DOI. It's **this project's backbone**, because it
 supplies the organism → cluster → compound arrows.
 
+**MIBiG GenBank file**: `mibig_gbk_4.0.tar.gz` (79.8 MB) on MIBiG's download
+server: 2,636 GenBank records, one per entry. From Phase 4b the project reads its
+CDS features for every name a gene goes by, which places gene records named only
+by a gene name and the curators' removals no other list names. Pinned by its
+SHA-256, like the protein file.
+
 **MIBiG gene record**: the part of a MIBiG entry that lists the cluster's genes:
 for each one, the id of the protein it makes, its name, a short product
 description, and often its job and the experiment that showed it. In MIBiG 4.0,
@@ -929,10 +1014,22 @@ nodes and `ENCODES` arrows from Phase 3b, but no jobs, so no `CATALYZES`.
 `low` or `questionable`. MicrobeGraph carries it through as the `confidence` of
 every arrow from that entry (0.95, 0.85, 0.70, 0.50).
 
+**Name search (PubChem)**: asking PubChem which records a name is filed under
+(`POST .../compound/name/cids/JSON`). It answers with the numbers, or "No CID
+found". From Phase 4b the PubChem adapter asks it for MIBiG names their own
+numbers don't list, and for compounds with no number but a formula, one a
+second. A number only the search found joins a compound only when the formula
+agrees.
+
 **NCBI**: the US National Center for Biotechnology Information. It runs Taxonomy
 (the classification of life) and Datasets (genome records), among much else.
 NCBI places no restrictions on using its data, although some people who submit
 data to it claim rights in what they submitted.
+
+**NCBI gene number** (GeneID): NCBI Gene's number for a gene, such as
+`100272490`. A gene with no other name is called `LOC` plus its number
+(`LOC100272490`), and a GenBank record writes it as `/db_xref="GeneID:100272490"`,
+which is how Phase 4b matched four maize genes MIBiG's curators removed.
 
 **Negative result**: a test that looked for something and did not find it. MIBiG
 records some bioactivities as `"observed": false`. MicrobeGraph counts them but
@@ -961,6 +1058,11 @@ version number, which goes up if the sequence is corrected.
 CID it returns a formula, weights, the structure and a synonym list; given a name
 it can find the CID. Access is free and needs no account. Its synonym lists are
 the raw material for entity resolution here.
+
+**Qualifier (GenBank)**: one line of detail under a feature in a GenBank record,
+starting with `/`: `/gene="srfAA"`, `/locus_tag=...`, `/protein_id="CAE02630.1"`.
+A value in quotes can wrap onto the next line, which the reader in
+`sources/mibig_genbank.py` has to allow for.
 
 **RefSeq**: NCBI's Reference Sequence collection, a cleaned-up, non-redundant
 copy of the public sequence archives. Its protein ids start with `WP_`, `NP_`,
@@ -1306,13 +1408,18 @@ style the hand-made test record didn't use. Both times, every test had passed.
 whole build, day 0 to the finished product, in order, linking to every guide.
 Updated in the same commit as any change it describes.
 
+**Human-in-the-loop**: a pipeline in which a person makes the decisions the rules
+can't, at a defined point and in a recorded way, while the rules do the rest.
+In this project the point is the review file, and the record is the ledger.
+
 **Independent confirmation**: a second piece of evidence that doesn't depend on
 the first. A PubChem number that MIBiG's curators typed in is joined to PubChem's
 record only when the name or the formula agrees as well, because some of those
 numbers belong to other molecules (Phase 4). Independence is the hard part: where
 MIBiG copied a structure from the PubChem record its number points at, the
-formulas agree whatever the number, which is why Phase 4b checks the joins the
-formula alone confirmed.
+formulas agree whatever the number. That's why, from Phase 4b, the formula alone
+no longer counts when PubChem's name search points at another molecule or
+MIBiG's entries disagree about the formula.
 
 **Ledger**: a written record of what a step did: what was merged, removed, or
 changed, and why. The resolution ledger and the provenance log are both ledgers.
@@ -1330,6 +1437,13 @@ cup. Each stage has one job and can be tested alone.
 **Reproducibility**: the property that someone else, on a different machine, can
 run your work and get the same result. That's why this project has
 `requirements.txt`, the evidence locker and the provenance log.
+
+**Review file**: `curation/resolution_decisions.csv` (Phase 4b), where a person
+records a decision about two records (`join` or `keep_apart`) with a reason, a
+citation and a date. The resolver applies it before the rules that join
+compounds and proteins, and a pair kept apart can never end up in one node,
+even through a chain of other joins. See
+[`img/review_row.svg`](img/review_row.svg).
 
 **Test (unit test)**: a small automated check proving one function does what you
 claim. A cook tastes the sauce before serving instead of hoping; a test does the

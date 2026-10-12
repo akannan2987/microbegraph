@@ -53,10 +53,21 @@ RULES: dict[str, str] = {
     "organism_and_pathogen":
         "An identifier that is an Organism in one source and a Pathogen in another becomes "
         "one Pathogen node, a kind of Organism",
+    "activity_synonym":
+        "An activity word listed in curation/activity_synonyms.csv joins the word it means "
+        "the same as",
+    "reviewed_by_hand":
+        "A person decided, with a reason and a source in curation/resolution_decisions.csv; "
+        "applied before every rule below, and no rule overrides it",
     "pubchem_number_confirmed":
         "MIBiG gives a PubChem number, and the name or the formula confirms it",
     "pubchem_number_shared":
         "Several MIBiG compounds give one PubChem number: each needs its own name confirmed",
+    "pubchem_numbers_differ":
+        "MIBiG's entries give one compound different PubChem numbers: only a number whose "
+        "record lists the name is joined",
+    "pubchem_name_search":
+        "PubChem's name search finds MIBiG's name under one compound, and the formulas agree",
     "pubchem_number_unknown":
         "MIBiG gives a PubChem number that PubChem doesn't have",
     "npatlas_and_formula":

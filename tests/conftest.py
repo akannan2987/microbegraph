@@ -39,7 +39,7 @@ from typing import Any
 import pytest
 import requests
 
-from microbegraph.sources.mibig import FILENAME, PROTEIN_FILE, MibigSource
+from microbegraph.sources.mibig import FILENAME, GENBANK_FILE, PROTEIN_FILE, MibigSource
 
 FIXTURES = Path(__file__).parent / "fixtures" / "mibig"
 
@@ -51,6 +51,30 @@ PROTEIN_SAMPLE = FIXTURES / "mibig_prot_seqs_sample.fasta"
 def protein_file_bytes() -> bytes:
     """The sample of MIBiG's protein file, exactly as stored."""
     return PROTEIN_SAMPLE.read_bytes()
+
+
+# Phase 4b: surfactin's real GenBank record, cut down, and made-up records for
+# the made-up entries (tests/fixtures/README.md).
+GENBANK_SAMPLE = FIXTURES / "genbank"
+
+
+def genbank_file_bytes(extra: dict[str, bytes] | None = None) -> bytes:
+    """
+    The GenBank sample packed the way MIBiG packs the real file: one .gbk per
+    entry in a folder inside a gzip-compressed tar archive. `extra` adds or
+    replaces records by file name (BGC9999901.gbk), for a test that needs a
+    name the default sample doesn't give.
+    """
+    members = {p.name: p.read_bytes() for p in sorted(GENBANK_SAMPLE.glob("*.gbk"))}
+    members.update(extra or {})
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w:gz") as tar:
+        for name, data in sorted(members.items()):
+            info = tarfile.TarInfo(f"mibig_gbk_4.0/{name}")
+            info.size = len(data)
+            info.mtime = 0
+            tar.addfile(info, io.BytesIO(data))
+    return buffer.getvalue()
 
 
 @pytest.fixture(autouse=True)
@@ -78,8 +102,9 @@ def build_archive(target: Path, extra: dict[str, bytes] | None = None,
     `compression` is "gz", "bz2", "xz", or "" for none at all. The real
     MIBiG 4.0 file is named .tar.gz but is not gzip-compressed, so the tests
     try every kind under that same name.
-    `proteins` also puts the protein file sample next to the archive, under
-    the name the adapter expects (Phase 3b): the tidy reads both.
+    `proteins` also puts the protein file sample (Phase 3b) and the GenBank
+    sample (Phase 4b) next to the archive, under the names the adapter
+    expects: the tidy reads all three.
     """
     members = {f"mibig_json_4.0/{p.name}": p.read_bytes() for p in sorted(FIXTURES.glob("*.json"))}
     members.update(extra or {})
@@ -95,6 +120,7 @@ def build_archive(target: Path, extra: dict[str, bytes] | None = None,
     target.write_bytes(payload)
     if proteins:
         (target.parent / PROTEIN_FILE).write_bytes(protein_file_bytes())
+        (target.parent / GENBANK_FILE).write_bytes(genbank_file_bytes())
     return payload
 
 

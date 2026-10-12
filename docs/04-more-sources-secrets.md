@@ -627,6 +627,15 @@ It writes no arrows. The arrows to these compounds come from KEGG (this phase)
 and from joining them to MIBiG's compounds (Phase 4), which is what
 `mibig_compound_ids` is kept for.
 
+> **From Phase 4b** the adapter asks in three rounds: these numbers (plus every
+> second number MIBiG's entries give, and any number in the review file), then
+> a name search for MIBiG names their numbers don't list (and for compounds
+> with no number but a formula), then the numbers that
+> search found. The nodes gain `found_by_name`, `names_matching_mibig` and
+> `synonym_count`. The name search is slow on purpose, one name a second;
+> [`06b-closing-the-gaps.md`, Step 5](06b-closing-the-gaps.md#9-step-5-pubchem-in-three-rounds)
+> explains why.
+
 A CID PubChem doesn't know comes back holding nothing but its own number. It's
 counted (`cids_not_in_pubchem`) and listed in `pubchem_summary.json`, and never
 becomes an empty node. The first real run had five of them out of 1,176; Phase 4
@@ -1187,7 +1196,7 @@ row).
 | `... pubchem_nodes.csv is missing, and kegg builds on it` | KEGG ran before PubChem | `python -m microbegraph.fetch --source pubchem`, then KEGG again |
 | `... holds no finished fetch yet` | `--tidy-only` before any fetch, or every fetch stopped halfway | Run the fetch for that source |
 | Probe: `1 unfinished fetch folder(s) ...` | A fetch stopped halfway (dropped line, Ctrl+C) | Nothing to fix; tidy ignores it. Delete the folder, or keep it as a record |
-| `... answered HTTP 429` and retries | Asking too fast, often because something else on your network uses the same service | The adapter waits and retries by itself. If it keeps happening, wait ten minutes |
+| `... answered HTTP 429` and retries | Asking too fast, often because something else on your network uses the same service | The adapter waits and retries by itself. If it keeps happening, wait ten minutes. If the run ends with `PubChem is refusing requests from this computer for now`, wait a few hours: [`06b-closing-the-gaps.md`, section 18](06b-closing-the-gaps.md#18-what-could-go-wrong) |
 | `attempt 1 of 5 failed (... answered HTTP 502 ...)` or `HTTP 503` from PubChem | PubChem is busy for a moment (503 is `PUGREST.ServerBusy`) | Nothing: it's retried automatically. If all five tries fail, run it again later |
 | `... arrived and is logged, but it isn't the answer expected (PubChem says: ...)` | PubChem sent a fault message | Read PubChem's message; run the fetch again in a few minutes |
 | `... arrived and is logged, but it isn't the taxonomy XML expected` | NCBI sent an error page | Open the named file to read NCBI's message; run again |

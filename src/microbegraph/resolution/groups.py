@@ -38,6 +38,11 @@ THE GUARD AGAINST OVER-MERGING
     decided those are different things, so a chain of joins that would put two
     of them in one group is refused, and the rule that asked for it records
     the refusal in the ledger.
+
+    From Phase 4b a person can add to the guard: a "keep_apart" row in
+    curation/resolution_decisions.csv (reviewed.py) calls forbid(a, b), and
+    from then on no join, direct or through a chain, may bring a and b into
+    one group.
 """
 
 from __future__ import annotations
@@ -76,6 +81,7 @@ class Groups:
         self._authorities: dict[str, set[str]] = {}
         self._leaders: dict[str, str] = {}           # representative -> best member so far
         self._best: dict[str, str] | None = None     # filled in by settle()
+        self._forbidden: list[tuple[str, str]] = []  # pairs a person kept apart (Phase 4b)
 
     def find(self, node_id: str) -> str:
         """The current representative of a node's group (any member will do)."""
@@ -101,8 +107,24 @@ class Groups:
         return self._leaders[self.find(node_id)]
 
     def can_join(self, a: str, b: str) -> bool:
-        """Would joining a and b keep at most one PubChem or UniProt id per group?"""
-        return len(self.authorities(a) | self.authorities(b)) <= 1
+        """
+        Would joining a and b keep at most one PubChem or UniProt id per group,
+        and keep apart every pair a person said must stay apart?
+        """
+        if len(self.authorities(a) | self.authorities(b)) > 1:
+            return False
+        return not self.kept_apart_by_hand(a, b)
+
+    def kept_apart_by_hand(self, a: str, b: str) -> bool:
+        """Would joining a and b bring together a pair passed to forbid()?"""
+        roots = {self.find(a), self.find(b)}
+        if len(roots) == 1:
+            return False
+        return any({self.find(x), self.find(y)} == roots for x, y in self._forbidden)
+
+    def forbid(self, a: str, b: str) -> None:
+        """Never let a and b end up in one group (a person's keep_apart decision)."""
+        self._forbidden.append((a, b))
 
     def join(self, a: str, b: str) -> None:
         """Put a and b in one group. Call can_join() first; this refuses otherwise."""
@@ -110,7 +132,8 @@ class Groups:
         if root_a == root_b:
             return
         if not self.can_join(a, b):
-            raise ValueError(f"{a} and {b} would put two authority identifiers in one group")
+            raise ValueError(f"{a} and {b} can't be one group: two authority identifiers, "
+                             f"or a pair a person kept apart")
         self._parent[root_b] = root_a
         self._authorities[root_a] |= self._authorities.pop(root_b)
         self._leaders[root_a] = min(self._leaders[root_a], self._leaders.pop(root_b),

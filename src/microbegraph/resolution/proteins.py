@@ -38,23 +38,36 @@ THE THREE RULES, IN THE ORDER THEY RUN
         UniProt's separation wins.
 
     rule gene_name_in_uniprot
-        59 gene records name their protein only by a gene name that MIBiG's
-        protein file doesn't use (baeB in the bacillaene cluster, for example).
-        If UniProt gives that gene name to exactly ONE protein of the same
-        cluster, the gene record joins that protein, and the gene record's
-        facts (its job in the pathway, the experiment that showed it) move
-        with it. Otherwise it stays on its own, listed for Phase 4b, which
-        checks the rest against MIBiG's GenBank file.
+        In Phase 4, 59 gene records named their protein only by a gene name
+        that MIBiG's protein file doesn't use (baeB in the bacillaene
+        cluster, for example). If UniProt gives that gene name to exactly ONE
+        protein of the same cluster, the gene record joins that protein, and
+        the gene record's facts (its job in the pathway, the experiment that
+        showed it) move with it; 38 joined this way. From Phase 4b the MIBiG
+        adapter finds all 59 in MIBiG's GenBank file before the resolver
+        runs, so this rule is a fallback that the real data no longer needs.
 """
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 
 from microbegraph.resolution.groups import Groups, rank_key
 from microbegraph.resolution.ledger import Ledger
 from microbegraph.resolution.names import split_list
 from microbegraph.resolution.pool import Pool
+from microbegraph.resolution.reviewed import Reviewed
+
+
+def gene_names(text: object) -> set[str]:
+    """
+    UniProt's gene names for one entry, lowercased. The UniProt adapter joins
+    them with "|" ("baeI|PV946_13250"). Phase 4 split them on spaces and ";"
+    only, so an entry with more than one gene name never matched; Phase 4b
+    found that while checking baeI, whose entry Q1RS74 lists two names.
+    """
+    return {n.lower() for n in re.split(r"[|;\s]+", str(text or "")) if n}
 
 
 def _taxid(node_id: str) -> str:
@@ -88,8 +101,9 @@ def _entry(pool: Pool, entry: str) -> dict:
 
 
 def join_uniprot(pool: Pool, groups: Groups, ledger: Ledger, facts: ProteinFacts,
-                 notes: dict[str, list[str]]) -> None:
+                 notes: dict[str, list[str]], reviewed: Reviewed | None = None) -> None:
     """Rule uniprot_cross_reference (see the module notes)."""
+    reviewed = reviewed or Reviewed([])
     candidates: dict[str, list[str]] = defaultdict(list)
     for entry in pool.ids("uniprot"):
         for number in split_list(_entry(pool, entry).get("mibig_protein_ids")):
@@ -97,8 +111,16 @@ def join_uniprot(pool: Pool, groups: Groups, ledger: Ledger, facts: ProteinFacts
                 candidates[number].append(entry)
 
     for number in sorted(candidates):
-        entries = sorted(candidates[number])
+        # Phase 4b: a pair a person settled is left to that decision.
+        settled = [e for e in candidates[number] if reviewed.settled(number, e)]
+        if any(reviewed.settled(number, e).decision == "join" for e in settled):
+            continue
+        entries = sorted(e for e in candidates[number] if e not in settled)
+        if not entries:
+            continue
         chosen, how = _choose(pool, facts, number, entries)
+        if chosen and not groups.can_join(chosen, number):
+            chosen, how = "", ", but it is already one with another UniProt entry"
         if chosen:
             groups.join(chosen, number)
             accession = chosen.split(":", 1)[1]
@@ -154,8 +176,9 @@ def _choose(pool: Pool, facts: ProteinFacts, number: str,
 
 
 def join_identical_sequences(pool: Pool, groups: Groups, ledger: Ledger,
-                             facts: ProteinFacts) -> None:
+                             facts: ProteinFacts, reviewed: Reviewed | None = None) -> None:
     """Rule identical_sequence (see the module notes)."""
+    reviewed = reviewed or Reviewed([])
     by_fingerprint: dict[tuple[str, frozenset[str]], list[str]] = defaultdict(list)
     for protein, organisms in facts.current.items():
         md5 = pool.props(protein, "mibig").get("sequence_md5", "")
@@ -168,7 +191,7 @@ def join_identical_sequences(pool: Pool, groups: Groups, ledger: Ledger,
         first, *rest = sorted(members, key=rank_key)
         where = ", ".join(sorted(organisms))
         for other in rest:
-            if groups.same(first, other):
+            if groups.same(first, other) or reviewed.settled(first, other):
                 continue
             pair = f"{first.split(':', 1)[1]} and {other.split(':', 1)[1]}"
             if groups.can_join(first, other):
@@ -184,6 +207,11 @@ def join_identical_sequences(pool: Pool, groups: Groups, ledger: Ledger,
                 ledger.add("identical_sequence", "merged", goes, "Protein",
                            f"{pair} have the same sequence (MD5 {md5}) in the same "
                            f"organism ({where}).{already}", compared_with=stays, sources="mibig")
+            elif groups.kept_apart_by_hand(first, other):
+                ledger.add("identical_sequence", "kept_apart", other, "Protein",
+                           f"{pair} have the same sequence (MD5 {md5}) in the same organism, "
+                           f"but a person decided they stay apart (see their reviewed_by_hand "
+                           f"rows).", compared_with=first, sources="mibig")
             else:
                 entries = sorted(groups.authorities(first) | groups.authorities(other))
                 ledger.add("identical_sequence", "kept_apart", other, "Protein",
@@ -193,12 +221,17 @@ def join_identical_sequences(pool: Pool, groups: Groups, ledger: Ledger,
                            compared_with=first, sources="mibig|uniprot")
 
 
-def join_gene_names(pool: Pool, groups: Groups, ledger: Ledger) -> list[str]:
+def join_gene_names(pool: Pool, groups: Groups, ledger: Ledger,
+                    reviewed: Reviewed | None = None) -> list[str]:
     """
     Rule gene_name_in_uniprot (see the module notes).
 
-    Returns the gene records that stayed on their own, for Phase 4b.
+    Returns the gene records that stayed on their own. From Phase 4b, the
+    MIBiG adapter places these through MIBiG's GenBank file first, so on the
+    real data this rule finds nothing left to do; it stays as the fallback
+    for a gene name the GenBank file doesn't give.
     """
+    reviewed = reviewed or Reviewed([])
     left: list[str] = []
     for protein in pool.ids("mg.protein"):
         props = pool.props(protein, "mibig")
@@ -219,11 +252,10 @@ def join_gene_names(pool: Pool, groups: Groups, ledger: Ledger) -> list[str]:
                 if other == protein:
                     continue
                 for entry in groups.authorities(other):
-                    names = {n.lower() for n in str(_entry(pool, entry).get("gene_names", ""))
-                             .replace(";", " ").split()}
-                    if gene.lower() in names:
+                    if gene.lower() in gene_names(_entry(pool, entry).get("gene_names")):
                         matches[groups.find(other)] = other
-        if len(matches) == 1:
+        if len(matches) == 1 and not reviewed.settled(protein, next(iter(matches.values()))) \
+                and groups.can_join(next(iter(matches.values())), protein):
             other = next(iter(matches.values()))
             entry = sorted(groups.authorities(other))[0]
             groups.join(other, protein)
@@ -238,6 +270,6 @@ def join_gene_names(pool: Pool, groups: Groups, ledger: Ledger) -> list[str]:
                      else f"{len(matches)} proteins of the cluster")
             ledger.add("gene_name_in_uniprot", "kept_apart", protein, "Protein",
                        f"The gene record in {where} names the gene '{gene}' only, and UniProt "
-                       f"gives that gene name to {found}. Left for Phase 4b (MIBiG's GenBank "
-                       f"file).", sources="mibig|uniprot")
+                       f"gives that gene name to {found}, and MIBiG's GenBank file doesn't "
+                       f"give it a protein number either.", sources="mibig|uniprot")
     return left

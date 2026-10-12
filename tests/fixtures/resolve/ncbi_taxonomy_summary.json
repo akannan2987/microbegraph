@@ -4,8 +4,8 @@
   "retrieved_at": "2026-10-12",
   "snapshot": "data/raw/ncbi_taxonomy/2026-10-12T071639Z",
   "counts": {
-    "nodes": 86,
-    "edges": 84
+    "nodes": 112,
+    "edges": 110
   },
   "merged_taxids": {
     "182080": "46161"

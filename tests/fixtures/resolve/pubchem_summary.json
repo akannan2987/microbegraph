@@ -4,7 +4,7 @@
   "retrieved_at": "2026-10-12",
   "snapshot": "data/raw/pubchem/2026-10-12T071614Z",
   "counts": {
-    "nodes": 18,
+    "nodes": 23,
     "edges": 0
   },
   "cids_not_in_pubchem": [
