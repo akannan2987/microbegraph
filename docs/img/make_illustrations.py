@@ -381,15 +381,26 @@ def ontology_map() -> str:
     parts.append(path(f"M{ox - 22} {oy - 30} C{ox - 70} {oy - 110} {ox + 70} {oy - 110} {ox + 22} {oy - 30}",
                       color=INK2, sw=2))
     parts.append(t(ox, oy - 98, "MEMBER_OF", size=11.5, weight=600, fill=INK2, anchor="middle", family=MONO))
+    # A Pathogen is a kind of Organism (from Phase 4): a dashed line with an open arrowhead,
+    # the usual way diagrams draw "is a kind of".
+    # It runs below every other drawing, so it crosses no label.
+    px, py = pos["Pathogen"]
+    low = 486
+    parts.append(path(f"M{px} {py + r + 30} V{low - 16} Q{px} {low} {px - 16} {low} "
+                      f"H{ox + 16} Q{ox} {low} {ox} {low - 16} V{oy + r + 30}",
+                      color=MUTED, sw=1.8, dash="6 5"))
+    parts.append(t((px + ox) / 2, low + 4, "a Pathogen is a kind of Organism (from Phase 4)",
+                   size=12, weight=600, fill=INK2, anchor="middle", style="italic", halo=True))
     for kind, (x, y) in pos.items():
         parts.append(node_badge(kind, x, y, r=r))
     legend_x = 32
     for name, color in LAYER.items():
-        parts.append(chip(legend_x, 470, name, color))
+        parts.append(chip(legend_x, 520, name, color))
         legend_x += len(name) * 7 + 52
-    return svg(1220, 510, "".join(parts), "The ontology map",
+    return svg(1220, 562, "".join(parts), "The ontology map",
                "Nine node types connected by the ten allowed edge types, coloured by "
-               "biological layer.")
+               "biological layer. A dashed line marks that a Pathogen is a kind of Organism, so "
+               "a pathogen may also harbour gene clusters and sit in the family tree.")
 
 
 def evidence_ladder() -> str:
@@ -1456,6 +1467,309 @@ def protein_file_coverage() -> str:
                f"{mapped if mapped is not None else 'the real run'}; CATALYZES arrows 4,492 in both.")
 
 
+# The numbers in the Phase 4 figures come from the real run of 2026-10-12
+# (MIBiG 4.0, UniProt 2026_03), as docs/06-entity-resolution-graph-build.md shows.
+PHASE4 = {
+    "sources": [("mibig", 47_907), ("pubchem", 1_171), ("ncbi_taxonomy", 2_457),
+                ("kegg", 39), ("uniprot", 20_507), ("curation", 11)],
+    "rows": 72_092, "identifiers": 70_613, "nodes": 48_264, "edges": 57_012,
+    "edges_read": 57_111, "ledger": 23_989, "left_out": 347,
+}
+
+
+def resolution_flow() -> str:
+    """Phase 4: six sources' tables become one graph, with every decision in the ledger."""
+    green = LAYER["metabolomics"]
+    parts = [t(32, 46, "From six sources to one graph", size=22, weight=700),
+             t(32, 70, "The resolver decides which records are the same thing, writes every "
+               "decision down, and the build loads the result twice.", size=14, fill=INK2)]
+    # 1. the six staging tables
+    parts.append(t(32, 108, "1  SIX SOURCES' TABLES", size=12, weight=700, fill=MUTED))
+    for i, (name, n) in enumerate(PHASE4["sources"]):
+        y = 120 + i * 50
+        parts.append(rect(32, y, 220, 40, fill=SURFACE, stroke=HAIR, rx=8))
+        parts.append(_table(52, y + 20, INK2))
+        parts.append(t(74, y + 25, name, size=13, weight=600, family=MONO))
+        parts.append(t(240, y + 25, f"{n:,}", size=13, anchor="end"))
+    parts.append(t(32, 440, f"{PHASE4['rows']:,} node rows for", size=12.5, fill=INK2))
+    parts.append(t(32, 458, f"{PHASE4['identifiers']:,} identifiers", size=12.5, fill=INK2))
+    # 2. the rules
+    parts.append(t(300, 108, "2  THE RULES, IN ORDER", size=12, weight=700, fill=MUTED))
+    groups = [
+        ("Organisms", LAYER["genomics"], ["same identifier, several sources: 1,478",
+                                          "NCBI's merged numbers moved: 7",
+                                          "organism and pathogen: 2"]),
+        ("Compounds", LAYER["metabolomics"], ["PubChem number confirmed: 1,105",
+                                              "kept apart: 81 (names or formulas)",
+                                              "same NPAtlas number and formula: 3"]),
+        ("Proteins", LAYER["proteomics"], ["UniProt entry joined: 20,629",
+                                           "same sequence, same organism: 220",
+                                           "gene name confirmed by UniProt: 38"]),
+    ]
+    for i, (head, colour, lines_) in enumerate(groups):
+        y = 120 + i * 110
+        parts.append(rect(300, y, 330, 96, fill=SURFACE, stroke=HAIR, rx=10))
+        parts.append(rect(300, y, 6, 96, fill=colour, rx=3))
+        parts.append(t(320, y + 26, head, size=15, weight=700))
+        for k, text in enumerate(lines_):
+            parts.append(t(320, y + 50 + k * 19, text, size=12.5, fill=INK2))
+    parts.append(t(300, 458, "Anything the evidence can't settle stays apart.", size=12.5,
+                   fill=INK2))
+    for y in (290,):
+        parts.append(line(258, y, 292, y, color=INK2, sw=2.5))
+        parts.append(line(636, y, 670, y, color=INK2, sw=2.5))
+    # 3. the outputs
+    parts.append(t(680, 108, "3  WHAT IT WRITES", size=12, weight=700, fill=MUTED))
+    outs = [("nodes.csv", f"{PHASE4['nodes']:,} nodes"), ("edges.csv", f"{PHASE4['edges']:,} arrows"),
+            ("resolution_ledger.csv", f"{PHASE4['ledger']:,} decisions, each with grounds")]
+    for i, (name, what) in enumerate(outs):
+        y = 120 + i * 58
+        parts.append(rect(680, y, 330, 48, fill=SURFACE, stroke=green if i == 2 else HAIR,
+                          rx=8, sw=2 if i == 2 else 1.5))
+        parts.append(_file_icon(694, y + 10, INK2))
+        parts.append(t(722, y + 21, name, size=13, weight=600, family=MONO))
+        parts.append(t(722, y + 39, what, size=12, fill=INK2))
+    parts.append(t(680, 314, "the twelve rules run again: all pass", size=12.5, weight=600))
+    parts.append(check_mark(990, 310, 9))
+    # 4. the two shapes
+    parts.append(line(845, 324, 845, 350, color=INK2, sw=2.5))
+    parts.append(rect(680, 356, 160, 70, fill=SURFACE, stroke=HAIR, rx=10))
+    parts.append(t(760, 384, "DuckDB", size=15, weight=700, anchor="middle"))
+    parts.append(t(760, 406, "tables, for SQL", size=12, fill=INK2, anchor="middle"))
+    parts.append(rect(850, 356, 160, 70, fill=SURFACE, stroke=HAIR, rx=10))
+    parts.append(t(930, 384, "NetworkX", size=15, weight=700, anchor="middle"))
+    parts.append(t(930, 406, "a graph, for walking", size=12, fill=INK2, anchor="middle"))
+    parts.append(t(680, 452, f"Counted in both, type by type: {PHASE4['nodes']:,} and "
+                   f"{PHASE4['edges']:,} in each.", size=12.5, fill=INK2))
+    return svg(1040, 476, "".join(parts), "From six sources to one graph",
+               f"Six staging tables ({PHASE4['rows']:,} node rows, {PHASE4['identifiers']:,} "
+               "identifiers) go through the organism, compound and protein rules. The resolver "
+               f"writes nodes.csv ({PHASE4['nodes']:,} nodes), edges.csv ({PHASE4['edges']:,} "
+               f"arrows) and the ledger ({PHASE4['ledger']:,} decisions), checks the twelve rules, "
+               "and the build loads the result into DuckDB and NetworkX with matching counts.")
+
+
+def pubchem_check() -> str:
+    """Phase 4: how a PubChem number MIBiG gives is confirmed, with the real counts and examples."""
+    green, red = GOOD, CRITICAL
+    parts = [t(32, 46, "Is MIBiG's PubChem number right?", size=22, weight=700),
+             t(32, 70, "A shared number isn't enough on its own. A second, independent clue must "
+               "agree before two records become one node.", size=14, fill=INK2)]
+    # the question boxes
+    parts.append(rect(32, 96, 300, 60, fill=SURFACE, stroke=HAIR, rx=10))
+    parts.append(t(48, 122, "MIBiG gives a compound a", size=13.5))
+    parts.append(t(48, 142, "PubChem number (1,186 compounds)", size=13.5, weight=700))
+    rows = [
+        ("Only one MIBiG name on the number", "Does PubChem list the name, OR do the formulas agree?",
+         [("name and formula", "637", True), ("name only", "135", True),
+          ("formula only", "325", True), ("neither", "64", False)]),
+        ("Several MIBiG names on one number", "Each name must be one PubChem lists: isomers share formulas",
+         [("name confirmed", "8", True), ("name not listed", "12", False)]),
+        ("A number PubChem doesn't have", "Nothing to compare with",
+         [("kept apart, listed", "5", False)]),
+    ]
+    y = 176
+    for head, test, outcomes in rows:
+        parts.append(line(182, y - 14, 182, y + 4, color=INK2, sw=2))
+        parts.append(rect(32, y + 6, 620, 66 + 26 * ((len(outcomes) + 1) // 2), fill=SURFACE,
+                          stroke=HAIR, rx=10))
+        parts.append(t(48, y + 30, head, size=14, weight=700))
+        parts.append(t(48, y + 50, test, size=12.5, fill=INK2))
+        for k, (label, n, ok) in enumerate(outcomes):
+            cx = 48 + (k % 2) * 300
+            cy = y + 74 + (k // 2) * 26
+            parts.append(check_mark(cx + 8, cy - 4, 8, green) if ok else cross_mark(cx + 8, cy - 4, 8, red))
+            parts.append(t(cx + 24, cy, f"{label}: {n}", size=12.5,
+                           weight=700 if not ok else 400))
+        y += 66 + 26 * ((len(outcomes) + 1) // 2) + 22
+    # the examples on the right
+    ex_x = 690
+    parts.append(t(ex_x, 108, "THREE REAL CASES", size=12, weight=700, fill=MUTED))
+    cases = [
+        ("erythromycin and erythromycin A", "both give CID 12560, and PubChem lists",
+         "both names: one node", True),
+        ("bacillomycin D", "gives the number of PubChem's \"Bacillomycin Fc\":",
+         "C49H76N10O15 against C52H84N12O14", False),
+        ("minutissamides B and C", "both give the number of minutissamide D:",
+         "same formula, different molecules", False),
+    ]
+    for i, (name, l1, l2, ok) in enumerate(cases):
+        cy = 122 + i * 96
+        parts.append(rect(ex_x, cy, 340, 84, fill=SURFACE, stroke=green if ok else red, rx=10,
+                          sw=1.8))
+        parts.append(check_mark(ex_x + 22, cy + 24, 9, green) if ok
+                     else cross_mark(ex_x + 22, cy + 24, 9, red))
+        parts.append(t(ex_x + 40, cy + 29, name, size=13.5, weight=700))
+        parts.append(t(ex_x + 18, cy + 52, l1, size=12, fill=INK2))
+        parts.append(t(ex_x + 18, cy + 70, l2, size=12, fill=INK2,
+                       family=MONO if "C49" in l2 else FONT))
+    parts.append(t(ex_x, 432, "Kept apart: the MIBiG compound stays as it", size=12.5))
+    parts.append(t(ex_x, 450, "was, and its number moves to", size=12.5))
+    parts.append(t(ex_x, 468, "pubchem_cid_not_confirmed.", size=12.5, family=MONO))
+    height = max(y, 490)
+    return svg(1060, int(height), "".join(parts), "Is MIBiG's PubChem number right?",
+               "1,186 MIBiG compounds give a PubChem number. With one name on a number, a "
+               "matching name or formula confirms it: 637 both, 135 name only, 325 formula only, "
+               "64 neither and kept apart. With several names on one number, each name must be "
+               "listed by PubChem: 8 confirmed, 12 not. 5 numbers PubChem doesn't have. Examples: "
+               "erythromycin and erythromycin A joined; bacillomycin D's number belongs to "
+               "Bacillomycin Fc, with a different formula; minutissamides B and C share D's number "
+               "and formula but are different molecules.")
+
+
+def uniprot_choice() -> str:
+    """Phase 4: one protein number with several UniProt entries, decided step by step."""
+    orange = LAYER["proteomics"]
+    parts = [t(32, 46, "Which UniProt entry is this protein?", size=22, weight=700),
+             t(32, 70, "UniProt lists each protein number under one or more entries. One entry "
+               "joins at once; several need a reason to pick one.", size=14, fill=INK2)]
+    parts.append(rect(32, 96, 300, 96, fill=SURFACE, stroke=HAIR, rx=10))
+    parts.append(t(48, 124, "20,671 protein numbers", size=16, weight=700))
+    parts.append(t(48, 146, "found in UniProt (release 2026_03)", size=12.5, fill=INK2))
+    parts.append(t(48, 172, "UniProt's own cross-reference", size=12.5, fill=INK2))
+    parts.append(line(332, 128, 380, 128, color=INK2, sw=2.5))
+    parts.append(rect(388, 100, 300, 56, fill=SURFACE, stroke=orange, rx=10, sw=2))
+    parts.append(check_mark(410, 128, 9, orange))
+    parts.append(t(428, 124, "one entry: joins it", size=14, weight=700))
+    parts.append(t(428, 144, "20,589 numbers", size=12.5, fill=INK2))
+    parts.append(line(182, 192, 182, 226, color=INK2, sw=2.5))
+    parts.append(t(196, 214, "several entries: 82 numbers", size=12.5, weight=600))
+    steps = [("1", "the entry for the cluster's organism", "33", "WP_012444311.1 > Q8KWW8"),
+             ("2", "of those, the one as long as MIBiG's sequence", "2", "NP_851152.1 > F4K051"),
+             ("3", "of those, the one a curator reviewed", "5", "XP_001798919.1 > Q0UI04")]
+    for i, (num, rule, n, example) in enumerate(steps):
+        y = 234 + i * 72
+        parts.append(rect(32, y, 656, 60, fill=SURFACE, stroke=HAIR, rx=10))
+        parts.append(f'<circle cx="58" cy="{y + 30}" r="14" fill="{orange}"/>')
+        parts.append(t(58, y + 35, num, size=14, weight=700, fill=SURFACE, anchor="middle"))
+        parts.append(t(84, y + 26, rule, size=13.5, weight=600))
+        parts.append(t(84, y + 46, example, size=12, fill=INK2, family=MONO))
+        parts.append(t(672, y + 36, f"{n} joined", size=13.5, weight=700, anchor="end"))
+    y = 234 + 3 * 72
+    parts.append(rect(32, y, 656, 60, fill=SURFACE, stroke=CRITICAL, rx=10, sw=1.8))
+    parts.append(cross_mark(58, y + 30, 11))
+    parts.append(t(84, y + 26, "still not one: the number stays on its own", size=13.5,
+                   weight=600))
+    parts.append(t(84, y + 46, "26 with no entry for the organism, 16 with equal ties",
+                   size=12, fill=INK2))
+    parts.append(t(672, y + 36, "42 kept apart", size=13.5, weight=700, anchor="end"))
+    parts.append(t(720, 250, "Several numbers can choose one entry:", size=12.5))
+    parts.append(t(720, 268, "the same protein submitted twice.", size=12.5))
+    parts.append(t(720, 286, "It becomes one node, encoded by", size=12.5))
+    parts.append(t(720, 304, "every cluster that lists it.", size=12.5))
+    parts.append(t(720, 340, "An entry no number chooses is left", size=12.5))
+    parts.append(t(720, 358, "out of the graph (278 entries), and", size=12.5))
+    parts.append(t(720, 376, "the ledger says which numbers", size=12.5))
+    parts.append(t(720, 394, "led to it.", size=12.5))
+    return svg(1000, y + 84, "".join(parts), "Which UniProt entry is this protein?",
+               "Of 20,671 protein numbers UniProt found, 20,589 have one entry and join it. 82 have "
+               "several: 33 are decided by the cluster's organism, 2 more by sequence length, 5 "
+               "more by review status, and 42 stay on their own. 278 entries no number chose are "
+               "left out of the graph.")
+
+
+def ledger_row() -> str:
+    """Phase 4: one real row of the resolution ledger, column by column."""
+    parts = [t(32, 46, "One decision, written down", size=22, weight=700),
+             t(32, 70, "A real row of data/processed/resolution_ledger.csv, about bacillomycin D, "
+               "read column by column.", size=14, fill=INK2)]
+    grounds = ["MIBiG gives CID 3086563; PubChem doesn't list the name 'bacillomycin D'",
+               "(its title is 'Bacillomycin Fc'); the formulas differ (MIBiG C49H76N10O15,",
+               "PubChem C52H84N12O14). Nothing besides the number confirms it, so the two",
+               "stay apart."]
+    cols = [
+        ("rule", ["pubchem_number_confirmed"], "which rule decided"),
+        ("decision", ["kept_apart"], "what was decided (one of five kinds)"),
+        ("identifier", ["mg.compound:bacillomycin-d"], "the record this row is about"),
+        ("node_id", ["mg.compound:bacillomycin-d"], "where it ended up: its own node"),
+        ("compared_with", ["pubchem.compound:3086563"], "the record it wasn't joined to"),
+        ("node_type", ["Compound"], "what kind of thing"),
+        ("grounds", grounds, "the evidence, in sentences"),
+        ("sources", ["mibig|pubchem"], "whose records were compared"),
+    ]
+    y = 96
+    for k, (name, values, meaning) in enumerate(cols):
+        height = 12 + 22 * len(values)
+        if k % 2 == 1:
+            parts.append(rect(32, y, 1036, height, fill=PLANE, rx=6))
+        parts.append(t(46, y + 23, name, size=13, weight=700, family=MONO))
+        for i, value in enumerate(values):
+            parts.append(t(190, y + 23 + i * 22, value, size=12.5, family=MONO))
+        parts.append(t(830, y + 23, meaning, size=12, fill=INK2))
+        y += height + 4
+    parts.append(t(32, y + 22, "Look up any identifier in the identifier column to see where it "
+                   "went; look up a node in node_id to see what became it.", size=12.5, fill=INK2))
+    parts.append(t(32, y + 44, "The query cookbook has both as recipes (R5 and R6), and R7 "
+                   "counts every refusal by rule.", size=12.5, fill=INK2))
+    return svg(1100, int(y + 66), "".join(parts), "One decision, written down",
+               "A ledger row: rule pubchem_number_confirmed, decision kept_apart, identifier and "
+               "node_id mg.compound:bacillomycin-d, compared with pubchem.compound:3086563, node "
+               "type Compound, grounds explaining that PubChem's title is Bacillomycin Fc and the "
+               "formulas differ, sources mibig and pubchem.")
+
+
+def two_shapes() -> str:
+    """Phase 4: the same facts as SQL tables (DuckDB) and as a walkable graph (NetworkX)."""
+    blue, green = LAYER["genomics"], LAYER["metabolomics"]
+    parts = [t(32, 46, "Two shapes of the same facts", size=22, weight=700),
+             t(32, 70, "DuckDB holds the truth as tables; the NetworkX graph is rebuilt from it "
+               "on every load and never edited.", size=14, fill=INK2)]
+    # left: the tables
+    parts.append(rect(32, 96, 470, 300, fill=SURFACE, stroke=HAIR, rx=12))
+    parts.append(t(52, 124, "DuckDB: microbegraph.duckdb", size=15, weight=700))
+    parts.append(t(52, 144, "the catalogue: count, filter, group, join", size=12.5, fill=INK2))
+    header = ["source_id", "edge_type", "target_id"]
+    rows = [("ncbitaxon:326423", "HARBORS", "mibig:BGC0000433"),
+            ("mibig:BGC0000433", "PRODUCES", "mg.compound:surfactin"),
+            ("mg.compound:surfactin", "INHIBITS", "ncbitaxon:40559"),
+            ("ncbitaxon:40559", "INFECTS", "mg.crop:jujube")]
+    xs = [52, 216, 314]
+    parts.append(rect(48, 160, 440, 26, fill=PLANE, rx=4))
+    for x, h in zip(xs, header, strict=True):
+        parts.append(t(x, 178, h, size=11.5, weight=700, family=MONO))
+    for i, row in enumerate(rows):
+        for x, value in zip(xs, row, strict=True):
+            parts.append(t(x, 206 + i * 26, value, size=11, family=MONO))
+    parts.append(t(52, 330, "SELECT edge_type, count(*) FROM edges", size=11.5, family=MONO,
+                   fill=blue))
+    parts.append(t(52, 348, "GROUP BY edge_type;", size=11.5, family=MONO, fill=blue))
+    parts.append(t(52, 378, f"{PHASE4['nodes']:,} nodes, {PHASE4['edges']:,} arrows", size=12.5,
+                   weight=600))
+    # middle arrow
+    parts.append(line(510, 246, 576, 246, color=INK2, sw=2.5))
+    parts.append(t(543, 232, "load_graph()", size=11.5, family=MONO, anchor="middle"))
+    parts.append(t(543, 270, "rebuilt,", size=11.5, fill=INK2, anchor="middle"))
+    parts.append(t(543, 286, "never edited", size=11.5, fill=INK2, anchor="middle"))
+    # right: the graph
+    parts.append(rect(584, 96, 470, 300, fill=SURFACE, stroke=HAIR, rx=12))
+    parts.append(t(604, 124, "NetworkX: a directed graph", size=15, weight=700))
+    parts.append(t(604, 144, "the shelves: walk from one dot to the next", size=12.5, fill=INK2))
+    chain = [("Organism", 640, 240, "FZB42"), ("GeneCluster", 740, 240, "BGC0000433"),
+             ("Compound", 840, 240, "surfactin"), ("Pathogen", 940, 240, "B. cinerea"),
+             ("Crop", 1010, 316, "jujube")]
+    for (_, x1, y1, _), (_, x2, y2, _) in zip(chain, chain[1:], strict=False):
+        d = math.hypot(x2 - x1, y2 - y1)
+        ux, uy = (x2 - x1) / d, (y2 - y1) / d
+        parts.append(line(x1 + ux * 30, y1 + uy * 30, x2 - ux * 34, y2 - uy * 34, color=INK2,
+                          sw=2))
+    for kind, x, y, label in chain:
+        parts.append(f'<circle cx="{x}" cy="{y}" r="26" fill="{PLANE}"/>')
+        parts.append(icon(kind, x, y, 32))
+        parts.append(t(x, y + 46 if kind != "Crop" else y + 44, label, size=11.5, anchor="middle"))
+    parts.append(t(604, 348, "nx.shortest_path(G, \"ncbitaxon:326423\",", size=11.5, family=MONO,
+                   fill=green))
+    parts.append(t(604, 366, "                 \"mg.crop:jujube\")", size=11.5, family=MONO,
+                   fill=green))
+    parts.append(t(32, 424, "Every build counts nodes and arrows of each type in both shapes and "
+                   "stops if any number differs.", size=12.5, fill=INK2))
+    return svg(1086, 446, "".join(parts), "Two shapes of the same facts",
+               "Left, DuckDB tables: four rows of the edges table for the chain from Bacillus "
+               "velezensis FZB42 to jujube, and a SQL query. Right, the same four arrows as a "
+               "NetworkX graph from FZB42 through the surfactin cluster, surfactin and Botrytis "
+               "cinerea to jujube, found with shortest_path. Both hold "
+               f"{PHASE4['nodes']:,} nodes and {PHASE4['edges']:,} arrows.")
+
+
 FIGURES = {
     "logo_microbegraph.svg": logo,
     "cover_microbegraph.svg": cover,
@@ -1479,6 +1793,11 @@ FIGURES = {
     "fasta_header.svg": fasta_header,
     "protein_file_matching.svg": protein_file_matching,
     "protein_file_coverage.svg": protein_file_coverage,
+    "resolution_flow.svg": resolution_flow,
+    "pubchem_check.svg": pubchem_check,
+    "uniprot_choice.svg": uniprot_choice,
+    "ledger_row.svg": ledger_row,
+    "two_shapes.svg": two_shapes,
 }
 
 

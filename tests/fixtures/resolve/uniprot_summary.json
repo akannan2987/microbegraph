@@ -1,0 +1,10 @@
+{
+  "source": "uniprot",
+  "source_version": "2026_03",
+  "retrieved_at": "2026-10-12",
+  "snapshot": "data/raw/uniprot/2026-10-12T101526Z",
+  "counts": {
+    "nodes": 166,
+    "edges": 0
+  }
+}

@@ -138,8 +138,8 @@ its structure written as a line of text, and the many names it goes by.
 Molecules collect names the way old towns do. Itaconic acid is also
 "methylenesuccinic acid", "2-methylidenebutanedioic acid" and about ninety
 other things. PubChem's CID is the one name that never changes, and its list of
-synonyms is how this project will later recognise the same molecule written
-differently (Phase 4).
+synonyms is how Phase 4 confirms that MIBiG's name and a PubChem number
+describe the same molecule.
 
 **What this project asks it:** MIBiG records a CID for 1,176 of the 3,842
 compounds in its tables. The PubChem adapter asks about exactly those, and also
@@ -630,7 +630,8 @@ and from joining them to MIBiG's compounds (Phase 4), which is what
 A CID PubChem doesn't know comes back holding nothing but its own number. It's
 counted (`cids_not_in_pubchem`) and listed in `pubchem_summary.json`, and never
 becomes an empty node. The first real run had five of them out of 1,176; Phase 4
-looks at those five MIBiG records more closely instead of guessing.
+keeps those five as MIBiG's own compounds and lists them in its ledger (rule
+`pubchem_number_unknown`) instead of guessing.
 
 ---
 
@@ -683,9 +684,10 @@ Three situations are handled on purpose, and each one is counted:
   pathogen's taxid is already an `Organism` (a MIBiG organism, or the species
   above one), it stays an `Organism` here and is counted under
   `pathogens_also_organisms`. The first real run found two: *Botrytis cinerea*
-  and *Fusarium graminearum*. Phase 4 decides how one node carries both roles,
-  as [`02-ontology-and-data-model.md`, section 4](02-ontology-and-data-model.md#7-pathogen)
-  planned.
+  and *Fusarium graminearum*. Phase 4 makes each one a single Pathogen node,
+  because a Pathogen is now a kind of Organism, and the node keeps both roles
+  ([`02-ontology-and-data-model.md`, section 4](02-ontology-and-data-model.md#7-pathogen);
+  [`06-entity-resolution-graph-build.md`, Step 4](06-entity-resolution-graph-build.md#8-step-4-organisms)).
 
 ---
 
@@ -1197,8 +1199,8 @@ row).
 | Curation: `... has 1 problem(s) ... check 13: ... NCBI calls ...` | A pathogen's name differs from NCBI's current one | Use NCBI's name in `pathogen_name`; put the paper's name in `notes` |
 | Curation: `check 4: ... is not a compound in MIBiG's tables` | The compound's identifier is misspelled, or MIBiG names it differently | Look it up (step 2 of [`curation/README.md`](../curation/README.md#adding-a-row-step-by-step)) |
 | Curation: `check 13: ... is not in NCBI Taxonomy's tables` | A new bridge pathogen hasn't been fetched yet | `python -m microbegraph.fetch --source ncbi_taxonomy --source curation` |
-| `taxids_not_found` is more than 0 | NCBI deleted some numbers MIBiG still uses | Nothing to fix now; they're listed in the summary, and Phase 4 decides what to do with them |
-| `pathogens_also_organisms` is more than 0 | A pathogen also makes molecules MIBiG records | Expected; Phase 4 reconciles the two roles |
+| `taxids_not_found` is more than 0 | NCBI deleted some numbers MIBiG still uses | Nothing to fix now; they're listed in the summary, and in the merged graph (Phase 4) their organisms keep MIBiG's name, without NCBI's family tree |
+| `pathogens_also_organisms` is more than 0 | A pathogen also makes molecules MIBiG records | Expected; Phase 4 makes each one Pathogen node that keeps both roles |
 
 ---
 

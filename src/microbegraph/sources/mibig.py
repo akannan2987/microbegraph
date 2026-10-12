@@ -952,7 +952,8 @@ class _GraphBuilder:
                 merged[key] = value
             elif merged[key] != value:
                 # Two entries disagree (e.g. two masses for one compound). Keep
-                # the first, count the disagreement, and let Phase 4 resolve it.
+                # the first and count the disagreement. Phase 4b keeps the other
+                # value too, so a person can review it (docs/ROADMAP.md).
                 self.counts["property_conflicts"] += 1
         if name != existing["name"]:
             others = set(str(merged.get("other_names", "")).split("|")) | {name}

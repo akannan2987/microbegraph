@@ -54,6 +54,13 @@ DNA that together build one specific molecule. If the genome is a cookbook, a
 BGC is several consecutive pages describing one complicated recipe. Abbreviated
 BGC throughout.
 
+**Charge (of a molecule)**: a molecule with an electric charge is an **ion**,
+and its formula ends in a sign: `C10H16NO4-` has one negative charge. Databases
+don't always write the sign, so the same atoms can appear as `C10H16NO4` in one
+record and `C10H16NO4-` in another (MIBiG and PubChem for prekainic acid).
+Phase 4's formula check ignores a sign at the end, but not a difference in the
+atoms: an acid and its ion usually differ by a hydrogen, and stay different.
+
 **Compound**: see *Metabolite*. The two words are used interchangeably here;
 "compound" is the chemistry word and "metabolite" the biology word.
 
@@ -116,6 +123,12 @@ animals). One recipe card with optional steps gives several versions of the same
 cake. In MIBiG's protein file each isoform has its own protein number, so
 removing a gene (`to_delete`) removes all of them (Phase 3b).
 
+**Isomers**: molecules made of exactly the same atoms joined in different ways,
+so they share a molecular formula and can still behave completely differently,
+like two models built from the same box of bricks. Minutissamides B, C and D are
+isomers, which is why a matching formula alone never proves that two records
+are one molecule.
+
 **Jujube** (*Ziziphus jujuba*): a fruit tree grown widely in China, whose fruit
 rots easily after harvest. It's the crop in the running example, because Xiao
 and colleagues (2023) showed that purified surfactin reduced grey mould on
@@ -154,6 +167,12 @@ that premise.
 
 **Microbe**: the umbrella term for any organism too small to see, including
 bacteria, fungi and yeasts.
+
+**Molecular formula**: the atoms in one molecule, element by element with their
+counts: surfactin is `C52H91N7O13`, meaning 52 carbon, 91 hydrogen, 7 nitrogen
+and 13 oxygen atoms. It says which atoms there are, not how they're joined (see
+*Isomers*). Phase 4 uses it as a check that two records describe the same
+molecule.
 
 **Monoisotopic mass**: a molecule's mass counting each element by its most
 common isotope (carbon-12, hydrogen-1...). This is the value a mass spectrometer
@@ -252,6 +271,11 @@ hierarchy it produces.
 
 ## Graphs and knowledge
 
+**Alias**: another identifier for the same node. Since Phase 4,
+`ncbiprotein:CAE02630.1` is an alias of `uniprot:Q70KJ7`: the node lists its
+aliases, and the database's `aliases` view finds the node from any of them, the
+way a forwarding address still reaches you after a move.
+
 **Betweenness centrality**: a measure of how often a node sits *on the shortest
 route between other nodes*, which makes it a kind of "bridge" score. A road
 junction can be quiet itself and still break half the city's journeys if it
@@ -279,7 +303,8 @@ score.
 
 **Directed graph (DiGraph)**: a graph where arrows have a direction. *A
 produces B* is not the same statement as *B produces A*. MicrobeGraph is
-directed throughout.
+directed throughout. NetworkX's `DiGraph` holds at most one arrow from one node
+to another, which the graph build checks.
 
 **Edge**: a connection between two nodes, with a direction and a name
 (*produces*, *inhibits*). Also called a *relationship* or *link*. On the map,
@@ -291,9 +316,11 @@ is a vector, ordinary machine learning applies. Describing a person by the
 social circles they move in, then looking for people with similar descriptions,
 works on the same principle.
 
-**Entity resolution**: deciding that several records refer to the same
-real-world thing and merging them into one node, as when you realise that
-"Robert Smith", "Bob Smith" and "R. Smith (work)" are one person.
+**Entity resolution** (also *record linkage* or *deduplication*): deciding that
+several records refer to the same real-world thing and merging them into one
+node, as when you realise that "Robert Smith", "Bob Smith" and "R. Smith (work)"
+are one person. MicrobeGraph's resolver (Phase 4) does it with ten rules and
+writes every decision, joins and refusals alike, in the resolution ledger.
 
 **Graph**: information stored as dots connected by arrows (nothing to do with
 bar charts). A transport map is a graph, and so is a social network.
@@ -311,6 +338,10 @@ MicrobeGraph is one.
 **Link prediction**: scoring arrows that *don't* exist yet, to guess which ones
 probably should. Social networks do this when they suggest "People you may
 know". In this project the output is always a hypothesis, never a finding.
+
+**Naming identifier**: the one identifier a merged node keeps, taken from the most
+specific public authority: a PubChem compound before MIBiG's own compound name,
+a UniProt entry before a protein record number. The others become its aliases.
 
 **Node**: one thing in a graph: a microbe, a compound, a crop. Also called a
 *vertex*. One dot on the map.
@@ -335,6 +366,22 @@ types, these constraints.
 
 **Shortest path**: the route between two nodes crossing the fewest arrows. The
 graph equivalent of "fastest route".
+
+**Subtype (a kind of)**: a node type that is a special case of another, and may do
+anything the other may. In MicrobeGraph a Pathogen is a kind of Organism (since
+Phase 4), so a pathogen may harbour gene clusters and sit in the family tree,
+while an ordinary Organism still can't infect a crop. A sports car is a kind of
+car: it may park wherever cars may, but not every car is allowed on the track.
+
+**Union-find** (also *disjoint-set forest*): a small data structure that keeps
+track of which items belong together while groups are joined one pair at a
+time. If A joins B and later B joins C, it knows that A and C are in one group
+without anyone comparing them. Phase 4's resolver groups records of the same
+thing with it (`src/microbegraph/resolution/groups.py`).
+
+**Weakest link**: the least certain arrow along a path. A chain of evidence is only
+as strong as its weakest arrow, so the cookbook's recipe R9, and the analytics
+from Phase 5, name it for every path.
 
 ---
 
@@ -414,6 +461,10 @@ writing. `import pandas` means "give me the pandas toolkit".
 to write it yourself. Using one is like buying flour instead of growing wheat.
 
 **Module**: one Python file containing code you can import.
+
+**NetworkX**: the Python library this project uses to hold the graph in memory and
+walk it: neighbours, shortest paths, centrality. In MicrobeGraph it's always
+rebuilt from the DuckDB database (`load_graph()`), never edited on its own.
 
 **pandas**: the standard Python library for working with tables. If you know
 Excel, imagine a programmable version that never gets tired and never
@@ -580,6 +631,11 @@ example:* putting items in a shopping basket, where nothing's bought yet.
 
 ## Data, databases, and SQL
 
+**CHECK constraint**: a rule a database checks on every row before accepting it,
+such as "`evidence_level` must be one of these four words". MicrobeGraph's
+database builds its CHECK lists from `ontology.py`, so the Python rules and the
+database rules can't disagree.
+
 **Column**: one field in a table; one attribute of every row.
 
 **Constraint**: a rule the data must obey, enforced by the database or the
@@ -605,19 +661,37 @@ graph, every `source_id` in `edges.csv` must exist in `nodes.csv`.
 **Join**: combining two tables by matching a shared column. The table-shaped
 equivalent of following one arrow.
 
+**NULL**: "no value" in a database. It isn't zero and it isn't empty text, so SQL
+tests for it with `IS NULL` or `IS NOT NULL`, never with `=`.
+
 **Primary key**: the column that uniquely identifies each row. Ours is
 `node_id`.
 
 **Query**: a question asked of a database, usually written in SQL.
 
-**Read-only**: able to look but not change. The app's SQL console is read-only
-*by construction*, meaning the code enforces it rather than the docs promising
-it.
+**Query cookbook**: [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md), a collection of
+questions for the database, each with the SQL (or Python) that answers it and
+the answer it gave on the real data. Every recipe is run by the tests, so none of
+them quietly stops working.
+
+**Read-only**: able to look but not change. The query command
+(`python -m microbegraph.query`), `load_graph()` and the app's SQL console open
+the database read-only *by construction*, meaning the database itself refuses
+any change, rather than the docs promising it.
+
+**Recursive query**: a SQL query that feeds its own result back in, step by step,
+until nothing new turns up (`WITH RECURSIVE`). It's how SQL walks a family tree of
+any depth; the cookbook's recipe R12 finds every cluster under the genus
+*Bacillus* this way.
 
 **Row**: one record in a table; one thing.
 
 **Schema**: the structure of a database: which tables exist, which columns they
 have, which rules apply.
+
+**Single source of truth**: the one place a fact is kept, from which every other
+copy is rebuilt. Here it's the DuckDB database: the NetworkX graph is rebuilt
+from it every time, so the two can't drift apart.
 
 **SQL** (pronounced "sequel" or "ess-cue-ell"): the language for asking
 databases questions. It reads close to English:
@@ -627,6 +701,11 @@ the 1970s and is still everywhere.
 **Table**: a grid of rows and columns. Tables are excellent at counting and
 filtering but bad at chains of unknown length, which is why this project also
 builds a graph.
+
+**View**: a saved query that looks and behaves like a table. MicrobeGraph's
+database has one for each node type with properties worth showing (`organisms`,
+`compounds`, `proteins`...), with the most-used properties as plain columns, and
+an `aliases` view.
 
 ---
 
@@ -859,6 +938,11 @@ data to it claim rights in what they submitted.
 records some bioactivities as `"observed": false`. MicrobeGraph counts them but
 never turns them into a `HAS_ACTIVITY` arrow, which would say the opposite.
 
+**NPAtlas** (Natural Products Atlas): a curated database of molecules made by
+microbes, with its own numbers (surfactin is `NPA018495`). MIBiG records NPAtlas
+numbers for many compounds; in Phase 4, two MIBiG names with the same NPAtlas
+number and the same formula become one compound.
+
 **Pending (MIBiG entry)**: an entry submitted to MIBiG but not yet reviewed and
 released, like a manuscript that has been sent in but not yet published. Its
 status isn't `active`, so MicrobeGraph leaves it out. MIBiG's protein file holds
@@ -934,7 +1018,9 @@ protein in MIBiG's protein file is 344 amino acids long, although the longest is
 
 **Normalise (text)**: put text into a consistent form before comparing:
 lowercase, trimmed, punctuation stripped. It stops `Surfactin ` and `surfactin`
-from being treated as different things.
+from being treated as different things. Phase 4 calls the result a *name key*,
+and keeps the signs of mirror-image molecules as words, so (+)-menthol and
+(-)-menthol never match.
 
 **Null model**: a random version of your data, built on purpose as a comparison.
 Any network has *some* clustering, so "we found three communities" means nothing
@@ -1220,10 +1306,20 @@ style the hand-made test record didn't use. Both times, every test had passed.
 whole build, day 0 to the finished product, in order, linking to every guide.
 Updated in the same commit as any change it describes.
 
+**Independent confirmation**: a second piece of evidence that doesn't depend on
+the first. A PubChem number that MIBiG's curators typed in is joined to PubChem's
+record only when the name or the formula agrees as well, because some of those
+numbers belong to other molecules (Phase 4). Independence is the hard part: where
+MIBiG copied a structure from the PubChem record its number points at, the
+formulas agree whatever the number, which is why Phase 4b checks the joins the
+formula alone confirmed.
+
 **Ledger**: a written record of what a step did: what was merged, removed, or
 changed, and why. The resolution ledger and the provenance log are both ledgers.
 A bank statement is one in this sense; it records what happened to the money
-rather than holding the money itself.
+rather than holding the money itself. The resolution ledger
+(`data/processed/resolution_ledger.csv`, Phase 4) has one row per merge or
+refusal, with the rule that decided it and its grounds in a sentence.
 
 **Pipeline**: a series of stages where each one's output is the next one's
 input, flowing one way. *Everyday example:* beans → grinder → espresso machine →

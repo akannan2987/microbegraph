@@ -12,8 +12,9 @@ WHO CALLS IT
     * Phase 1: every adapter's tidy() checks its own output before writing
       it, so a parsing bug is caught at the source, with the source's name
       on it, instead of three phases later.
-    * Phase 4: the graph build runs exactly the same checks on the merged
-      tables of all sources, and refuses to build if any fail.
+    * Phase 4: the resolver and the graph build run exactly the same checks
+      on the merged tables of all sources, and refuse to write anything if
+      any fail.
 
     Both callers use the one function below.
 
@@ -36,6 +37,7 @@ from microbegraph.ontology import (
     EVIDENCE_LEVELS,
     NODE_TYPES,
     REQUIRES_CITATION,
+    is_a,
     is_valid_curie,
 )
 
@@ -99,7 +101,8 @@ def check_tables(
             want_from, want_to = EDGE_TYPES[edge_type]
             got_from = node_type_of.get(source_id)
             got_to = node_type_of.get(target_id)
-            if got_from and got_to and (got_from, got_to) != (want_from, want_to):
+            # A kind of a type counts as that type: a Pathogen may start HARBORS.
+            if got_from and got_to and not (is_a(got_from, want_from) and is_a(got_to, want_to)):
                 problems.append(
                     f"rule 8: edge {label} connects {got_from} -> {got_to}; "
                     f"{edge_type} must connect {want_from} -> {want_to}"

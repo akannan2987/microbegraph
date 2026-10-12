@@ -1,0 +1,10 @@
+{
+  "source": "kegg",
+  "source_version": "pathway 2026/10/09, compound 2026/10/09",
+  "retrieved_at": "2026-10-12",
+  "snapshot": "data/raw/kegg/2026-10-12T071654Z",
+  "counts": {
+    "nodes": 5,
+    "edges": 6
+  }
+}

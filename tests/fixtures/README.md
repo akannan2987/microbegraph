@@ -155,6 +155,59 @@ Expected: `23 surfactin records, identical in the sample: True`.
 seven-part shape, every gene added with `to_add` already present, and some genes
 removed with `to_delete` still present.
 
+## `resolve/` (Phase 4)
+
+A real slice of all six sources' staging tables, cut on **2026-10-12** from the
+tables of the first full run by
+[`capture_resolution_samples.py`](capture_resolution_samples.py). It holds the
+18 files the resolver reads (`<source>_nodes.csv`, `<source>_edges.csv` and
+`<source>_summary.json` for each source), about 380 KB, and every arrow in it
+points at a node in it. Three things differ from the originals, all on purpose:
+
+* the summaries keep only what the resolver reads (the source's version and
+  date, and the lists of merged taxids, unknown PubChem numbers and curators'
+  removals, cut to the slice);
+* `mibig_compound_ids` on PubChem records and `mibig_protein_ids` on UniProt
+  records list only identifiers in the slice;
+* UniProt's `function` text is cut to its first sentence, because the resolver
+  never reads it.
+
+The slice is cut around these 22 clusters, each there for a case the resolver
+must handle:
+
+| Cluster | What it is | The case it brings |
+|---|---|---|
+| `BGC0000433` | surfactin, *Bacillus velezensis* FZB42 | The worked example: srfAA joins UniProt entry Q70KJ7; surfactin against grey mould on jujube |
+| `BGC0001089` | bacillaene, FZB42 | Gene records named only by a gene name (`baeB`, `baeJ`...), joined through UniProt's gene names; `baeI` isn't |
+| `BGC0001090` | bacillomycin D, FZB42 | A PubChem number that belongs to another molecule (Bacillomycin Fc): kept apart |
+| `BGC0000054`, `BGC0000055` | erythromycin, erythromycin A | One PubChem number, both names confirmed: one node |
+| `BGC0001952`, `BGC0001953` | minutissamides | One number given to minutissamides B and C, names not confirmed: kept apart |
+| `BGC0000088`, `BGC0000098` | lovastatin, monacolin K | One NPAtlas number and one formula: one compound |
+| `BGC0000094`, `BGC0000899` | methymycin, MIBiG's "desosamine" record | A record whose structure, numbers and formula are methymycin's |
+| `BGC0002187` | monorden D and the monocillins | Two PubChem numbers PubChem doesn't have |
+| `BGC0001600` | *Fusarium graminearum* | An organism that is also a crop pathogen |
+| `BGC0000631` | *Botrytis cinerea* B05.10 | A strain below a pathogen in the family tree |
+| `BGC0000519` | *Actinomadura namibiensis* | An organism number NCBI has merged into another (182080 into 46161) |
+| `BGC0002180` | (+)-asperlin, *Aspergillus nidulans* FGSC A4 | A protein number with two equally good UniProt entries: kept apart |
+| `BGC0000670` | thalianol, *Arabidopsis thaliana* | A protein number decided by sequence length; two numbers, one entry |
+| `BGC0001865` | elsinochrome C, *Parastagonospora nodorum* SN15 | Protein numbers decided by review status |
+| `BGC0002005` | RaxX, *Xanthomonas oryzae* pv. *oryzae* | A RefSeq "WP_" number with two UniProt entries, decided by the cluster's organism |
+| `BGC0000546` | SAL-2242, *Streptomyces albidoflavus* | The same sequence listed twice in one cluster |
+| `BGC0001238`, `BGC0001239` | two biotin clusters | One UniProt entry encoded by two clusters |
+
+Cases the real data doesn't contain (an arrow to nowhere, a KEGG arrow from a
+PubChem record that gets left out, two sources stating one arrow) are added as
+made-up rows inside the test that needs them, and the test says so.
+
+The 18 files' SHA-256, taken together in name order, is
+`f3732a8138fa94b511e4dde7376fec9f6b38482bf8a9573091e5b7e2967b1967`. To check it:
+
+```bash
+python -c "import hashlib, pathlib; h = hashlib.sha256(); [h.update(p.read_bytes()) for p in sorted(pathlib.Path('tests/fixtures/resolve').iterdir())]; print(h.hexdigest())"
+```
+
+Cutting the slice again from the same staging tables gives the same bytes.
+
 ## Refreshing the samples
 
 If a source changes its format, run the capture again (after Phase 1, with
@@ -164,9 +217,14 @@ If a source changes its format, run the capture again (after Phase 1, with
 python tests/fixtures/capture_samples.py                 # PubChem, NCBI Taxonomy, KEGG
 python tests/fixtures/capture_uniprot_samples.py         # MIBiG's gene records and UniProt
 python tests/fixtures/capture_mibig_protein_samples.py   # MIBiG's protein file
+python tests/fixtures/capture_resolution_samples.py      # the resolver's slice (Phase 4)
 ```
 
 The new answers land in `data/samples/<date>/`, which never goes to GitHub.
+The last one is different: it writes straight into `tests/fixtures/resolve/`,
+because it cuts its slice from your own staging tables rather than asking a
+server. Run `git diff --stat tests/fixtures/resolve` afterwards to see what
+changed.
 Copy over the ones that changed, update the table above with the new date and
 fingerprints, and run `pytest`. A failing test then shows exactly what the
 source changed.

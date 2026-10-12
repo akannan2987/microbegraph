@@ -145,8 +145,22 @@ def test_pathogens_become_pathogen_nodes(make_source, tmp_path):
     assert botrytis["node_type"] == "Pathogen" and botrytis["name"] == "Botrytis cinerea"
     assert json.loads(botrytis["properties"])["group"] == "Fungi"
     assert result.counts["pathogen_nodes"] == 6
-    # Pathogens get no MEMBER_OF arrows: that edge joins Organism to Organism.
-    assert not any(e["source_id"] == "ncbitaxon:40559" for e in _rows(result.edges_path))
+
+
+def test_pathogens_join_the_family_tree(make_source, tmp_path):
+    # From Phase 4 a Pathogen is a kind of Organism, so it may start MEMBER_OF.
+    result = _tidied(make_source, tmp_path)
+
+    nodes = {r["node_id"]: r for r in _rows(result.nodes_path)}
+    edges = {(e["source_id"], e["target_id"]) for e in _rows(result.edges_path)}
+    chain = ["40559", "33196", "28983", "5178", "147548", "4890", "4751", "2759"]
+    for child, parent in pairwise(chain):
+        assert (f"ncbitaxon:{child}", f"ncbitaxon:{parent}") in edges
+    assert nodes["ncbitaxon:33196"]["name"] == "Botrytis"
+    assert nodes["ncbitaxon:33196"]["node_type"] == "Organism"
+    # Each pathogen has exactly one arrow up, and the whole table still passes.
+    assert sum(1 for child, _ in edges if child == "ncbitaxon:2052682") == 1
+    assert check_tables(_rows(result.nodes_path), _rows(result.edges_path)) == []
 
 
 def test_a_pathogen_that_is_also_an_organism_stays_an_organism(make_source, tmp_path):

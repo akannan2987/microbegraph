@@ -79,7 +79,8 @@ DuckDB has clients for both languages. `microbegraph.duckdb`, built by your
 Python pipeline, is queryable directly from R:
 
 ```r
-con <- DBI::dbConnect(duckdb::duckdb(), "data/processed/microbegraph.duckdb")
+con <- DBI::dbConnect(duckdb::duckdb(), "data/processed/microbegraph.duckdb",
+                      read_only = TRUE)
 edges <- DBI::dbGetQuery(con, "SELECT * FROM edges")
 ```
 
@@ -457,8 +458,9 @@ renv/sandbox/
 
 ## 9. Step 7. Read the project database from R
 
-This is where the two languages meet. *(It needs the database to exist, so it
-only works from Phase 4 onward. If you're reading ahead, come back then.)*
+This is where the two languages meet. *(It needs the database, which Phase 4
+builds: `python -m microbegraph.resolve`, then `python -m microbegraph.build_graph`.
+If you're reading ahead, come back then.)*
 
 Create `R/explore.R`:
 
@@ -481,7 +483,10 @@ library(dplyr)      # data manipulation, for the summarising below
 
 # Connect. The path is relative to the project root, which is why opening
 # the .Rproj file matters, it guarantees we start in the right place.
-con <- dbConnect(duckdb::duckdb(), "data/processed/microbegraph.duckdb")
+# read_only = TRUE: R only reads; the Python build is the one writer, and a
+# read-only connection can never change the database by accident.
+con <- dbConnect(duckdb::duckdb(), "data/processed/microbegraph.duckdb",
+                 read_only = TRUE)
 
 # What tables exist?
 cat("Tables in the database:\n")
@@ -507,8 +512,8 @@ nodes <- dbGetQuery(con, "SELECT * FROM nodes")
 
 cat("\nLoaded", nrow(nodes), "nodes and", nrow(edges), "edges into R.\n")
 
-# ALWAYS close the connection. An open connection holds a lock on the file,
-# which can block the Python side from writing to it.
+# ALWAYS close the connection. While it's open the file is in use, and on
+# Windows that stops the Python build from replacing it with a new one.
 dbDisconnect(con, shutdown = TRUE)
 ```
 
@@ -518,20 +523,29 @@ Run it from the RStudio Console:
 source("R/explore.R")
 ```
 
-The output should have roughly this shape:
+With the database from Phase 4's first run (2026-10-12) the output looks like
+this; R's line breaks depend on the width of your Console:
 
 ```
 Tables in the database:
-[1] "edges" "nodes"
+ [1] "aliases"    "build_info" "clusters"   "compounds"  "crops"
+ [6] "edges"      "ledger"     "nodes"      "organisms"  "pathogens"
+[11] "pathways"   "proteins"   "sources"
 
 Edges by type and evidence level:
-        edge_type       evidence_level   n
-1        PRODUCES curated_experimental 412
-2         HARBORS curated_experimental 389
+   edge_type       evidence_level     n
+1    ENCODES   database_assertion 39955
+2  CATALYZES   database_assertion  3010
+3   PRODUCES   database_assertion  2604
 ...
 
-Loaded 1247 nodes and 3891 edges into R.
+Loaded 48264 nodes and 57012 edges into R.
 ```
+
+The list includes the database's views (`aliases`, `organisms`, `proteins`...)
+as well as its tables, and the counts are the same ones the Python build prints,
+because it's the same file. What each table and view holds is in
+[`QUERY_COOKBOOK.md`, section 2](QUERY_COOKBOOK.md#2-sql-in-ten-minutes).
 
 ✅ **Checkpoint.** R prints tables that your Python pipeline created, which means
 the two languages are now working on the same data.

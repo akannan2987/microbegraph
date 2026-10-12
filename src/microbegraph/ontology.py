@@ -26,9 +26,24 @@ NODE_TYPES: Final[frozenset[str]] = frozenset({
     "Pathway",        # a chain of biochemical reactions, the wider process
 })
 
+# --- Kinds of a type --------------------------------------------------
+# A Pathogen is a kind of Organism (from Phase 4). Anything an Organism may do
+# in the graph, a Pathogen may do too: harbour a gene cluster, or sit in the
+# family tree with MEMBER_OF arrows. The reverse isn't true: INFECTS starts at
+# a Pathogen, and an ordinary Organism can't be its starting point.
+#
+# Without this, an organism that is both a producer and a crop pathogen
+# (MIBiG records four gene clusters in Fusarium graminearum, which also causes
+# head blight on wheat) would need two dots with one identifier, which rule 1
+# forbids. With it, the graph has one Pathogen dot that also harbours clusters.
+SUBTYPE_OF: Final[dict[str, str]] = {
+    "Pathogen": "Organism",
+}
+
 # --- The ten edge types (the verbs) ---------------------------------
-# Each maps to the (from_type, to_type) pair it is allowed to connect.
-# The loader uses this to reject nonsense like Compound --PRODUCES--> Compound.
+# Each maps to the (from_type, to_type) pair it is allowed to connect, or a
+# kind of either (see SUBTYPE_OF above). The loader uses this to reject nonsense
+# like Compound --PRODUCES--> Compound.
 EDGE_TYPES: Final[dict[str, tuple[str, str]]] = {
     "HARBORS":         ("Organism", "GeneCluster"),
     "ENCODES":         ("GeneCluster", "Protein"),    # genomics -> proteomics
@@ -76,6 +91,22 @@ KNOWN_PREFIXES: Final[frozenset[str]] = frozenset({
     "mg.compound",        # ours: compounds with no PubChem entry
     "mg.protein",         # ours: proteins MIBiG names only by a gene name or locus tag
 })
+
+
+def is_a(node_type: str, wanted: str) -> bool:
+    """
+    True if node_type is the wanted type, or a kind of it.
+
+    is_a("Pathogen", "Organism") is True; is_a("Organism", "Pathogen") is False.
+    Rule 8 uses it, so a Pathogen may start a HARBORS or MEMBER_OF arrow.
+    """
+    seen = set()
+    while node_type and node_type not in seen:
+        if node_type == wanted:
+            return True
+        seen.add(node_type)
+        node_type = SUBTYPE_OF.get(node_type, "")
+    return False
 
 
 def evidence_rank(level: str) -> int:

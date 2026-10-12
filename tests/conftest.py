@@ -26,9 +26,11 @@ WHY THE TESTS NEVER TOUCH THE INTERNET
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import io
 import json
+import shutil
 import tarfile
 from collections.abc import Callable
 from pathlib import Path
@@ -287,3 +289,33 @@ def make_source(tmp_path: Path) -> Callable[..., Any]:
         )
 
     return _make
+
+
+# --- Phase 4 helpers: the resolver and the graph build ------------------------------
+# A real slice of all six sources' staging tables, cut around chosen clusters by
+# tests/fixtures/capture_resolution_samples.py (tests/fixtures/README.md).
+RESOLVE_FIXTURES = PHASE2_FIXTURES / "resolve"
+
+
+def read_rows(path: Path) -> list[dict[str, str]]:
+    """Every row of a CSV file, as dicts."""
+    with path.open(newline="", encoding="utf-8") as handle:
+        return list(csv.DictReader(handle))
+
+
+def add_rows(path: Path, rows: list[dict[str, str]]) -> None:
+    """Append made-up rows to a copied staging table (for cases the slice lacks)."""
+    with path.open(newline="", encoding="utf-8") as handle:
+        columns = next(csv.reader(handle))
+    with path.open("a", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=columns, lineterminator="\n")
+        for row in rows:
+            writer.writerow({c: row.get(c, "") for c in columns})
+
+
+@pytest.fixture
+def staging_copy(tmp_path: Path) -> Path:
+    """A fresh copy of the resolver's slice, safe to change in one test."""
+    target = tmp_path / "staging"
+    shutil.copytree(RESOLVE_FIXTURES, target)
+    return target

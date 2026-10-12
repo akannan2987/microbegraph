@@ -1,0 +1,8 @@
+source_id,target_id,edge_type,evidence_level,source,source_record_id,citation,confidence,retrieved_at
+ncbitaxon:40559,mg.crop:jujube,INFECTS,curated_literature,curation,compound_pathogen_crop.csv,doi:10.1186/s13568-023-01543-w,0.90,2026-10-12
+ncbitaxon:5518,mg.crop:maize,INFECTS,curated_literature,curation,compound_pathogen_crop.csv,doi:10.1128/AEM.01075-17,0.80,2026-10-12
+ncbitaxon:5518,mg.crop:maize,INFECTS,curated_literature,curation,compound_pathogen_crop.csv,doi:10.1128/AEM.01075-17,0.80,2026-10-12
+ncbitaxon:5518,mg.crop:wheat,INFECTS,curated_literature,curation,compound_pathogen_crop.csv,doi:10.1128/AEM.01075-17,0.90,2026-10-12
+ncbitaxon:5518,mg.crop:wheat,INFECTS,curated_literature,curation,compound_pathogen_crop.csv,doi:10.1128/AEM.01075-17,0.90,2026-10-12
+mg.compound:bacillomycin-d,ncbitaxon:5518,INHIBITS,curated_literature,curation,compound_pathogen_crop.csv,doi:10.1128/AEM.01075-17,0.90,2026-10-12
+mg.compound:surfactin,ncbitaxon:40559,INHIBITS,curated_literature,curation,compound_pathogen_crop.csv,doi:10.1186/s13568-023-01543-w,0.90,2026-10-12

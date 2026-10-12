@@ -58,14 +58,16 @@ NODE_TEXT = {
                     "Phase 1 (MIBiG)"),
     "Protein": ("An enzyme encoded by the cluster: the machine that performs one chemical step.",
                 "Phase 3 (MIBiG's gene records), every cluster's from Phase 3b (MIBiG's "
-                "protein file); UniProt describes each one"),
+                "protein file); joined to its UniProt entry in Phase 4"),
     "Compound": ("The molecule the cluster makes.",
-                 "Phase 1 (MIBiG); PubChem identities in Phase 2, joined to MIBiG's in Phase 4"),
+                 "Phase 1 (MIBiG); PubChem identities in Phase 2, joined to MIBiG's in Phase 4 "
+                 "where the name or formula confirms the number"),
     "CompoundClass": ("A family of chemically related molecules.",
                       "Phase 1 (MIBiG, when it gives one)"),
     "Activity": ("What a molecule has been seen to do: antibacterial, antifungal, surfactant...",
                  "Phase 1 (MIBiG)"),
-    "Pathogen": ("An organism that causes a plant disease.",
+    "Pathogen": ("An organism that causes a plant disease. A kind of Organism (from Phase 4), so "
+                 "it may also harbour gene clusters and has a family tree.",
                  "Phase 2 (the cited curated bridge; name, lineage and group from NCBI Taxonomy)"),
     "Crop": ("A cultivated plant that the disease harms.", "Phase 2 (the cited curated bridge)"),
     "Pathway": ("A chain of biochemical reactions the molecule takes part in.",
@@ -294,7 +296,7 @@ all.forEach(g => {{
 CHAIN_NODES = [
     ("ncbitaxon:326423", "Organism", "Bacillus velezensis FZB42", 110, 150),
     ("mibig:BGC0000433", "GeneCluster", "surfactin BGC", 340, 150),
-    ("ncbiprotein:CAE02630.1", "Protein", "srfAA (UniProt Q70KJ7)", 470, 370),
+    ("uniprot:Q70KJ7", "Protein", "srfAA (UniProt Q70KJ7)", 470, 370),
     ("mg.compound:surfactin", "Compound", "surfactin", 600, 150),
     ("mg.activity:antibacterial", "Activity", "antibacterial", 760, 380),
     ("mg.activity:surfactant", "Activity", "surfactant", 980, 380),
@@ -306,9 +308,9 @@ CHAIN_EDGES = [
      "BGC0000433", "pubmed:14762003", "0.50", True),
     ("mibig:BGC0000433", "mg.compound:surfactin", "PRODUCES", "curated_experimental", "mibig",
      "BGC0000433", "pubmed:14762003", "0.50", True),
-    ("mibig:BGC0000433", "ncbiprotein:CAE02630.1", "ENCODES", "database_assertion", "mibig",
+    ("mibig:BGC0000433", "uniprot:Q70KJ7", "ENCODES", "database_assertion", "mibig",
      "BGC0000433", "pubmed:14762003", "0.50", False),
-    ("ncbiprotein:CAE02630.1", "mg.compound:surfactin", "CATALYZES", "curated_experimental", "mibig",
+    ("uniprot:Q70KJ7", "mg.compound:surfactin", "CATALYZES", "curated_experimental", "mibig",
      "BGC0000433", "pubmed:14762003", "0.50", False),
     ("mg.compound:surfactin", "mg.activity:antibacterial", "HAS_ACTIVITY", "database_assertion",
      "mibig", "BGC0000433", "", "0.50", False),
@@ -392,8 +394,9 @@ full release can add their record numbers and citations to the same arrows. ENCO
 come from the entry's gene record for srfAA (Phase 3): a knock-out showed that srfAA builds the
 molecule's backbone, so its CATALYZES arrow is curated_experimental, while ENCODES only states that
 the gene is in the cluster (from Phase 3b, MIBiG's protein file lists it too, with the cluster's 22
-other proteins). UniProt's ID mapping says CAE02630.1 is the entry Q70KJ7, Surfactin
-synthetase A. The protein route sits beside the PRODUCES shortcut, so hiding it never breaks the
+other proteins). UniProt's ID mapping says MIBiG's protein number CAE02630.1 is the entry Q70KJ7,
+Surfactin synthetase A, and since Phase 4 the two records are one node, uniprot:Q70KJ7, still named
+srfAA. The protein route sits beside the PRODUCES shortcut, so hiding it never breaks the
 chain. The two curation rows come
 from one row of the cited bridge (Phase 2): Xiao et al. (2023) found that purified surfactin inhibited
 <i>Botrytis cinerea</i> and reduced grey mould on harvested winter jujube. The bridge refuses any row

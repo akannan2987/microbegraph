@@ -48,6 +48,9 @@ WHAT tidy() TURNS THE ANSWERS INTO
            Organism   ncbitaxon:<taxid>  its ancestors at the main ranks
            Pathogen   ncbitaxon:<taxid>  each bridge pathogen, with rank,
                                          lineage, group, synonyms
+           Organism   ncbitaxon:<taxid>  the pathogens' ancestors too (from
+                                         Phase 4, when a Pathogen became a
+                                         kind of Organism)
     edges  MEMBER_OF  child -> parent, one step up at a time
                       (strain -> species -> genus -> ... -> domain)
 
@@ -59,8 +62,9 @@ WHAT tidy() TURNS THE ANSWERS INTO
 
     One taxid can be both a producer and a pathogen (Botrytis cinerea makes
     botcinic acid and causes grey mould). In these tables it stays an
-    Organism and is counted under pathogens_also_organisms; Phase 4 decides
-    how one node carries both roles.
+    Organism and is counted under pathogens_also_organisms; the resolver
+    (Phase 4) turns it into one Pathogen node, a kind of Organism, that keeps
+    both roles.
 
 LICENCE AND CITATION
     NCBI places no restrictions on using its data. NCBI Taxonomy is not an
@@ -370,8 +374,10 @@ class _TreeBuilder:
             props["merged_from"] = "|".join(sorted(old, key=int))
         self.nodes[taxid] = {"type": "Organism", "name": record["name"], "props": props,
                              "leaf": True}
+        self._walk_up(taxid, record)
 
-        # Walk up the kept ranks: the taxon itself -> nearest kept ancestor -> ...
+    def _walk_up(self, taxid: str, record: dict[str, Any]) -> None:
+        """Add the kept ranks above a taxon, and one MEMBER_OF arrow per step up."""
         chain = [(i, n, r) for i, n, r in record["lineage_ex"] if r in KEPT_RANKS and i]
         child = taxid
         for ancestor_id, ancestor_name, rank in reversed(chain):
@@ -383,11 +389,20 @@ class _TreeBuilder:
 
     def add_pathogen(self, record: dict[str, Any]) -> None:
         self.pathogens[record["taxid"]] = {"type": "Pathogen", "name": record["name"],
-                                           "props": _leaf_props(record), "leaf": True}
+                                           "props": _leaf_props(record), "leaf": True,
+                                           "record": record}
 
     def settle_pathogens(self) -> None:
-        """Add pathogen nodes, except where the same taxid is already an Organism."""
+        """
+        Add pathogen nodes, except where the same taxid is already an Organism.
+
+        From Phase 4 a Pathogen is a kind of Organism, so each pathogen also gets
+        its family tree (Globisporangium ultimum -> Globisporangium -> Pythiaceae
+        -> ...), the same way MIBiG's organisms do. Where the taxid is already an Organism
+        here, it stays one and is counted; the resolver gives it both roles.
+        """
         for taxid, node in self.pathogens.items():
+            record = node.pop("record")
             if taxid in self.nodes:
                 self.also_organisms.add(taxid)
                 existing = self.nodes[taxid]
@@ -395,6 +410,7 @@ class _TreeBuilder:
                     existing["props"] = {**node["props"], **existing["props"]}
                 continue
             self.nodes[taxid] = node
+            self._walk_up(taxid, record)
 
     def count(self, node_type: str) -> int:
         return sum(1 for n in self.nodes.values() if n["type"] == node_type)

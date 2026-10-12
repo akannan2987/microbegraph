@@ -1,0 +1,6 @@
+node_id,node_type,name,properties,source,retrieved_at
+kegg.pathway:map00522,Pathway,"Biosynthesis of 12-, 14- and 16-membered macrolides","{""category"": ""Metabolism"", ""subcategory"": ""Metabolism of terpenoids and polyketides""}",kegg,2026-10-12
+kegg.pathway:map00780,Pathway,Biotin metabolism,"{""category"": ""Metabolism"", ""subcategory"": ""Metabolism of cofactors and vitamins""}",kegg,2026-10-12
+kegg.pathway:map01052,Pathway,Type I polyketide structures,"{""category"": ""Metabolism"", ""subcategory"": ""Metabolism of terpenoids and polyketides""}",kegg,2026-10-12
+kegg.pathway:map02010,Pathway,ABC transporters,"{""category"": ""Environmental Information Processing"", ""subcategory"": ""Membrane transport""}",kegg,2026-10-12
+kegg.pathway:map04977,Pathway,Vitamin digestion and absorption,"{""category"": ""Organismal Systems"", ""subcategory"": ""Digestive system""}",kegg,2026-10-12

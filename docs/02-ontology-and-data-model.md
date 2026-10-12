@@ -184,7 +184,9 @@ runs through biological and linked-data systems.
 > nodes Phase 1 builds from MIBiG 4.0, 1,176 carry a PubChem number. Phase 2
 > asks PubChem about exactly those 1,176 and writes them as
 > `pubchem.compound:<CID>` nodes, each remembering which `mg.compound` it came
-> from (`mibig_compound_ids`). Joining the two is Phase 4's job.
+> from (`mibig_compound_ids`). Phase 4 joins the two where MIBiG's name or
+> formula confirms the number, because some of the numbers turned out to belong
+> to other molecules ([`06-entity-resolution-graph-build.md`, Step 5](06-entity-resolution-graph-build.md#9-step-5-compounds)).
 
 The prefixes also make the graph open about its own sources. `mg.` marks the
 things *this project* invented because no public authority numbers them, so
@@ -267,7 +269,9 @@ and 3b):
   protein file gives its number, so it's `ncbiprotein:EED18001.1`.)
 * `uniprot:<accession>` for UniProt's description of a protein, e.g.
   `uniprot:Q70KJ7`. Phase 4 joins it to the `ncbiprotein:` node it was found
-  through, so the finished graph has one node per protein.
+  through, so the finished graph has one node per protein, named by its UniProt
+  entry where there is one, with the protein number kept as an alias
+  ([`06-entity-resolution-graph-build.md`, Step 6](06-entity-resolution-graph-build.md#10-step-6-proteins)).
 
 This node type matters because it turns MicrobeGraph from two molecular layers
 into three. With `Protein` in place, the chain reads
@@ -382,13 +386,24 @@ ask and every diagram easier to read. The whole graph is oriented around
 "helpful organism → molecule → harmful organism → crop", and collapsing the two
 ends into one type would mean every query needs a role filter.
 
-This has a cost. If an organism is both (and some are: several *Fusarium*
-species make interesting molecules *and* attack crops), this model needs it
-twice. When two sources give such an organism the same identifier, rule 1 below
-(unique `node_id`) stops the build, and Phase 4 reconciles the pair explicitly,
-recording why in the resolution ledger. I've written the decision down here so
-that a future reader can see it was made knowingly. The limits of a model belong
-in its documentation.
+**A Pathogen is a kind of Organism (from Phase 4).** Some organisms are both:
+*Fusarium graminearum* makes molecules MIBiG records *and* causes head blight on
+wheat. Two separate types would need two dots with one identifier, which rule 1
+below (unique `node_id`) forbids. So the rulebook says, in
+[`ontology.py`](../src/microbegraph/ontology.py) (`SUBTYPE_OF`), that a Pathogen
+is a **subtype** of Organism: anything an Organism may do in the graph, a
+Pathogen may do too. An organism that is both becomes one Pathogen node that
+harbours its clusters and sits in the family tree, and the resolution ledger
+records why. The reverse doesn't hold: `INFECTS` still starts only at a Pathogen.
+
+A sports car is a kind of car. It may park wherever a car may, but not every car
+is allowed on the race track.
+
+Queries that mean "every organism" include pathogens (the database's
+`organisms` view does), and queries about pathogens filter on `Pathogen`. Phase 0
+first wrote this down as a known cost of keeping two types; Phase 4 settled it,
+and I've kept both halves of the story here so a future reader can see how the
+decision was made.
 
 | Property | Type | Meaning |
 |---|---|---|
@@ -451,6 +466,10 @@ There are ten edge types, and **every edge has a direction**:
 | `INFECTS` | Pathogen → Crop | *this pathogen attacks this crop* | **curated bridge** |
 | `PARTICIPATES_IN` | Compound → Pathway | *this molecule takes part in this process* | KEGG |
 | `MEMBER_OF` | Organism → Organism | *this species belongs to this genus* | NCBI Taxonomy |
+
+Where a row says Organism, a Pathogen fits too, because a Pathogen is a kind of
+Organism (from Phase 4; see `Pathogen` in section 4). So a pathogen may harbour a
+gene cluster and has `MEMBER_OF` arrows up its family tree.
 
 ### The chain this is all built for
 
@@ -594,7 +613,7 @@ The first three rows are copied from the first real Phase 1 run, on 2026-10-10
 date of your download instead. The long `smiles` value is surfactin's structure
 written as one line of text. The organism's
 properties are empty in MIBiG's table: its rank and family tree come from NCBI
-Taxonomy's table in Phase 2, and Phase 4 merges the two. The last two rows are
+Taxonomy's table in Phase 2, and Phase 4 merges the two into one node. The last two rows are
 what the curated bridge writes in Phase 2, dated by the day each row was added.
 The doubled quotes (`""`) are how a CSV file writes a quote mark inside a quoted
 cell.
@@ -604,8 +623,10 @@ the nine node types need different properties, and one wide table with a column
 for every property of every type would be mostly empty. A JSON column keeps the
 file narrow and readable, and DuckDB can query inside JSON when you need it.
 The downside is that querying inside JSON is slightly more awkward than querying
-a plain column, so Phase 4 promotes the handful of properties we filter on
-frequently to real columns. Start simple, and promote a property once there's a
+a plain column, so the database built in Phase 4 has a **view** for each node
+type with properties worth showing (`organisms`, `compounds`, `proteins`...) with
+the handful of properties we filter
+on most as plain columns. Start simple, and promote a property once there's a
 reason to.
 
 ### `data/processed/edges.csv`
@@ -707,15 +728,25 @@ live in one place, and you get two shapes to ask questions in. If you could edit
 the graph directly, the two would drift apart and you'd end up with two versions
 of reality, which is the classic way projects like this rot.
 
+**From Phase 4 this is real.** `python -m microbegraph.resolve` writes the merged
+`nodes.csv` and `edges.csv`, and `python -m microbegraph.build_graph` loads them
+into `data/processed/microbegraph.duckdb` (tables `nodes`, `edges`, `ledger`,
+`sources` and `build_info`, views for the node types, and an `aliases` view),
+rebuilds the NetworkX `DiGraph` and checks that both hold the same counts, type
+by type, before the new database replaces the old one. [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md) has tested recipes for both
+shapes.
+
 ---
 
 ## 9. Validation rules the loader enforces
 
 An ontology that nothing enforces is only a suggestion. Phase 1 turns all twelve
 rules into code, in [`src/microbegraph/validate.py`](../src/microbegraph/validate.py):
-every source adapter checks its own rows before writing them, and Phase 4's graph
-build runs the same checks on every source merged and **refuses to build** if any
-fail.
+every source adapter checks its own rows before writing them, and from Phase 4
+the resolver and the graph build run the same checks on every source merged and
+**refuse to write anything** if any fail. The database repeats rules 1, 3, 6, 7
+and 9 as database rules of its own (a primary key, foreign keys and CHECK lists
+built from `ontology.py`), so a hand-edited row is refused there too.
 
 **Node rules**
 
@@ -731,8 +762,10 @@ fail.
    is the most common graph bug, and a silent one: the node just looks
    unconnected.)*
 7. `edge_type` is one of the ten.
-8. The types at each end are **allowed** for that edge type. `PRODUCES` must go
-   GeneCluster → Compound; a Compound → Compound `PRODUCES` edge is rejected.
+8. The types at each end are **allowed** for that edge type, or a kind of them.
+   `PRODUCES` must go GeneCluster → Compound; a Compound → Compound `PRODUCES`
+   edge is rejected. A Pathogen, a kind of Organism, may start `HARBORS` and
+   `MEMBER_OF` (from Phase 4).
 9. `evidence_level` is one of the four.
 10. `citation` is non-empty whenever `evidence_level = curated_literature`.
 11. `confidence`, if present, is between 0 and 1.
@@ -784,12 +817,14 @@ harvest the fruit rots easily, and grey mould is one of the causes.)
 
 **Step 4b, the protein route** (from Phase 3). Which enzymes make it? Walk
 `CATALYZES` backwards from surfactin, then `ENCODES` backwards to the cluster:
-→ `ncbiprotein:CAE02630.1` (srfAA), `ncbiprotein:CAE02631.1` (srfAB) and
-`ncbiprotein:CAE02633.1` (srfAC), the three parts of the surfactin synthetase,
-all encoded by `mibig:BGC0000433`.
+→ `uniprot:Q70KJ7` (srfAA), `uniprot:Q70KJ6` (srfAB) and `uniprot:Q70KJ4`
+(srfAC), the three parts of the surfactin synthetase, all encoded by
+`mibig:BGC0000433`.
 *Evidence: `curated_experimental` for srfAA, whose job a knock-out showed;
-`database_assertion` for the other two.* UniProt adds that `CAE02630.1` is the
-entry `Q70KJ7`, "Surfactin synthetase A", 3,584 amino acids long.
+`database_assertion` for the other two.* Each node holds MIBiG's facts and
+UniProt's together, since Phase 4 joined MIBiG's protein numbers
+(`CAE02630.1` for srfAA) to their UniProt entries: `Q70KJ7` is "Surfactin
+synthetase A", 3,584 amino acids long.
 
 **Step 5, walk `HARBORS` backwards.** Which microbes carry it?
 → `ncbitaxon:326423` (*Bacillus velezensis* FZB42)
@@ -852,8 +887,9 @@ one for winter jujube, so the example now follows the study I can cite.
 | Decision | Reason | What it costs |
 |---|---|---|
 | CURIE identifiers everywhere | Unique across sources; `mg.` visibly marks what we invented | Slightly verbose to type |
-| `Pathogen` separate from `Organism` | Every query in this project is oriented helpful → harmful; one type would mean a role filter in every query | An organism that is both would need two nodes |
-| Properties as a JSON column | Nine types with different properties; a wide table would be mostly empty | Querying inside JSON is more awkward; hot properties get promoted in Phase 4 |
+| `Pathogen` separate from `Organism`, as a kind of it (Phase 4) | Every query in this project is oriented helpful → harmful; one type would mean a role filter in every query | Queries about every organism must include pathogens (the `organisms` view does) |
+| Properties as a JSON column | Nine types with different properties; a wide table would be mostly empty | Querying inside JSON is more awkward; the most-used properties are plain columns in the database's views (Phase 4) |
+| Join records only with independent confirmation (Phase 4) | A wrong merge silently attaches facts to the wrong thing; a missed one is a visible gap | Some true matches wait, listed, for more evidence or a person's review (Phase 4b) |
 | Evidence level on every edge, no default | Forces every adapter to state what it knows; no fact enters anonymously | Slightly more work per adapter, by design |
 | Citation required for curated edges | An uncited hand-added fact is the thing that erodes trust fastest | Curation is slower; the bridge layer stays small and good rather than large and vague |
 | Loader refuses instead of warns | Warnings get ignored; a broken graph is worse than no graph | Occasionally blocks you until you fix the data |
@@ -906,9 +942,24 @@ NODE_TYPES: Final[frozenset[str]] = frozenset({
     "Pathway",        # a chain of biochemical reactions, the wider process
 })
 
+# --- Kinds of a type --------------------------------------------------
+# A Pathogen is a kind of Organism (from Phase 4). Anything an Organism may do
+# in the graph, a Pathogen may do too: harbour a gene cluster, or sit in the
+# family tree with MEMBER_OF arrows. The reverse isn't true: INFECTS starts at
+# a Pathogen, and an ordinary Organism can't be its starting point.
+#
+# Without this, an organism that is both a producer and a crop pathogen
+# (MIBiG records four gene clusters in Fusarium graminearum, which also causes
+# head blight on wheat) would need two dots with one identifier, which rule 1
+# forbids. With it, the graph has one Pathogen dot that also harbours clusters.
+SUBTYPE_OF: Final[dict[str, str]] = {
+    "Pathogen": "Organism",
+}
+
 # --- The ten edge types (the verbs) ---------------------------------
-# Each maps to the (from_type, to_type) pair it is allowed to connect.
-# The loader uses this to reject nonsense like Compound --PRODUCES--> Compound.
+# Each maps to the (from_type, to_type) pair it is allowed to connect, or a
+# kind of either (see SUBTYPE_OF above). The loader uses this to reject nonsense
+# like Compound --PRODUCES--> Compound.
 EDGE_TYPES: Final[dict[str, tuple[str, str]]] = {
     "HARBORS":         ("Organism", "GeneCluster"),
     "ENCODES":         ("GeneCluster", "Protein"),    # genomics -> proteomics
@@ -956,6 +1007,22 @@ KNOWN_PREFIXES: Final[frozenset[str]] = frozenset({
     "mg.compound",        # ours: compounds with no PubChem entry
     "mg.protein",         # ours: proteins MIBiG names only by a gene name or locus tag
 })
+
+
+def is_a(node_type: str, wanted: str) -> bool:
+    """
+    True if node_type is the wanted type, or a kind of it.
+
+    is_a("Pathogen", "Organism") is True; is_a("Organism", "Pathogen") is False.
+    Rule 8 uses it, so a Pathogen may start a HARBORS or MEMBER_OF arrow.
+    """
+    seen = set()
+    while node_type and node_type not in seen:
+        if node_type == wanted:
+            return True
+        seen.add(node_type)
+        node_type = SUBTYPE_OF.get(node_type, "")
+    return False
 
 
 def evidence_rank(level: str) -> int:

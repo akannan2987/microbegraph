@@ -202,9 +202,10 @@ Five details in it shape the code:
    activity" would state the opposite of the record, so those are counted but
    never drawn.
 5. **No PubChem number.** Surfactin's identifiers here come from NPAtlas and
-   ChemSpider, so compounds enter as `mg.compound:surfactin` and get matched to
-   PubChem later, in Phase 4. Guessing an identifier now would mean inventing a
-   fact.
+   ChemSpider, so compounds enter as `mg.compound:surfactin`. Phase 4 joins a
+   MIBiG compound to PubChem only where MIBiG gives a number and the name or the
+   formula confirms it, and Phase 4b looks the rest up by name. Guessing an
+   identifier now would mean inventing a fact.
 
 > **The website and the archive can differ slightly.** The entry above was read
 > from MIBiG's public website, which always shows the newest version of each
@@ -323,7 +324,8 @@ and nothing downstream has to change.
 
 `tidy()` writes **staging tables**: one pair of CSV files per source, already in
 the exact column layout of the ontology guide. In Phase 4, every source's staging
-tables are merged, aliases resolved, and the whole graph built. In Phase 10, dbt
+tables are merged, aliases resolved, and the whole graph built
+([`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md)). In Phase 10, dbt
 calls the same idea its *staging layer*, so I use that one name for it all the way
 through the project.
 
@@ -570,8 +572,8 @@ It stands guard at two doors:
 
 * **Now**, every adapter's `tidy()` checks its own rows *before* writing them, so
   a parsing bug is caught at the source, with the source's name on it.
-* **In Phase 4**, the graph build runs the same checks on all sources merged,
-  and refuses to build if anything fails.
+* **In Phase 4**, the resolver and the graph build run the same checks on all
+  sources merged, and refuse to write anything if a rule fails.
 
 The same rulebook is enforced at both doors. That means if you ever change the
 ontology, you should change `ontology.py`, the ontology guide and (if a rule
@@ -633,7 +635,9 @@ activity in general.
 Some plain-text names carry a remark of their own, such as
 `antitumor (duplicate of anticancer)`. Those are kept exactly as MIBiG wrote them.
 Deciding which activity names mean the same thing (antitumor, anticancer,
-antineoplastic) is a matching job, and matching names is what Phase 4 is for.
+antineoplastic) is a judgement about meaning rather than spelling, so Phase 4's
+rules leave it alone, and Phase 4b adds a small curated list of equivalent
+activity names, each with a reason.
 
 **Merging repeats.** The same compound often appears in more than one entry,
 but the graph must have **one** dot for it, with several arrows pointing in. So
@@ -642,7 +646,8 @@ and an arrow seen in several entries becomes a single row. That row lists every
 entry in `source_record_id` and keeps the stronger evidence level, the higher
 confidence, and every citation. When entries disagree (two entries giving one
 compound two masses), the first value is kept and the disagreement is counted
-under `property_conflicts` for Phase 4 to look at.
+under `property_conflicts`. Phase 4b makes the adapter keep the second value
+too, so a person can review each one.
 
 **Skipping, with a count.** Entries that are not `active`, records in an
 unrecognised layout, unreadable files and negative bioactivity results are all
@@ -863,7 +868,7 @@ archive lands on your machine.
    | `bioactivities_observed` | Activities a compound was seen to have; each becomes a `HAS_ACTIVITY` arrow |
    | `bioactivities_not_observed` | Negative results: tested for and not found. Counted, never turned into arrows |
    | `compound_name_collisions` | Two different names that would have produced the same identifier; the second gets a short fingerprint added, so they stay apart |
-   | `property_conflicts` | Two entries describing the same compound disagree on a value (two masses, say). The first is kept, and Phase 4 sorts these out |
+   | `property_conflicts` | Two entries describing the same compound disagree on a value (two masses, say). The first is kept; Phase 4b keeps both, for review |
 
    **Sanity checks on your numbers:**
    * the record count is in the low thousands: 3,013 files in the archive. The

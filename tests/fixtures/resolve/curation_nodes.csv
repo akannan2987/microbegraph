@@ -1,0 +1,6 @@
+node_id,node_type,name,properties,source,retrieved_at
+mg.crop:jujube,Crop,jujube,"{""category"": ""fruit"", ""scientific_name"": ""Ziziphus jujuba""}",curation,2026-10-12
+mg.crop:maize,Crop,maize,"{""category"": ""cereal"", ""scientific_name"": ""Zea mays""}",curation,2026-10-12
+mg.crop:wheat,Crop,wheat,"{""category"": ""cereal"", ""scientific_name"": ""Triticum aestivum""}",curation,2026-10-12
+ncbitaxon:40559,Pathogen,Botrytis cinerea,"{""diseases"": ""grey mould (jujube)"", ""pathogen_type"": ""fungus""}",curation,2026-10-12
+ncbitaxon:5518,Pathogen,Fusarium graminearum,"{""diseases"": ""Fusarium head blight (wheat)|Gibberella ear rot (maize)"", ""pathogen_type"": ""fungus""}",curation,2026-10-12

@@ -290,7 +290,8 @@ top to bottom.
 | 2 | PubChem · NCBI · KEGG · the cited bridge | `feat: add PubChem, NCBI Taxonomy and KEGG adapters and the cited bridge` (with a second `-m`; see [`04-more-sources-secrets.md`, section 19](04-more-sources-secrets.md#19-committing-this-phase)) |
 | 3 | MIBiG gene records · UniProt proteins | `feat: add UniProt adapter and the protein layer` (with a second `-m`; see [`05-proteomics-uniprot.md`, section 17](05-proteomics-uniprot.md#17-committing-this-phase)) |
 | 3b | Every cluster's proteins | `feat: add every cluster's proteins from MIBiG's protein file` (with a second `-m`; see [`05b-all-cluster-proteins.md`, section 18](05b-all-cluster-proteins.md#18-committing-this-phase)) |
-| 4 | Entity resolution & build | `feat: add entity resolution, resolution ledger, and graph build` |
+| 4 | Entity resolution & build | `feat: add entity resolution, resolution ledger, and graph build` (with a second `-m`; see [`06-entity-resolution-graph-build.md`, section 20](06-entity-resolution-graph-build.md#20-committing-this-phase)) |
+| 4b | Closing the gaps | `feat: close resolution gaps with GenBank, PubChem names and a review file` |
 | 5 | Graph analytics | `feat: add path finding, centrality, and community detection` |
 | 6 | Statistical validation (R) | `feat: add R null-model validation and igraph cross-check` |
 | 7 | Graph machine learning | `feat: add node embeddings and link prediction with honest evaluation` |

@@ -34,8 +34,8 @@ attached tells a reader more than a list of promises does.
 
 ## The shape of the plan
 
-There are nineteen numbered phases (1-19) plus three sub-phases (3b, and the
-optional 8b and 9b), so twenty-two pieces of work in total, grouped into three
+There are nineteen numbered phases (1-19) plus four sub-phases (3b, 4b, and the
+optional 8b and 9b), so twenty-three pieces of work in total, grouped into three
 releases. The
 design work you have already read (architecture, setup, ontology, this roadmap)
 is Phase 0.
@@ -281,69 +281,137 @@ from more than one number, both listed in `uniprot_summary.json`.
 
 ---
 
-## Phase 4. Entity resolution and the graph build
+## Phase 4. Entity resolution and the graph build ✅
 
-**What gets built:** the resolution engine and its **ledger**, the graph build
-(which runs the twelve rules from `validate.py`, written in Phase 1, on every
-source merged), the first real graph in DuckDB + NetworkX, and the first
-`docs/QUERY_COOKBOOK.md` of tested SQL recipes.
+**Status:** built and tested. Guide:
+[`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md);
+recipes: [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md).
 
-**Why this is the hardest phase:** deciding that `surfactin`, `surfactin A`, and
-`npatlas:NPA018495` are one thing, and refusing to guess when you can't confirm it, is
-what separates a graph you can trust from one that looks fine but is quietly
-wrong. Most tutorials skip it entirely.
+**What gets built:** the resolver (`python -m microbegraph.resolve`) and its
+**ledger**, the graph build (`python -m microbegraph.build_graph`), the first
+real graph in DuckDB and NetworkX, a query command
+(`python -m microbegraph.query`) and the first `QUERY_COOKBOOK.md`: 19 SQL
+recipes and 5 graph recipes, every one run by the tests. The resolver reads all
+six sources' staging tables, applies ten rules in a fixed order (organisms,
+then compounds, then proteins), turns each group of records into one node,
+re-points every arrow, runs the twelve rules from `validate.py` on the merged
+tables and writes nothing if any fail. The build loads the result into DuckDB
+with the ontology as database rules (primary key, foreign keys, CHECK lists
+built from `ontology.py`) and views for the node types, rebuilds the NetworkX
+graph from it, and swaps the new database in only if both hold the same counts,
+type by type.
 
-**What "the ledger" means:** every merge decision is written down with its
-grounds. The ledger answers "how do you know these are the same thing?", and
-trusting anything else the graph says depends on being able to answer that.
+**Why this is the hardest phase:** deciding that two records are one thing, and
+refusing to guess when you can't confirm it, is what separates a graph you can
+trust from one that looks fine but is quietly wrong. Most tutorials skip it
+entirely.
 
-**A case it must handle on purpose:** an organism that is both a producer (from
-MIBiG) and a crop pathogen (from the bridge). *Botrytis cinerea* and some
-*Fusarium* species are both, and Phase 2 already counts them
-(`pathogens_also_organisms`). If both sources use the same identifier, rule 1
-(unique `node_id`) stops the build, and the ledger records how the two roles were
-reconciled.
+**What "the ledger" means:** every decision, a merge or a refusal, is written
+down with its rule and its grounds in a sentence. The ledger answers "how do you
+know these are the same thing?", and trusting anything else the graph says
+depends on being able to answer that.
 
-**What Phase 2 hands over:** each PubChem compound lists the MIBiG compounds that
-gave its number (`mibig_compound_ids`), so most compound joins are exact; the
-rest are looked up by name. Taxids NCBI has merged are listed old → new in
-`ncbi_taxonomy_summary.json`, and MIBiG's organisms are moved to the current
-number, with the move written in the ledger.
+**What looking first changed:** a survey of the real staging tables, before any
+code, showed that MIBiG's PubChem numbers can't be trusted on their own: 34 of
+those PubChem knows give a formula that differs from PubChem's, and most of
+those point at a different molecule ("bacillomycin D" carries the number of
+PubChem's "Bacillomycin Fc"). Ten numbers are shared by two MIBiG names, some of
+them isomers (minutissamides B and C, both given minutissamide D's number). So
+a number is joined only when the name or the formula confirms it, and a shared
+number only when each name is confirmed. The survey also showed that UniProt
+gives 82 protein numbers several entries, which led to the organism, length and
+review-status steps, and that two organisms are also crop pathogens, which led
+to the ontology change below.
 
-**What Phases 3 and 3b hand over:** each UniProt protein lists the MIBiG protein
-numbers it was found through (`mibig_protein_ids`), so an `ncbiprotein:` node and
-its `uniprot:` entry become one node, by an exact join (20,507 entries for 20,671
-numbers on the 2026-10-12 run). A number with several UniProt entries (82), an
-entry reached from several numbers (349), and a locus tag that appears in two
-entries are decisions for the ledger. UniProt's organism names stay properties;
-organisms come from MIBiG and NCBI only. Three lists from Phase 3b need their own
-rules, each written in the ledger:
+**An ontology change:** a Pathogen is now a kind of Organism (`SUBTYPE_OF` in
+`ontology.py`; rule 8 accepts a kind of a type). An organism that is both a
+producer and a pathogen (*Fusarium graminearum*, *Botrytis cinerea*) is one
+Pathogen node that keeps its clusters and its family tree, and the NCBI Taxonomy
+adapter gives every pathogen its family tree.
 
-* **59 gene records the protein file doesn't name** (9 entries, such as `baeB` in
-  BGC0001089): in those entries a protein can exist twice, once as
-  `mg.protein:<entry>-<gene name>` and once by its number. The ledger matches the
-  gene name against the UniProt gene names of the same cluster's proteins, and
-  checks what's left against MIBiG's GenBank file (`mibig_gbk_4.0.tar.gz`), which
-  gives each gene's name and protein number side by side.
-* **4 curators' removals the file doesn't name** (maize genes such as
-  `LOC100272490` in BGC0002390): resolved through NCBI's gene records, which link
-  an NCBI gene number to its proteins, then removed with the curators' reason.
-* **Identical sequences:** two protein nodes with the same `sequence_md5` have the
-  same sequence, which is grounds (written in the ledger) for treating two locus
-  tags in two entries as one protein.
+**New concepts:** entity resolution; why a wrong merge is worse than a missed
+one; exact identifiers against a second, independent clue; molecular formulas
+and isomers; name keys; union-find; a naming identifier and aliases; subtypes in
+an ontology; a database, SQL, primary and foreign keys, CHECK constraints and
+views; one source of truth; building into a temporary file.
 
-**New concepts:** entity resolution, normalisation before comparison, why a wrong
-merge is worse than a missed one, validation that *refuses* rather than warns,
-SQL basics, `SELECT` / `WHERE` / `GROUP BY` / `JOIN`.
+**New tools:** `duckdb`, `networkx` (both in `requirements.txt` since Phase 0).
 
-**New tools:** `duckdb`, `networkx`.
+**Checkpoint (met on 2026-10-12):** 70,613 identifiers became 48,264 nodes and
+57,111 arrows became 57,012; the twelve rules pass on the merged tables; DuckDB
+and NetworkX report the same counts for every node and arrow type; the ledger's
+23,989 rows account for every identifier that was merged, moved or left out; 296
+tests pass, including every cookbook recipe.
 
-**Checkpoint:** `nodes.csv` and `edges.csv` pass all validation rules; the same
-row counts appear in DuckDB and in the NetworkX graph; the ledger explains every
-merge.
+**Handed on to Phase 4b:** 325 PubChem joins that rest on the formula alone
+(recipe R19), a few of them wrong because MIBiG's formula came from the same
+PubChem record as its number; 21 gene records named only by a gene name UniProt
+can't confirm, and 4 curators' removals no list names (both for MIBiG's GenBank
+file); 2,656 MIBiG compounds without a PubChem number and 81 whose number was
+refused (for a PubChem name lookup); 42 protein numbers with tied UniProt
+entries; 275 property values two MIBiG entries disagree on; activity names that
+mean the same thing; and decisions only a person can make, such as MIBiG's
+"desosamine" record, which carries methymycin's structure. All listed in the
+ledger or in `resolve_summary.json`.
 
 **Effort:** ~10-12 hours. It's the biggest phase in 1.0, and the time is well
 spent.
+
+---
+
+## Phase 4b. Closing the gaps: names, GenBank and a review file
+
+**Status:** planned. Guide: `06b-closing-the-gaps.md`.
+
+**Why it exists:** Phase 4's rules refuse to join anything they can't confirm,
+and the survey showed which gaps that leaves. Some close with more evidence
+from sources the project already uses; the rest need a person's judgement, and
+the graph needs a proper place to record it.
+
+**What gets built:**
+
+* **MIBiG's GenBank file** (`mibig_gbk_4.0.tar.gz`, about 80 MB, on MIBiG's
+  download server beside the protein file): each gene's name, locus tag,
+  protein number and NCBI gene number side by side. Pinned by its own SHA-256
+  like the protein file. It resolves the 21 gene records named only by a gene
+  name, and the 4 maize removals in BGC0002390 (`LOC100272490` and three more),
+  whose NCBI gene numbers it links to protein numbers.
+* **A PubChem name lookup** for MIBiG compounds without a PubChem number, and
+  for refused numbers whose name may be listed under another title (1233A is
+  hymeglusin), through the existing PubChem adapter, with the same confirmation
+  rule as Phase 4: a name match still needs the formula, where MIBiG gives one.
+* **A second look at the joins the formula alone confirmed** (325, listed by
+  cookbook recipe R19). Phase 2 keeps PubChem's 20 most used names per
+  compound, but its download holds them all, so each join is checked against
+  the full list first. A join whose name is still missing goes to the review
+  file below, where a person decides with a source. MIBiG's
+  "2-methylisoborneol", which carries a bromine compound's formula, is the
+  first case it has to catch.
+* **A review file**, `curation/resolution_decisions.csv`: a decision a person
+  made (join, or keep apart), with the reason and a source, which the resolver
+  applies before its own rules and writes to the ledger as `reviewed_by_hand`.
+  The first rows settle cases Phase 4 listed, such as the desosamine record and
+  tied UniProt entries, each with a citation.
+* **Both values for MIBiG's property conflicts:** the MIBiG adapter keeps the
+  second value (and the entry it came from) instead of only counting it, so the
+  review file can show both.
+* **Activity names that mean the same thing** (antitumor, anticancer,
+  antineoplastic): a small curated list, `curation/activity_synonyms.csv`, each
+  row with a reason, applied by the resolver.
+* **Housekeeping:** `import microbegraph.staging` on its own trips over a
+  circular import with the source adapters (every command loads the adapters
+  first, so nothing is affected today); the fix moves the shared table helpers
+  out of the adapters' package.
+
+**New concepts:** GenBank records and their features, human-in-the-loop review,
+an override that wins over a rule and says so.
+
+**Checkpoint:** the 21 gene records and 4 removals are resolved or listed with
+a reason; more compounds carry a confirmed PubChem number; every join the
+formula alone confirmed is backed by a name or settled in the review file; every
+reviewed decision appears in the ledger with its source.
+
+**Effort:** ~6-8 hours.
 
 ---
 
@@ -352,9 +420,11 @@ spent.
 **What gets built:** evidence-path finding, degree and betweenness centrality,
 community detection, and the first interactive network visualisations.
 
-**Why:** this is where the graph starts *answering* questions. The jujube
-question (walk backwards from a crop to candidate microbes) works for the first
-time here, and every path comes with its own evidence chain attached.
+**Why:** this is where the graph starts *answering* questions at scale. Phase
+4's cookbook already answers the jujube question as one SQL query (recipe R9)
+and one NetworkX path (recipe N3); Phase 5 turns that into a general tool: walk
+backwards from any crop to candidate microbes, rank the paths, and attach each
+path's evidence chain.
 
 **The interesting output:** betweenness centrality tends to find *bridges*,
 compounds that are the only known link between a group of microbes and a group of
@@ -1108,11 +1178,12 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | | A tutorial guide per phase, with checkpoints and troubleshooting | ✅ Phases 0-1, then each phase |
 | | The glossary, every term in plain language | ✅ Phase 0, grows each phase |
 | | Teaching diagrams and interactive explorers, regenerated by script | ✅ Phase 1, grows each phase |
-| | Query cookbook: tested SQL, then Cypher, recipes | Phase 4, extended in Phase 11 |
+| | Query cookbook: tested SQL, then Cypher, recipes | ✅ Phase 4 (19 SQL and 5 graph recipes, all run by the tests), Cypher in Phase 11 |
 | **Trust** | Evidence level, source, record and date on every arrow | ✅ Phase 0 design, Phase 1 code |
 | | Checksums and an append-only provenance log for every download | ✅ Phase 1 |
 | | The twelve rules enforced in code, then as dbt tests | ✅ Phase 1, Phase 10 |
-| | A resolution ledger explaining every merge | Phase 4 |
+| | A resolution ledger explaining every merge and every refusal | ✅ Phase 4 |
+| | Decisions only a person can make, recorded with a reason and a source | Phase 4b |
 | | Null-model statistics and a second-language cross-check | Phase 6 |
 | | Predictions stored as `inferred`, never mixed with evidence | Phase 7 |
 | | Data sources and licences listed, attribution in the app | ✅ Phase 2, Phase 8 |
@@ -1120,9 +1191,12 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | | Answers from live services kept as dated snapshots, one provenance row per answer | ✅ Phase 2 |
 | | What each join didn't match counted and listed, never dropped quietly | ✅ Phases 2-3b |
 | | Files with no published checksum pinned by a fingerprint of our own | ✅ Phase 3b |
-| | Curators' corrections applied, each one listed with its reason | ✅ Phase 3b (removals); the rest in Phase 4 |
+| | Curators' corrections applied, each one listed with its reason | ✅ Phase 3b (removals); the four no list names in Phase 4b |
 | **Science** | Three molecular layers joined: genes, proteins (enzymes), molecules | ✅ Phase 3 (entries with gene records), ✅ every cluster in Phase 3b |
+| | One node per real thing across all sources, with every alias kept | ✅ Phase 4 |
+| | An organism that is also a crop pathogen as one node, with both roles | ✅ Phase 4 |
 | **Engineering** | Installable package, bounded dependencies, lockfile | ✅ Phase 0-1 |
+| | One database file with the ontology as database rules, rebuilt on every change | ✅ Phase 4 |
 | | Automated tests on Windows, macOS, Linux and RHEL 8 at every push | ✅ Phase 1 |
 | | One-command setup scripts per operating system | Phase 9 |
 | | Monthly scheduled refresh with retries and alerts | Phase 12 |
@@ -1218,12 +1292,12 @@ weeks:
 | Release | Phases | Hours | Calendar |
 |---|---|---|---|
 | 0, design and setup | 0 | ~5-6 | ~1 week |
-| 1.0, the science | 1-9 (with 3b) | ~78-97 | ~17-22 weeks |
+| 1.0, the science | 1-9 (with 3b and 4b) | ~84-105 | ~19-23 weeks |
 | 1.0, the same app in Shiny *(optional)* | 8b | ~8-10 | ~2 weeks |
 | 1.0, one container *(optional)* | 9b | ~4-5 | ~1 week |
 | 2.0, the platform | 10-13 | ~34-42 | ~8-9 weeks |
 | 3.0, the product | 14-19 | ~55-66 | ~12-15 weeks |
-| **Total** | **0-19 and 3b (+8b, 9b)** | **~184-226** | **~41-50 weeks** |
+| **Total** | **0-19, 3b and 4b (+8b, 9b)** | **~190-234** | **~42-52 weeks** |
 
 *The per-phase hours live in [`phases.csv`](phases.csv); the weeks assume about
 4.5 hours a week.*

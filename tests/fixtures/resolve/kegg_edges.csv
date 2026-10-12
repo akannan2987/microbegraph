@@ -1,0 +1,7 @@
+source_id,target_id,edge_type,evidence_level,source,source_record_id,citation,confidence,retrieved_at
+pubchem.compound:12560,kegg.pathway:map00522,PARTICIPATES_IN,database_assertion,kegg,C01912,,,2026-10-12
+pubchem.compound:12560,kegg.pathway:map01052,PARTICIPATES_IN,database_assertion,kegg,C01912,,,2026-10-12
+pubchem.compound:171548,kegg.pathway:map00780,PARTICIPATES_IN,database_assertion,kegg,C00120,,,2026-10-12
+pubchem.compound:171548,kegg.pathway:map02010,PARTICIPATES_IN,database_assertion,kegg,C00120,,,2026-10-12
+pubchem.compound:171548,kegg.pathway:map04977,PARTICIPATES_IN,database_assertion,kegg,C00120,,,2026-10-12
+pubchem.compound:24755489,kegg.pathway:map00522,PARTICIPATES_IN,database_assertion,kegg,C06633,,,2026-10-12

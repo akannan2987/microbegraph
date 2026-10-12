@@ -22,7 +22,12 @@ THE LAYOUT
     │   ├── provenance.csv        one row per fetch: what, from where, when
     │   └── mibig/                one folder per source
     └── processed/
-        └── staging/              per-source tidy tables (mibig_nodes.csv ...)
+        ├── staging/              per-source tidy tables (mibig_nodes.csv ...)
+        ├── nodes.csv             the merged graph's dots (Phase 4)
+        ├── edges.csv             the merged graph's arrows (Phase 4)
+        ├── resolution_ledger.csv every merge and refusal, with its grounds
+        ├── resolve_summary.json  the resolver's counts and lists
+        └── microbegraph.duckdb   the database the graph is built from
 
     data/ is never committed to Git. The pipeline rebuilds it on demand,
     and that rebuild is also how you know the pipeline works.
@@ -45,6 +50,13 @@ RAW_DIR: Path = DATA_DIR / "raw"
 PROCESSED_DIR: Path = DATA_DIR / "processed"
 STAGING_DIR: Path = PROCESSED_DIR / "staging"
 PROVENANCE_LOG: Path = RAW_DIR / "provenance.csv"
+
+# What the resolver writes (Phase 4), and the database built from it.
+NODES_FILE: Path = PROCESSED_DIR / "nodes.csv"
+EDGES_FILE: Path = PROCESSED_DIR / "edges.csv"
+LEDGER_FILE: Path = PROCESSED_DIR / "resolution_ledger.csv"
+RESOLVE_SUMMARY: Path = PROCESSED_DIR / "resolve_summary.json"
+DATABASE_FILE: Path = PROCESSED_DIR / "microbegraph.duckdb"
 
 # Things that ARE in the repository (unlike data/, which never is).
 CURATION_DIR: Path = REPO_ROOT / "curation"

@@ -270,12 +270,13 @@ which no public database publishes as a downloadable table. Every arrow in the
 graph carries its source and how strong its evidence is, so real and curated
 facts can't be mixed up. More in [About the data](#about-the-data-honesty-notes).*
 
-This is the planned shape of the graph. The final counts are printed by the
-build step and recorded in the provenance log, and I don't state any of them here
-before they exist.
+This is the shape of the graph. The counts in the first row are from the first
+full build, on 2026-10-12; `python -m microbegraph.build_graph` prints them every
+time, and they move a little as the live sources update.
 
 | Fact | Value |
 |---|---|
+| The graph today | **48,264 nodes and 57,012 arrows**, merged from 70,613 identifiers in six sources, with every merge and refusal in a ledger of 23,989 decisions (Phase 4) |
 | Primary real source | **MIBiG 4.0**: thousands of manually curated biosynthetic gene clusters, each linking an organism to the compound it produces, and for some, the cluster's genes with each one's protein and job ([Zenodo, CC-BY](https://doi.org/10.5281/zenodo.14169073)); plus MIBiG's protein file, every protein of every cluster ([download server](https://dl.secondarymetabolites.org/mibig/)) |
 | Chemistry source | **PubChem** (NIH): formula, weights, structure, synonyms, and KEGG and ChEBI numbers for each compound MIBiG gives a PubChem number |
 | Taxonomy source | **NCBI Taxonomy** (E-utilities): the lineage of every organism and pathogen, so "all *Bacillus*" is one query |
@@ -366,9 +367,28 @@ means, matching the build log below. Nothing is shown before it exists.*
   ([`05b-all-cluster-proteins.md`](docs/05b-all-cluster-proteins.md)).
 
   ![How far the protein layer reaches now](docs/img/protein_file_coverage.svg)
-- **Phases 4-9 (Release 1.0, the science):** *(pending)* entity resolution, graph
-  analytics, statistical validation in R, graph machine learning, the app,
-  GraphRAG.
+- **Phase 4. Entity resolution and the graph build:** ✅ the six sources become
+  one graph. A resolver decides which records describe the same thing, joins
+  them, re-points every arrow and writes each decision into a ledger with its
+  grounds: 70,613 identifiers became 48,264 nodes, and the ledger's 23,989 rows
+  explain every merge and every refusal. A survey of the real data first showed
+  that MIBiG's PubChem numbers need a second clue: 34 of them give another
+  formula (MIBiG's "bacillomycin D" carries the number of PubChem's
+  "Bacillomycin Fc"), and isomers share numbers. So 1,105 numbers were joined
+  where the name or formula confirms them, and 81 were refused. 20,629 protein
+  numbers joined their UniProt entries, and a Pathogen became a kind of
+  Organism, so *Fusarium graminearum* is one node that makes molecules and
+  infects wheat. The graph is stored in DuckDB with the rulebook as database
+  rules, rebuilt in NetworkX and checked type by type, and the first tested query
+  cookbook answers the project's question, microbe to crop with the weakest link
+  named. 296 offline tests, from a real slice of all six sources
+  ([`06-entity-resolution-graph-build.md`](docs/06-entity-resolution-graph-build.md),
+  [`QUERY_COOKBOOK.md`](docs/QUERY_COOKBOOK.md)).
+
+  ![From six sources to one graph](docs/img/resolution_flow.svg)
+- **Phases 4b-9 (Release 1.0, the science):** *(pending)* closing the gaps the
+  resolver's rules left, graph analytics, statistical validation in R, graph
+  machine learning, the app, GraphRAG.
 - **Phases 10-13 (Release 2.0, the platform):** *(pending)* dbt, PostgreSQL +
   Apache AGE + pgvector, Airflow, Snowflake portability.
 - **Phases 14-19 (Release 3.0, the product):** *(pending)* FastAPI, React +
@@ -379,8 +399,8 @@ means, matching the build log below. Nothing is shown before it exists.*
 
 ## Build log
 
-The plan has nineteen phases across three releases, plus three sub-phases (3b,
-and the optional 8b and 9b) and the design work in Phase 0. **Each release is complete
+The plan has nineteen phases across three releases, plus four sub-phases (3b,
+4b, and the optional 8b and 9b) and the design work in Phase 0. **Each release is complete
 and publishable on its own.** [`ROADMAP.md`](docs/ROADMAP.md) explains why each
 tool is there, and says openly which one is the weakest fit.
 
@@ -407,7 +427,8 @@ tool is there, and says openly which one is the weakest fit.
 | 2 | [More sources: PubChem · NCBI · KEGG · the cited bridge](docs/04-more-sources-secrets.md) | web APIs, snapshots, `.env` and API keys, licence terms, the curated bridge | ✅ |
 | 3 | [The proteomics layer: MIBiG's gene records and UniProt](docs/05-proteomics-uniprot.md) | `Protein` nodes, three molecular layers, ID mapping jobs | ✅ |
 | 3b | [Every cluster's proteins: MIBiG's protein file](docs/05b-all-cluster-proteins.md) | FASTA, a file pinned by its own fingerprint, curators' corrections, ID mapping at scale | ✅ |
-| 4 | Entity resolution & building the graph | DuckDB, NetworkX, the resolution ledger | ⬜ |
+| 4 | [Entity resolution & building the graph](docs/06-entity-resolution-graph-build.md) | DuckDB, NetworkX, the resolution ledger, SQL, a tested [query cookbook](docs/QUERY_COOKBOOK.md) | ✅ |
+| 4b | Closing the gaps: names, GenBank and a review file | MIBiG's GenBank file, PubChem name lookup, decisions by hand | ⬜ |
 | 5 | Graph analytics: paths, hubs, communities | `plotly`, `pyvis` | ⬜ |
 | 6 | Statistical validation in R | R, `igraph`, `renv`, permutation tests | ⬜ |
 | 7 | Graph machine learning | `scikit-learn`, node2vec, honest evaluation | ⬜ |
@@ -459,6 +480,8 @@ Read them in this order:
 | 04 | [More sources and secrets](docs/04-more-sources-secrets.md) | GET and POST, speed limits, API keys and `.env`, snapshots, licences, the cited bridge, tests from real answers |
 | 05 | [The proteomics layer](docs/05-proteomics-uniprot.md) | Genes, proteins and enzymes; joining two databases through a shared number; jobs, polling and redirects; saying what didn't match |
 | 05b | [Every cluster's proteins](docs/05b-all-cluster-proteins.md) | Protein sequences and the FASTA format; pinning a file by your own fingerprint; curators' corrections; matching names without guessing; ID mapping at scale |
+| 06 | [Entity resolution and the graph build](docs/06-entity-resolution-graph-build.md) | Deciding when two records are one thing, and writing down why; formulas and isomers; union-find; a database, SQL, keys and views; one source of truth in two shapes |
+|  | [Query cookbook](docs/QUERY_COOKBOOK.md) | SQL in ten minutes, then 18 tested SQL recipes and 5 graph recipes for asking the graph questions |
 |  | [Roadmap](docs/ROADMAP.md) | The nineteen phases and three releases, the reason for each tool, and what "finished" means |
 |  | [Prior art](docs/PRIOR-ART.md) | What already exists, how this differs, and what it does not claim |
 |  | [Git workflow](docs/GIT-WORKFLOW.md) | The commit message convention, the branch flow, and what to do when something goes wrong |
@@ -467,7 +490,7 @@ Read them in this order:
 |  | [Containerization](docs/CONTAINERIZATION.md) | Packaging the whole application in a box: images, layers, volumes, networks, compose |
 |  | [Glossary](docs/GLOSSARY.md) | Every term in everyday language, grouped by section |
 
-Phase guides 06-21 arrive with their phases and are listed in the
+Phase guides 06b-21 arrive with their phases and are listed in the
 [build log](#build-log) above.
 
 ---
@@ -483,7 +506,7 @@ without an internet connection, and they're made by
 | Picture | What it explains | Used in |
 |---|---|---|
 | [The nine node types](docs/img/node_types.svg) | every kind of dot, each with an everyday comparison | ontology guide, Handbook |
-| [The ontology map](docs/img/ontology_map.svg) | every allowed arrow, and which way it points | ontology guide, Handbook |
+| [The ontology map](docs/img/ontology_map.svg) | every allowed arrow, which way it points, and that a Pathogen is a kind of Organism | ontology guide, Phase 4, Handbook |
 | [The evidence ladder](docs/img/evidence_ladder.svg) | the four evidence levels, strongest first | ontology guide, Handbook |
 | [The adapter contract](docs/img/adapter_contract.svg) | one socket, many plugs: probe, fetch, tidy | architecture, Phase 1 |
 | [Phase 1 flow](docs/img/ingestion_flow.svg) | Zenodo to staging tables, every file and check | Phase 1, Handbook |
@@ -502,6 +525,11 @@ without an internet connection, and they're made by
 | [One protein, part by part](docs/img/fasta_header.svg) | a record of MIBiG's protein file: the seven parts of its header, its sequence, and what each becomes | Phase 3b, Handbook |
 | [Every cluster's proteins, in three steps](docs/img/protein_file_matching.svg) | the curators' removals, matching gene records, adding the rest, with the real counts | Phase 3b, Handbook |
 | [How far the protein layer reaches now](docs/img/protein_file_coverage.svg) | Phase 3 against Phase 3b: entries, proteins, arrows, numbers sent to UniProt and found | Phase 3b, results, Handbook |
+| [From six sources to one graph](docs/img/resolution_flow.svg) | the resolver's rules in order, what it writes, and the two shapes the build loads, with the real counts | Phase 4, results, Handbook |
+| [Is MIBiG's PubChem number right?](docs/img/pubchem_check.svg) | the second clue a number needs, with the real counts and three real cases | Phase 4, Handbook |
+| [Which UniProt entry is this protein?](docs/img/uniprot_choice.svg) | one entry joins at once; several are decided by organism, length and review status, or left on their own | Phase 4 |
+| [One decision, written down](docs/img/ledger_row.svg) | a real row of the resolution ledger, column by column | Phase 4, glossary |
+| [Two shapes of the same facts](docs/img/two_shapes.svg) | DuckDB tables beside the NetworkX graph, and the rule that keeps them in step | Phase 4, Handbook |
 
 | Interactive page (download, then open) | What you can do |
 |---|---|
@@ -721,7 +749,7 @@ microbegraph/
 │   ├── 00-architecture.md           ← how it all fits together                    ✅
 │   ├── 01-setup.md                  ← blank laptop → working workshop             ✅
 │   ├── 02-ontology-and-data-model.md← the rulebook: nodes, edges, evidence        ✅
-│   ├── ROADMAP.md               ← 19 phases + 3 sub-phases, every tool justified ✅
+│   ├── ROADMAP.md               ← 19 phases + 4 sub-phases, every tool justified ✅
 │   ├── PRIOR-ART.md             ← related work + what this does NOT claim     ✅
 │   ├── GIT-WORKFLOW.md          ← commit messages + the branch flow           ✅
 │   ├── R-SETUP.md               ← R, RStudio, renv alongside Python           ✅
@@ -731,7 +759,9 @@ microbegraph/
 │   ├── 04-more-sources-secrets.md ← Phase 2: APIs, snapshots, keys, licences ✅
 │   ├── 05-proteomics-uniprot.md ← Phase 3: gene records, UniProt ID mapping   ✅
 │   ├── 05b-all-cluster-proteins.md ← Phase 3b: MIBiG's protein file, FASTA    ✅
-│   ├── 06..11                   ← Release 1.0: resolve, analytics,
+│   ├── 06-entity-resolution-graph-build.md ← Phase 4: the resolver, the ledger,
+│   │                              DuckDB and NetworkX                         ✅
+│   ├── 06b..11                  ← Release 1.0: closing the gaps, analytics,
 │   │                              R validation, graph ML, app, GraphRAG       ⬜
 │   ├── 12..15                   ← Release 2.0: dbt, Postgres+AGE+pgvector,
 │   │                              Airflow, Snowflake                          ⬜
@@ -739,7 +769,7 @@ microbegraph/
 │   │                              Databricks, the stack in containers,
 │   │                              published images                            ⬜
 │   ├── phases.csv               ← the plan as data: hours and status per phase ✅
-│   ├── QUERY_COOKBOOK.md        ← tested SQL + Cypher + graph recipes         ⬜
+│   ├── QUERY_COOKBOOK.md        ← tested SQL and graph recipes (Cypher: Phase 11) ✅
 │   ├── GLOSSARY.md              ← every term, plain language                  🔨
 │   ├── img/                         ← teaching diagrams + make_illustrations.py   ✅
 │   └── interactive/                 ← open-in-browser pages + make_interactive.py ✅
@@ -764,8 +794,13 @@ microbegraph/
 │   │   ├── kegg.py                  ← Phase 2: pathway maps (academic use)        ✅
 │   │   ├── curation.py              ← Phase 2: the cited bridge, checked 13 ways  ✅
 │   │   └── uniprot.py               ← Phase 3: the enzymes, by ID mapping         ✅
-│   ├── resolve.py                   ← entity resolution + the resolution ledger   ⬜
-│   ├── build_graph.py               ← nodes/edges → DuckDB → NetworkX             ⬜
+│   ├── resolve.py                   ← entity resolution + the resolution ledger   ✅
+│   ├── resolution/                  ← the resolver's rules, one file per job (Phase 4)
+│   │   ├── pool.py, groups.py, names.py, ledger.py ← reading, grouping, comparing, recording ✅
+│   │   ├── organisms.py, compounds.py, proteins.py ← the rules, kind by kind     ✅
+│   │   └── combine.py               ← one node per group; arrows re-pointed       ✅
+│   ├── build_graph.py               ← nodes/edges → DuckDB → NetworkX, compared   ✅
+│   ├── query.py                     ← ask the database: cookbook recipes or your SQL ✅
 │   ├── analytics.py                 ← paths, centrality, communities              ⬜
 │   ├── embed.py                     ← node2vec embeddings (Phase 7)               ⬜
 │   ├── predict.py                   ← link prediction / candidate ranking         ⬜
@@ -815,6 +850,8 @@ microbegraph/
 │   ├── fixtures/capture_samples.py  ← captures real answers for the tests        ✅
 │   ├── fixtures/capture_uniprot_samples.py ← surveys gene records, captures UniProt ✅
 │   ├── fixtures/capture_mibig_protein_samples.py ← downloads and surveys the protein file ✅
+│   ├── fixtures/capture_resolution_samples.py ← surveys duplicates; cuts the real slice ✅
+│   ├── fixtures/resolve/            ← a real slice of all six sources' tables (Phase 4) ✅
 │   ├── fixtures/mibig/              ← four test records in the MIBiG 4.0 layout, and
 │   │                                  a sample of the protein file (Phase 3b)       ✅
 │   ├── fixtures/pubchem/, ncbi_taxonomy/, kegg/, uniprot/ ← real answers, byte for byte ✅
@@ -828,7 +865,9 @@ microbegraph/
 │   │   └── pubchem/, ncbi_taxonomy/, kegg/, uniprot/ ← one dated snapshot folder per fetch
 │   └── processed/
 │       ├── staging/                 ← per-source tables: mibig_nodes.csv, ...
-│       └── ...                      ← nodes.csv, edges.csv, microbegraph.duckdb (Phase 4)
+│       ├── nodes.csv, edges.csv     ← the merged graph (Phase 4)
+│       ├── resolution_ledger.csv    ← every merge and refusal, with its grounds
+│       └── microbegraph.duckdb      ← the database the app and analytics read
 │
 ├── .venv/                           ← Python's sealed toolbox. NOT in Git
 └── renv/library/                    ← R's sealed toolbox. NOT in Git
@@ -898,8 +937,9 @@ pytest                                 # the automated checks
 cp .env.example .env                        # optional NCBI key (Windows: copy ...)
 python -m microbegraph.fetch --probe        # Phases 1-3: see what's available, free
 python -m microbegraph.fetch --all          # Phases 1-3: download, verify, tidy
-python -m microbegraph.resolve              # Phase 4: merge aliases
-python -m microbegraph.build_graph          # Phase 4: DuckDB + NetworkX
+python -m microbegraph.resolve              # Phase 4: merge aliases, write the ledger
+python -m microbegraph.build_graph          # Phase 4: DuckDB + NetworkX, compared
+python -m microbegraph.query --recipe 9     # Phase 4: microbe -> crop, weakest link named
 python -m microbegraph.analytics            # Phase 5: paths, hubs, communities
 Rscript R/validate_graph.R                  # Phase 6: null-model validation
 python -m microbegraph.predict              # Phase 7: graph ML + rankings

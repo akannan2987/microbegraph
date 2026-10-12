@@ -18,6 +18,87 @@ and start a new, empty *Unreleased* above it. The
 
 ## Unreleased (toward 1.0.0)
 
+### Phase 4: entity resolution, the resolution ledger, and the graph build
+
+- **Added** the resolver, `python -m microbegraph.resolve`
+  (`src/microbegraph/resolve.py` and the `src/microbegraph/resolution/`
+  package). It reads all six sources' staging tables and applies ten rules in a
+  fixed order: one node for one identifier from several sources; organisms moved
+  from NCBI's merged numbers; an Organism that is also a Pathogen becomes one
+  Pathogen node; MIBiG's PubChem numbers joined only where the name or formula
+  confirms them, and a number shared by several MIBiG names only where each name
+  is confirmed; MIBiG compounds with the same NPAtlas number and formula joined;
+  protein numbers joined to their UniProt entry (organism, then sequence length,
+  then review status choosing between several); identical sequences in one
+  organism joined; gene records named only by a gene name joined through
+  UniProt's gene names. Records are grouped with union-find, a group never holds
+  two PubChem or two UniProt entries, and the identifier from the most specific
+  authority names each node, with the others kept as aliases. Every arrow is
+  re-pointed, and arrows that become one are combined, keeping the strongest
+  evidence. The twelve rules run on the merged tables, and nothing is written if
+  any fails, or if any identifier that disappeared lacks a ledger row.
+- **Added** the resolution ledger (`data/processed/resolution_ledger.csv`): one
+  row per decision, merged, moved, combined, kept apart or left out, with its
+  rule and its grounds in a sentence. A refused PubChem number moves to
+  `pubchem_cid_not_confirmed`, and the node notes why.
+- **Added** the graph build, `python -m microbegraph.build_graph`
+  (`src/microbegraph/build_graph.py`): DuckDB
+  (`data/processed/microbegraph.duckdb`) with `nodes`, `edges`, `ledger`,
+  `sources` and `build_info` tables, the ontology as database rules (primary key,
+  foreign keys, CHECK lists built from `ontology.py`), one view per node type and
+  an `aliases` view; the NetworkX graph rebuilt from it (`load_graph()`) and
+  compared type by type. All of it happens in a temporary file, swapped in only
+  when the counts agree, so a failed build leaves the previous database as it
+  was.
+- **Added** `python -m microbegraph.query` (`src/microbegraph/query.py`), which
+  runs a cookbook recipe or your own SQL on the database, read-only, and
+  `docs/QUERY_COOKBOOK.md`: SQL in ten minutes, 19 SQL recipes and 5 NetworkX
+  recipes, each run by the tests (the Python ones also pasted into an
+  interactive prompt, the way the cookbook says to run them).
+- **Changed** the ontology: a Pathogen is a kind of Organism (`SUBTYPE_OF` and
+  `is_a()` in `src/microbegraph/ontology.py`; rule 8 in `validate.py` accepts a
+  kind of a type). The NCBI Taxonomy adapter gives every pathogen its family tree
+  (12 more ancestors and 16 more `MEMBER_OF` arrows on the real data).
+- **Added** 83 tests (296 in all): `tests/test_resolve.py`,
+  `tests/test_build_graph.py`, `tests/test_query.py`, built from a real slice of
+  all six sources around 22 chosen clusters (`tests/fixtures/resolve/`, cut by
+  `tests/fixtures/capture_resolution_samples.py`, which also has a `--survey`
+  mode that counts the duplicates in your own tables).
+- **Added** the Phase 4 guide (`docs/06-entity-resolution-graph-build.md`), five
+  pictures (`resolution_flow.svg`, `pubchem_check.svg`, `uniprot_choice.svg`,
+  `ledger_row.svg`, `two_shapes.svg`), the new terms in the glossary, and Phase
+  4b in the roadmap and the Handbook (Stage 7b). The ontology map shows that a
+  Pathogen is a kind of Organism, and the interactive explorers name srfAA's node
+  by its UniProt entry.
+- **Measured on the first run** (2026-10-12, from `resolve_summary.json` and the
+  build's output):
+  - *In:* 72,092 node rows for 70,613 identifiers from the six sources (MIBiG
+    47,907, PubChem 1,171, NCBI Taxonomy 2,457, KEGG 39, UniProt 20,507, the
+    bridge 11), and 57,111 arrows.
+  - *Organisms:* 1,478 identifiers described by more than one source; 7 moved to
+    NCBI's current number (3 of them onto a number MIBiG also uses); 2 given both
+    roles (*Fusarium graminearum*, *Botrytis cinerea*). 130 organisms take NCBI's
+    current name, with MIBiG's kept as another name.
+  - *Compounds:* of 1,186 PubChem numbers MIBiG gives, 1,097 confirmed (637 by
+    name and formula, 135 by name, 325 by formula) and 64 refused; of 10 numbers
+    shared by two MIBiG names, 8 names confirmed and 12 not; 5 numbers PubChem
+    doesn't have. 3 pairs joined by NPAtlas number and formula, 7 kept apart.
+  - *Proteins:* 20,629 protein numbers joined to a UniProt entry (20,589 with one
+    entry; of 82 with several, 33 decided by organism, 2 by length, 5 by review
+    status) and 42 left with tied entries; 220 identical sequences in one organism
+    joined and 9 kept apart because UniProt keeps them separate; 38 gene records
+    joined through UniProt's gene names, 21 listed for Phase 4b.
+  - *Out:* 48,264 nodes (Activity 74, Compound 3,836, CompoundClass 37, Crop 5,
+    GeneCluster 2,437, Organism 2,451, Pathogen 6, Pathway 39, Protein 39,379)
+    and 57,012 arrows (96 combined, 3 dropped with left-out entries); 347 PubChem
+    and UniProt entries left out; a ledger of 23,989 rows. DuckDB and NetworkX
+    agree on every count.
+- **Known limit, for Phase 4b:** 325 of the PubChem joins rest on the formula
+  alone, and a formula only confirms a number when MIBiG didn't copy it from
+  that same PubChem record. Most are right; a few aren't (MIBiG's
+  "2-methylisoborneol" carries a bromine compound's formula). Recipe R19 lists
+  them, and Phase 4b checks them against PubChem's full list of names.
+
 ### Phase 3b: every cluster's proteins, MIBiG's protein file
 
 - **Added** MIBiG's protein file to the MIBiG adapter

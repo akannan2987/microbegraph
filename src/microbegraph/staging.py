@@ -8,8 +8,9 @@ WHAT THE STAGING FOLDER IS
         <source>_edges.csv      the arrows between them
         <source>_summary.json   counts, the version used, and the snapshot read
 
-    Phase 4 merges every source's tables into one graph. Until then each set
-    stands on its own and is checked against the twelve rules on its own.
+    Each set is checked against the twelve rules on its own. From Phase 4 the
+    resolver (src/microbegraph/resolve.py) merges every source's tables into
+    one graph, data/processed/nodes.csv and edges.csv, and checks them again.
 
 WHY SOME SOURCES READ ANOTHER SOURCE'S TABLES
     From Phase 2 on, sources build on each other, the way a second coat of

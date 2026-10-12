@@ -4,12 +4,13 @@
 
 ![MicrobeGraph: from a microbe's genes to a crop's disease, with the evidence for every arrow](img/cover_microbegraph.svg)
 
-**Handbook version:** 1.5 · **Last updated:** 2026-10-12 · **Repository state it
+**Handbook version:** 1.6 · **Last updated:** 2026-10-12 · **Repository state it
 describes:** Phase 0 (design and setup), Phase 1 (MIBiG ingestion), Phase 2
 (PubChem, NCBI Taxonomy, KEGG and the cited bridge), Phase 3 (the proteomics
-layer: MIBiG's gene records and UniProt) and Phase 3b (every cluster's proteins,
-from MIBiG's protein file) built and tested; Phase 4 (entity resolution and the
-graph build) next.
+layer: MIBiG's gene records and UniProt), Phase 3b (every cluster's proteins,
+from MIBiG's protein file) and Phase 4 (entity resolution with its ledger, the
+graph in DuckDB and NetworkX, and the query cookbook) built and tested; Phase 4b
+(closing the gaps the resolver's rules left) next.
 
 **Read this document first, and come back to it whenever you lose your place.**
 It follows the whole journey in order: understanding the project, setting up a
@@ -107,7 +108,8 @@ for the same plan.
 | 5 | More sources: PubChem, NCBI Taxonomy, KEGG, the curated bridge | 2 | 6-8 h | ✅ | [`04-more-sources-secrets.md`](04-more-sources-secrets.md) |
 | 6 | The proteomics layer: MIBiG's gene records and UniProt | 3 | 5-7 h | ✅ | [`05-proteomics-uniprot.md`](05-proteomics-uniprot.md) |
 | 6b | Every cluster's proteins: MIBiG's protein file | 3b | 4-5 h | ✅ | [`05b-all-cluster-proteins.md`](05b-all-cluster-proteins.md) |
-| 7 | Entity resolution and the graph build | 4 | 10-12 h | ⏳ next | `06-entity-resolution-graph-build.md` |
+| 7 | Entity resolution and the graph build | 4 | 10-12 h | ✅ | [`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md), [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md) |
+| 7b | Closing the gaps: names, GenBank and a review file | 4b | 6-8 h | ⏳ next | `06b-closing-the-gaps.md` |
 | 8 | Graph analytics | 5 | 8-10 h | ⬜ | `07-graph-analytics.md` |
 | 9 | Statistical validation in R | 6 | 6-8 h | ⬜ | `08-statistical-validation-r.md` |
 | 10 | Graph machine learning | 7 | 12-14 h | ⬜ | `09-graph-machine-learning.md` |
@@ -127,7 +129,7 @@ for the same plan.
 
 Guides listed without a link arrive with their phase, and I add the link here as
 each one is written. The times are hands-on estimates for a beginner following the
-guides. At four to five hours a week, Release 1.0 takes four to five months and
+guides. At four to five hours a week, Release 1.0 takes four to six months and
 the whole product roughly a part-time year. Every stage ends at a natural stopping
 point with everything committed, and **each release is complete on its own**, so
 stopping after any of them still leaves you with something whole.
@@ -542,40 +544,116 @@ UniProt's may move a little with each release. The sanity checks are in
 
 ## Stage 7. Entity resolution and the graph build (Phase 4)
 
-**What.** Decide when two names are one thing ("surfactin", "surfactin A",
-`npatlas:NPA018495`), write every merge decision in a **resolution ledger**, join
-MIBiG's compounds to the PubChem compounds from Phase 2 (each one records which
-MIBiG compound gave its number) and look the rest up by name, move organisms whose
-NCBI numbers were merged, then load the merged tables into DuckDB (the
-single source of truth) and rebuild the NetworkX graph from it. The twelve rules
-run on everything, and any failure stops the build. This stage also produces the
-first `QUERY_COOKBOOK.md`, a collection of tested SQL recipes.
+![From six sources to one graph: six staging tables go through the organism, compound and protein rules; the resolver writes the nodes, the arrows and a ledger of every decision; DuckDB and NetworkX hold the same counts](img/resolution_flow.svg)
+
+**What.** Follow [`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md).
+Until now each source has had its own tables, and several of their records
+describe the same real thing: MIBiG's "erythromycin A" and PubChem's compound
+12560, MIBiG's protein number CAE02630.1 and UniProt's entry Q70KJ7. You look at
+the real tables first with a survey, then build a **resolver** that decides which
+records are the same thing, joins them into one node each, re-points every arrow
+and writes every decision into a **resolution ledger** with its grounds. The
+twelve rules run on the merged tables, and nothing is written if any fails.
+Then the **graph build** loads the result into DuckDB, a database in one file,
+with the ontology as database rules, and rebuilds the same facts as a NetworkX
+graph, checking that the two agree type by type. On the way, the rulebook gains
+one idea: a Pathogen is a kind of Organism, so an organism that also causes a crop
+disease is one node.
+
+```bash
+python tests/fixtures/capture_resolution_samples.py --survey   # look at the real tables first
+python -m microbegraph.fetch --tidy-only --source ncbi_taxonomy # pathogens join the family tree
+python -m microbegraph.resolve                                  # six sources -> one graph + ledger
+python -m microbegraph.build_graph                              # DuckDB + NetworkX, compared
+python -m microbegraph.query --recipe 9                         # microbe -> crop, weakest link named
+pytest                                                          # 296 promises, every recipe included
+```
+
+Nothing in this stage downloads anything.
+
+![Is MIBiG's PubChem number right? A matching name or formula must confirm it, and with several names on one number each name must be confirmed](img/pubchem_check.svg)
 
 **Why.** This step decides whether you end up with a graph you can trust or one
 that looks fine while being quietly wrong. A wrong merge does more harm than a
-missed one, so the engine refuses to guess. Proteins join the same way compounds
-do: each UniProt entry lists the MIBiG protein numbers it was found through
-(Stages 6 and 6b), so an `ncbiprotein:` node and its `uniprot:` entry become one
-node by an exact join. Stage 6b also hands over three short lists for the ledger:
-59 gene records the protein file doesn't name, 4 curators' removals it doesn't
-name, and a sequence fingerprint on every protein, so identical proteins can be
-recognised ([`ROADMAP.md`, Phase 4](ROADMAP.md#phase-4-entity-resolution-and-the-graph-build)). It's also the stage where an organism
-that is both a producer and a crop pathogen (*Botrytis cinerea* and some
-*Fusarium* species are; Phase 2 counts them as `pathogens_also_organisms`) gets
-caught by rule 1, and you resolve it on purpose.
+missed one, so every rule needs evidence beyond a shared number or a shared name,
+and what the evidence can't settle stays apart, listed. The survey is why: 34 of
+MIBiG's PubChem numbers that PubChem knows give a different formula, mostly
+because the number belongs to another molecule (MIBiG's "bacillomycin D" carries
+the number of PubChem's "Bacillomycin Fc"), and isomers share numbers and
+formulas (minutissamides B and C both carry minutissamide D's). Joining on the
+number alone would have moved the cited claim that bacillomycin D inhibits
+*Fusarium graminearum* onto a different molecule.
 
-**Open:** `06-entity-resolution-graph-build.md`; the rules in
-[`02-ontology-and-data-model.md`, section 9](02-ontology-and-data-model.md#9-validation-rules-the-loader-enforces).
-**Checkpoint:** DuckDB and NetworkX report the same row counts, and the ledger
-explains every merge. **Commit message:** `feat: add entity resolution, resolution ledger, and graph build`.
+![Two shapes of the same facts: DuckDB tables and a NetworkX graph, rebuilt from the database and never edited](img/two_shapes.svg)
+
+**New ideas in this stage:** entity resolution; a second, independent clue;
+molecular formulas and isomers; name keys; union-find; a naming identifier and
+aliases; a subtype in an ontology; databases, SQL, primary and foreign keys,
+CHECK constraints and views; one source of truth; building into a temporary file;
+asking the database questions with tested recipes.
+
+**Open:** [`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md);
+[`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md) for the 19 SQL and 5 graph recipes; the
+rules in [`02-ontology-and-data-model.md`, section 9](02-ontology-and-data-model.md#9-validation-rules-the-loader-enforces);
+[`tests/fixtures/README.md`](../tests/fixtures/README.md) for the real slice the
+tests use.
+**Checkpoint:** `pytest` passes; `python -m microbegraph.build_graph` ends with
+`every count matches`; recipe R9 shows surfactin against grey mould on jujube;
+you can find in the ledger why bacillomycin D wasn't joined to PubChem; the
+**Actions** tab is green.
+**What you should get:** on the first run (2026-10-12), 70,613 identifiers from
+the six sources became 48,264 nodes (3,836 compounds, 39,379 proteins, 2,451
+organisms, 6 pathogens and the rest), and 57,111 arrows became 57,012 (96
+combined, 3 dropped with entries nothing was joined to). The ledger has 23,989
+rows: 1,105 PubChem numbers confirmed (325 of them by the formula alone, which
+Stage 7b checks again) and 81 refused, 20,629 protein numbers
+joined to UniProt and 42 left with tied entries, 220 identical sequences joined,
+38 gene records joined through UniProt's gene names, 7 old organism numbers moved
+and 347 entries left out. The sanity checks are in
+[`06-entity-resolution-graph-build.md`, Step 10](06-entity-resolution-graph-build.md#14-step-10-run-it-for-real).
+**Commit message:** `feat: add entity resolution, resolution ledger, and graph build`.
+**Estimated time:** 10-12 hours.
+
+---
+
+## Stage 7b. Closing the gaps (Phase 4b)
+
+**What.** Close the gaps Stage 7's rules left on purpose. Read MIBiG's GenBank
+file (`mibig_gbk_4.0.tar.gz`, about 80 MB, pinned by its own fingerprint like the
+protein file) to give the 21 remaining gene records their protein numbers and
+resolve the 4 curators' removals no list names; ask PubChem by name about the
+2,656 MIBiG compounds without a number, with the same confirmation rule as
+Stage 7; check the 325 joins the formula alone confirmed against PubChem's full
+list of names (cookbook recipe R19 lists them; MIBiG's "2-methylisoborneol"
+carries a bromine compound's formula, so its formula agrees for the wrong
+reason); add a **review file** (`curation/resolution_decisions.csv`) where a
+person records a decision the rules can't make, with a reason and a source; keep
+both values when two MIBiG entries disagree; and list the activity names that
+mean the same thing.
+
+**Why.** Refusing to guess leaves a queue, and a queue needs a way to be worked.
+Some gaps close with more evidence from sources the project already uses; the
+rest need a person's judgement, and the graph needs a proper, visible place for
+it, in the ledger beside the rules' own decisions.
+
+**Open:** `06b-closing-the-gaps.md`; the plan is in
+[`ROADMAP.md`, Phase 4b](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file),
+and the lists it starts from are in `resolve_summary.json` (`for_phase_4b`) and
+the ledger's `kept_apart` rows ([cookbook R7](QUERY_COOKBOOK.md#r7-what-did-the-resolver-refuse-rule-by-rule)).
+**Checkpoint:** the 21 gene records and 4 removals are resolved or listed with a
+reason; more compounds carry a confirmed PubChem number; every join the formula
+alone confirmed is backed by a name or settled in the review file; every reviewed
+decision is in the ledger with its source.
+**Commit message:** `feat: close resolution gaps with GenBank, PubChem names and a review file`.
+**Estimated time:** 6-8 hours.
 
 ---
 
 ## Stage 8. Graph analytics (Phase 5)
 
-**What.** Find evidence paths (the jujube question, walked backwards), hubs
-(centrality), bridges and communities, then draw the first interactive network
-views.
+**What.** Find evidence paths (the jujube question, walked backwards, for any
+crop: Stage 7's recipe R9 is the first version), hubs (centrality), bridges and
+communities, then draw the first interactive network views.
 
 **Why.** Until now you have been building the graph; from here on it starts
 *answering*. Every path comes with its evidence chain, and a path is only as strong
@@ -854,6 +932,9 @@ ritual from [Stage 2](#stage-2-version-control-and-the-end-of-phase-ritual).
 | The bridge refuses a row ("check ...") | [`curation/README.md`](../curation/README.md); the check numbers are in [`04-more-sources-secrets.md`, Step 8](04-more-sources-secrets.md#12-step-8-the-curated-bridge) |
 | UniProt: "no proteins with an INSDC or RefSeq id", a job that fails or never finishes, an identifier type that disappeared | [`05-proteomics-uniprot.md`, section 15](05-proteomics-uniprot.md#15-what-could-go-wrong) |
 | MIBiG's protein file: "not in the evidence locker yet", a SHA-256 that doesn't match the pinned one, a probe warning about its size, a header in another shape | [`05b-all-cluster-proteins.md`, section 16](05b-all-cluster-proteins.md#16-what-could-go-wrong) |
+| The resolver or the build refuses ("break the rulebook", "open in another program", "DuckDB refused", "disagree") | [`06-entity-resolution-graph-build.md`, section 18](06-entity-resolution-graph-build.md#18-what-could-go-wrong) |
+| A query fails, finds nothing, or says the database doesn't exist | [`QUERY_COOKBOOK.md`, section 9](QUERY_COOKBOOK.md#9-what-could-go-wrong) |
+| Why two records were (or weren't) joined | The ledger: [`QUERY_COOKBOOK.md`, recipes R5 to R8](QUERY_COOKBOOK.md#4-following-the-resolvers-decisions-r5-to-r8) |
 | The probe names a newer MIBiG release | Expected; [`ROADMAP.md`, *Watching the sources*](ROADMAP.md#watching-the-sources) says what the plan does about it |
 | A test fails | The test's name says which promise broke; the phase guide's *What could go wrong* table |
 | `$'\r': command not found` from the safety gate (Windows) | [`01-setup.md`, T14](01-setup.md#t14-bash-check-public-safesh-fails-with-r-command-not-found-windows) |
@@ -884,9 +965,11 @@ ritual from [Stage 2](#stage-2-version-control-and-the-end-of-phase-ritual).
 | [`04-more-sources-secrets.md`](04-more-sources-secrets.md) | Phase 2: web APIs, snapshots, the first API key, licences, the curated bridge | Stage 5 |
 | [`05-proteomics-uniprot.md`](05-proteomics-uniprot.md) | Phase 3: genes, proteins and enzymes, MIBiG's gene records, UniProt's ID mapping, what didn't match | Stage 6 |
 | [`05b-all-cluster-proteins.md`](05b-all-cluster-proteins.md) | Phase 3b: the FASTA format, pinning a file by your own fingerprint, curators' corrections, matching names without guessing, ID mapping at scale | Stage 6b |
-| `06-...` to `21-...` | One guide per later phase | As each stage arrives |
+| [`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md) | Phase 4: entity resolution, the ledger, a Pathogen as a kind of Organism, DuckDB and NetworkX | Stage 7 |
+| [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md) | Tested recipes for asking the database questions, SQL in ten minutes, and graph recipes in Python | Stage 7, and whenever you have a question for the graph |
+| `06b-...` to `21-...` | One guide per later phase | As each stage arrives |
 | [`curation/README.md`](../curation/README.md) | The bridge file's columns, the confidence scale, how to add a row | Stage 5, and whenever you add a finding |
-| [`tests/fixtures/README.md`](../tests/fixtures/README.md) | Where every test record came from, with fingerprints | Stages 5-6b, and when a source changes its format |
+| [`tests/fixtures/README.md`](../tests/fixtures/README.md) | Where every test record came from, with fingerprints | Stages 5-7, and when a source changes its format |
 | [`ROADMAP.md`](ROADMAP.md) | The plan, the reasons for every tool, the product checklist, the source changes being watched | Stage 0, per release, and when a probe names something new |
 | [`GIT-WORKFLOW.md`](GIT-WORKFLOW.md) | Commit messages, the branch flow, fixing git mistakes | Stage 2, and when stuck |
 | [`PRIOR-ART.md`](PRIOR-ART.md) | Related work and what this project does not claim | Stage 0 |
@@ -929,6 +1012,7 @@ mentions it in that same commit, and add a change-log line.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.6 | 2026-10-12 | Phase 4 built and run: Stage 7 rewritten around the new guide and the query cookbook, with three new pictures (six sources to one graph, the PubChem number check, and DuckDB beside NetworkX); a survey of the real tables showed that MIBiG's PubChem numbers need a second clue (34 give another formula, and isomers share numbers), which shaped the compound rules; the rulebook gains "a Pathogen is a kind of Organism"; Stage 7b (closing the gaps, Phase 4b) is added to the plan and is next; Stage 8 points at the first version of the jujube question; new troubleshooting rows for the resolver, the build and queries; the document map lists the Phase 4 guide and the cookbook. A check of the guide against the code before release tightened four things: the resolver now refuses to write if an identifier disappears without a ledger row (36 did, through the identical-sequence rule, now fixed); the build compares DuckDB with NetworkX before swapping the database in; what an open database does to a build is described per operating system; and the 325 PubChem joins the formula alone confirmed are listed (cookbook R19) and added to Stage 7b |
 | 1.5 | 2026-10-12 | Phase 3b built and run: Stage 6b rewritten around the new guide, with three new pictures (one protein record part by part, the three steps for each cluster, and the protein layer before and after); a survey of the real file showed it already includes the genes curators added but not their removals, and that its headers carry the locus tags and products that give 452 gene records a protein number; Stage 7 is next and lists what Stage 6b hands it; Stage 4 notes that the MIBiG fetch now brings two files; new troubleshooting rows for the protein file and for a newer MIBiG release; the document map lists the Phase 3b guide; Stage 23 points at the roadmap's watch list |
 | 1.4 | 2026-10-12 | Phase 3 built and run: Stage 6 rewritten around the new guide, with two new pictures (the protein layer, and asking UniProt); a survey of the real data showed UniProt doesn't cross-reference MIBiG and only 452 entries have gene records, so Stage 6b (every cluster's proteins, Phase 3b) is added to the plan and is next; Stage 4 notes that the MIBiG tidy now prints more counts; Stage 7 notes how proteins are joined; a troubleshooting row for UniProt; the document map lists the Phase 3 guide |
 | 1.3 | 2026-10-12 | Phase 2 built and run against the live services: Stage 5 rewritten around the new guide, with the first run's counts and two new pictures (the five sources, and where a key lives); the running example now ends at grey mould on jujube, the crop for which a paper tested surfactin; Stage 7 notes what Phase 2 hands to entity resolution; new troubleshooting rows for missing tables, API trouble, keys and bridge checks; the document map lists the Phase 2 guide, `curation/README.md` and `tests/fixtures/README.md` |

@@ -1112,12 +1112,12 @@ same choice Phase 1 made for activities that were tested and not seen.
 
 | Gap | How big | What happens to it |
 |---|---|---|
-| Gene records the file doesn't name | 59, in 9 entries (for example `baeB` in the bacillaene cluster BGC0001089, `mscA` in BGC0001019, and the three zealexin genes in BGC0002390); listed in `mibig_summary.json` | They keep their Phase 3 `mg.protein:` nodes, so in those 9 entries a protein can appear twice (once by gene name, once by number). Phase 4's ledger matches them using UniProt's gene names for the cluster's proteins, or MIBiG's GenBank file, and records each merge |
-| Removals the file doesn't name | 4, all maize genes in BGC0002390; listed | The zealexin cluster keeps 7 of the file's proteins (the 4 unresolved removals among them), plus zx5, zx6 and zx7 as gene-record nodes (row above), where the curators describe 3. Phase 4 resolves the four names through NCBI's gene records |
+| Gene records the file doesn't name | 59, in 9 entries (for example `baeB` in the bacillaene cluster BGC0001089, `mscA` in BGC0001019, and the three zealexin genes in BGC0002390); listed in `mibig_summary.json` | They keep their Phase 3 `mg.protein:` nodes, so in those 9 entries a protein can appear twice (once by gene name, once by number). Phase 4 matched 38 of them through UniProt's gene names for the cluster's proteins, recording each merge in its ledger; the other 21 wait for MIBiG's GenBank file in Phase 4b |
+| Removals the file doesn't name | 4, all maize genes in BGC0002390; listed | The zealexin cluster keeps 7 of the file's proteins (the 4 unresolved removals among them), plus zx5, zx6 and zx7 as gene-record nodes (row above), where the curators describe 3. Phase 4b resolves the four names through MIBiG's GenBank file, which links NCBI gene numbers to protein numbers |
 | Protein numbers UniProt can't map | 18,382 of the 39,053 numbers asked about (16,965 INSDC, 1,417 RefSeq), on UniProt release `2026_03` | Listed in `uniprot_summary.json`; their `ncbiprotein:` nodes stay, with MIBiG's product and the sequence fingerprint |
 | Proteins of pending entries | 6,978, in 199 entries | Left out on purpose, as for every pending entry; they would arrive only through a planned upgrade to a release in which those entries are active |
 | Sequences | 40,009 sequences of active entries (46,987 in the file) | Kept in the locker, not in the tables; each node has its length and MD5 |
-| MIBiG's GenBank file (`mibig_gbk_4.0.tar.gz`, 79.8 MB) | Not read | Not needed for the protein layer; Phase 4 may read it for the 59 unmatched gene records and 4 removals above |
+| MIBiG's GenBank file (`mibig_gbk_4.0.tar.gz`, 79.8 MB) | Not read | Not needed for the protein layer; Phase 4b reads it for the gene records and removals above that are still unmatched |
 | Jobs for the new proteins | 35,300 proteins come from the file alone | `ENCODES` only. A job needs a gene record (or, later, a cited source) |
 
 **MIBiG 5.0 is in testing.** The download server already offers
@@ -1229,7 +1229,7 @@ minutes).
 
 ---
 
-**Next:** Phase 4, `06-entity-resolution-graph-build.md`: entity resolution and
+**Next:** Phase 4, [`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md): entity resolution and
 the graph build. The proteins arrive there with everything it needs: the UniProt
 entries each `ncbiprotein:` node maps to, the sequence fingerprints, and the lists
 of gene records and removals this phase couldn't match. The plan is in the

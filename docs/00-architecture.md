@@ -95,8 +95,8 @@ SELECT name FROM compounds WHERE activity = 'antifungal';
 
 Read aloud, that's *give me the name column, from the compounds table, for rows
 where the activity is antifungal.* SQL is one of the most durable skills in data
-work (it was invented in the 1970s and is still everywhere), and you'll write
-your first real SQL in Phase 4.
+work (it was invented in the 1970s and is still everywhere), and you write your
+first real SQL in Phase 4, with the recipes in [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md).
 
 MicrobeGraph uses **DuckDB**, a database that is a single file sitting in your
 project folder. There's no server to install, and no account, password or cost.
@@ -251,13 +251,15 @@ and turned into rows: [`03-ingestion-mibig.md`](03-ingestion-mibig.md).
 PubChem is run by the US National Institutes of Health. Give it a compound's
 number (a **CID**) and it returns the molecular formula, the weight, the
 structure and a list of synonyms; give it a name and it can look the number up.
-Phase 2 asks about the CIDs MIBiG already records, and Phase 4 uses the name
-lookup for the rest.
+Phase 2 asks about the CIDs MIBiG already records; Phase 4 joins each one to
+MIBiG's compound where the name or the formula confirms it; and Phase 4b uses the
+name lookup for the rest.
 
 We need it for two reasons. First, it makes compounds *comparable*: every
 compound in the graph gets one canonical PubChem identity. Second, its synonym
-lists are the raw material for entity resolution in Layer 3. PubChem is how we
-learn that "surfactin" and "surfactin A" are the same molecule.
+lists are the raw material for entity resolution in Layer 3: MIBiG's
+"erythromycin A" is one of the names PubChem lists for compound 12560, which is
+how the two records are confirmed to be one molecule.
 
 **Access:** free, no account, no key. At most 5 requests a second.
 
@@ -457,7 +459,10 @@ real-world thing, and merging them into one node.
 
 1. **Prefer an official identifier.** Where a source gives a stable ID (a
    PubChem CID, an NCBI taxon ID, a MIBiG accession), that ID *is* the identity.
-   Numbers don't have spelling variants.
+   Numbers don't have spelling variants. But a number someone typed in can be
+   wrong, so when MIBiG gives a PubChem number, a second clue (the name or the
+   formula) must agree before the two records are joined: in the real data, some
+   of those numbers belong to other molecules.
 2. **Normalise text before comparing.** Lowercase, trim spaces, strip
    punctuation, so `Surfactin ` and `surfactin` stop being different.
 3. **Use official synonym lists.** PubChem publishes them; matching a name
@@ -465,14 +470,17 @@ real-world thing, and merging them into one node.
 4. **Write down every decision.** Each merge is recorded in a **resolution
    ledger**: what was merged, into what, and on what grounds.
 5. **Refuse to guess.** If two names are similar but no source confirms they're
-   the same, they stay separate and get flagged for review. A wrong merge is
+   the same, they stay separate, listed in the ledger, and wait for a person's
+   review (Phase 4b). A wrong merge is
    worse than a missed one, because a missed merge is visible (two dots where
    you expected one) while a wrong merge is invisible (one dot that quietly
    contains a lie).
 
 I treat the ledger as one of the project's outputs, alongside the graph itself.
 It answers the question "how do you know these are the same thing?", and people
-need that answered before they can rely on the graph.
+need that answered before they can rely on the graph. The rules, with the real
+numbers they produced, are in
+[`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md).
 
 ---
 
@@ -765,8 +773,8 @@ surfactin.*
 | 3 | Ingestion, `fetch()` | The release archive is downloaded, its checksum verified, and saved **unchanged** | `data/raw/mibig/mibig_json_4.0.tar.gz` |
 | 4 | Ingestion, provenance | A row records the source, version, time, fingerprints, record count, and licence | `data/raw/provenance.csv` |
 | 5 | Ingestion, `tidy()` | The entry's JSON is read from the archive and turned into rows that pass the twelve rules | `data/processed/staging/mibig_*.csv` |
-| 6 | Resolution | "Bacillus velezensis" → NCBI taxon ID; "surfactin" → PubChem CID; aliases merged | resolution ledger |
-| 7 | Storage (truth) | Two nodes and two edges are written, each with source and evidence level | `microbegraph.duckdb` |
+| 6 | Resolution | MIBiG's and NCBI's records of FZB42 become one node; MIBiG's protein number for srfAA joins its UniProt entry; old identifiers kept as aliases | `data/processed/resolution_ledger.csv` |
+| 7 | Storage (truth) | The nodes and edges are written, each with source and evidence level | `data/processed/microbegraph.duckdb` |
 | 8 | Storage (shape) | The same rows are loaded as dots and arrows | NetworkX graph in memory |
 | 9 | Analytics | Surfactin turns out to sit on many shortest paths, high betweenness | `artifacts/node_metrics.csv` |
 | 10 | Artifacts | The graph and metrics are saved as small files | `artifacts/` |

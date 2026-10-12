@@ -8,7 +8,14 @@ from __future__ import annotations
 import pytest
 
 from microbegraph import fetch, provenance
-from microbegraph.ontology import EDGE_TYPES, EVIDENCE_LEVELS, NODE_TYPES, is_valid_curie
+from microbegraph.ontology import (
+    EDGE_TYPES,
+    EVIDENCE_LEVELS,
+    NODE_TYPES,
+    SUBTYPE_OF,
+    is_a,
+    is_valid_curie,
+)
 from microbegraph.sources.base import slugify, write_files_together, write_table
 from microbegraph.validate import check_tables
 
@@ -17,6 +24,14 @@ from microbegraph.validate import check_tables
 def test_every_edge_type_connects_known_node_types():
     for edge_type, (start, end) in EDGE_TYPES.items():
         assert start in NODE_TYPES and end in NODE_TYPES, edge_type
+
+
+def test_a_pathogen_is_a_kind_of_organism_and_not_the_other_way_round():
+    assert is_a("Pathogen", "Organism") and is_a("Pathogen", "Pathogen")
+    assert not is_a("Organism", "Pathogen")
+    assert not is_a("Compound", "Organism")
+    for kind, parent in SUBTYPE_OF.items():
+        assert kind in NODE_TYPES and parent in NODE_TYPES
 
 
 def test_nine_nouns_ten_verbs_four_levels():
@@ -69,6 +84,19 @@ def good_tables():
 
 def test_good_tables_pass():
     assert check_tables(*good_tables()) == []
+
+
+def test_a_pathogen_may_harbour_a_cluster_but_an_organism_may_not_infect():
+    nodes, edges = good_tables()
+    nodes[0]["node_type"] = "Pathogen"              # Fusarium graminearum, say
+    assert check_tables(nodes, edges) == []
+
+    nodes, edges = good_tables()
+    nodes.append({"node_id": "mg.crop:wheat", "node_type": "Crop", "name": "wheat",
+                  "source": "test", "retrieved_at": "2026-10-10"})
+    edges[0].update(target_id="mg.crop:wheat", edge_type="INFECTS")
+    problems = check_tables(nodes, edges)
+    assert any(p.startswith("rule 8:") for p in problems), problems
 
 
 @pytest.mark.parametrize("break_it, rule", [

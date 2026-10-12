@@ -278,8 +278,8 @@ addresses. A table of matched numbers like this is called a **crosswalk**.
 So each gene record becomes a `Protein` node named after its sequence number,
 `ncbiprotein:CAE02630.1`, and each UniProt entry becomes a `Protein` node of its
 own, `uniprot:Q70KJ7`, which remembers the number it was found through
-(`mibig_protein_ids`). Phase 4 joins the two into one node, the same way it
-joins MIBiG's compounds to PubChem's.
+(`mibig_protein_ids`). Phase 4 joins the two into one node, named by the
+UniProt entry ([`06-entity-resolution-graph-build.md`, Step 6](06-entity-resolution-graph-build.md#10-step-6-proteins)).
 
 ### A job with a ticket number
 
@@ -869,7 +869,9 @@ twenty for the fetch.
 
    Five ids have two UniProt entries each. All five are RefSeq numbers, and in
    each pair one entry has an older accession (`G5JW76`, `Q0UI05`...) and one a
-   newer one (`A0A...`). Phase 4's ledger decides which entry each protein joins.
+   newer one (`A0A...`). Phase 4's ledger decides which entry each protein joins
+   (the reviewed one, where both are for the cluster's organism and as long as
+   MIBiG's sequence).
 
 3. **Run it again**, the same command:
 
