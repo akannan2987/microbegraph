@@ -60,6 +60,7 @@ from scratch, in public, and explaining each step as I go.
 - [Roadmap](#roadmap): three releases and nineteen phases, with a reason for each tool
 - [How this differs from existing work](#how-this-differs-from-existing-work)
 - [About the data (honesty notes)](#about-the-data-honesty-notes)
+- [Data sources and licences](#data-sources-and-licences): what each source supplies, its terms, how to cite it
 - [Repository map](#repository-map): every file, annotated
 - [How to run](#how-to-run)
 - [How I work on this repo (branch model)](#how-i-work-on-this-repo-branch-model)
@@ -89,13 +90,13 @@ A **knowledge graph** applies the same idea to facts instead of stations.
 Here's one chain of real-world biology written that way:
 
 ```
-Bacillus velezensis  --produces-->  surfactin  --inhibits-->  Botrytis cinerea  --infects-->  strawberry
+Bacillus velezensis  --produces-->  surfactin  --inhibits-->  Botrytis cinerea  --infects-->  jujube
 ```
 
 Read left to right, that says: *a soil bacterium makes a soapy molecule; that
-molecule suppresses grey-mould fungus; grey mould rots strawberries.* That's
+molecule suppresses grey-mould fungus; grey mould rots jujube fruit.* That's
 three facts, four dots and three arrows. Drawn like this, the chain lets you do
-something four separate spreadsheets can't: start at *strawberry* and walk
+something four separate spreadsheets can't: start at *jujube* and walk
 backwards to find every microbe that might protect it, even though no table
 anywhere has a "microbe → crop" column.
 
@@ -164,7 +165,7 @@ hard. Each of them is a documented, taught phase in this repo:
    identical once they're in a table. For a graph to be trustworthy, every arrow
    has to carry that difference.
 3. **The interesting questions are multi-hop.** "Which microbes might protect
-   strawberries?" is four arrows long and crosses four separate databases, none
+   jujube fruit?" is four arrows long and crosses four separate databases, none
    of which can answer it alone.
 
 Why does this matter? In developing biological crop protection, the bottleneck
@@ -272,11 +273,11 @@ before they exist.
 | Fact | Value |
 |---|---|
 | Primary real source | **MIBiG 4.0**: thousands of manually curated biosynthetic gene clusters, each linking an organism to the compound it produces ([Zenodo, CC-BY](https://doi.org/10.5281/zenodo.14169073)) |
-| Chemistry source | **PubChem** (NIH): formula, molecular weight, canonical name and synonyms for each compound |
-| Taxonomy source | **NCBI Taxonomy / Datasets**: the lineage of every organism, so "all *Bacillus*" is one query |
+| Chemistry source | **PubChem** (NIH): formula, weights, structure, synonyms, and KEGG and ChEBI numbers for each compound MIBiG gives a PubChem number |
+| Taxonomy source | **NCBI Taxonomy** (E-utilities): the lineage of every organism and pathogen, so "all *Bacillus*" is one query |
 | Protein source | **UniProt**: the enzymes encoded by each gene cluster, which turns two molecular layers into three |
-| Pathway source | **KEGG**: compound → pathway membership (attributed; academic use) |
-| Bridge layer (curated, disclosed) | compound → *inhibits* → pathogen → *infects* → crop, hand-assembled from published literature with a citation on every edge |
+| Pathway source | **KEGG**: compound → pathway membership (academic use only, so kept out of anything published) |
+| Bridge layer (curated, disclosed) | compound → *inhibits* → pathogen → *infects* → crop, hand-assembled from published literature with a citation on every edge ([`curation/`](curation/README.md)) |
 | Node types | 9. Organism, GeneCluster, **Protein**, Compound, CompoundClass, Activity, Pathogen, Crop, Pathway ([full spec](docs/02-ontology-and-data-model.md)) |
 | Edge types | 10. HARBORS, **ENCODES**, **CATALYZES**, PRODUCES, BELONGS_TO, HAS_ACTIVITY, INHIBITS, INFECTS, PARTICIPATES_IN, MEMBER_OF |
 | Molecular layers | 3: genomics (gene clusters) → proteomics (enzymes) → metabolomics (compounds), joined into one walkable structure |
@@ -314,9 +315,27 @@ means, matching the build log below. Nothing is shown before it exists.*
   ([`03-ingestion-mibig.md`](docs/03-ingestion-mibig.md)).
 
   ![Phase 1, end to end](docs/img/ingestion_flow.svg)
-- **Phases 2-9 (Release 1.0, the science):** *(pending)* more sources, the
-  proteomics layer, entity resolution, graph analytics, statistical validation in
-  R, graph machine learning, the app, GraphRAG.
+- **Phase 2. More sources, PubChem · NCBI Taxonomy · KEGG · the cited bridge:**
+  ✅ four more sources plug into the same socket, and nothing written in Phase 1
+  had to change. PubChem knew 1,171 of the 1,176 compounds MIBiG gives a PubChem
+  number, adding each one's formula, structure and other names. NCBI Taxonomy
+  answered for all 1,485 organisms and pathogens asked about (7 under a newer
+  number), which gives MIBiG's organisms a family tree of 2,441 nodes joined by
+  2,433 `MEMBER_OF` arrows. KEGG links 131 of those compounds to its pathway maps,
+  giving 85 `PARTICIPATES_IN` arrows to 39 maps, under its academic-use terms.
+  Answers from these live services are kept as dated snapshots with a provenance
+  row for every answer.
+  The curated bridge holds its first 8 cited findings from 6 papers, each checked
+  13 ways, including against NCBI's current names, and the worked example now
+  runs all the way to a crop: surfactin against grey mould on jujube. The
+  optional NCBI key lives in `.env` and is never printed, logged or committed.
+  144 offline tests, built from real captured answers
+  ([`04-more-sources-secrets.md`](docs/04-more-sources-secrets.md)).
+
+  ![Five sources, one graph](docs/img/sources_map.svg)
+- **Phases 3-9 (Release 1.0, the science):** *(pending)* the proteomics layer,
+  entity resolution, graph analytics, statistical validation in R, graph machine
+  learning, the app, GraphRAG.
 - **Phases 10-13 (Release 2.0, the platform):** *(pending)* dbt, PostgreSQL +
   Apache AGE + pgvector, Airflow, Snowflake portability.
 - **Phases 14-19 (Release 3.0, the product):** *(pending)* FastAPI, React +
@@ -352,7 +371,7 @@ tool is there, and says openly which one is the weakest fit.
 | # | Document | Adds | Status |
 |---|---|---|---|
 | 1 | [Ingestion: the MIBiG backbone](docs/03-ingestion-mibig.md) | `requests`, `tenacity`, checksums, evidence locker, provenance, tests, CI | ✅ |
-| 2 | More sources: PubChem · NCBI · KEGG | secrets handling, licence terms | ⬜ |
+| 2 | [More sources: PubChem · NCBI · KEGG · the cited bridge](docs/04-more-sources-secrets.md) | web APIs, snapshots, `.env` and API keys, licence terms, the curated bridge | ✅ |
 | 3 | The proteomics layer: UniProt | `Protein` nodes, three molecular layers | ⬜ |
 | 4 | Entity resolution & building the graph | DuckDB, NetworkX, the resolution ledger | ⬜ |
 | 5 | Graph analytics: paths, hubs, communities | `plotly`, `pyvis` | ⬜ |
@@ -403,6 +422,7 @@ Read them in this order:
 | 01 | [Setup](docs/01-setup.md) | Blank laptop → working workshop on Windows, macOS or RHEL 8 (Python, Git, `.venv`, GitHub, the `master`/`beta`/`develop` model) |
 | 02 | [Ontology & data model](docs/02-ontology-and-data-model.md) | What an ontology is; nine node types, ten edge types; CURIE identifiers; evidence on every arrow |
 | 03 | [Ingestion: the MIBiG backbone](docs/03-ingestion-mibig.md) | APIs, checksums, retries, the evidence locker, provenance, the twelve rules as code, tests, CI |
+| 04 | [More sources and secrets](docs/04-more-sources-secrets.md) | GET and POST, speed limits, API keys and `.env`, snapshots, licences, the cited bridge, tests from real answers |
 |  | [Roadmap](docs/ROADMAP.md) | The nineteen phases and three releases, the reason for each tool, and what "finished" means |
 |  | [Prior art](docs/PRIOR-ART.md) | What already exists, how this differs, and what it does not claim |
 |  | [Git workflow](docs/GIT-WORKFLOW.md) | The commit message convention, the branch flow, and what to do when something goes wrong |
@@ -411,7 +431,7 @@ Read them in this order:
 |  | [Containerization](docs/CONTAINERIZATION.md) | Packaging the whole application in a box: images, layers, volumes, networks, compose |
 |  | [Glossary](docs/GLOSSARY.md) | Every term in everyday language, grouped by section |
 
-Phase guides 04-21 arrive with their phases and are listed in the
+Phase guides 05-21 arrive with their phases and are listed in the
 [build log](#build-log) above.
 
 ---
@@ -436,6 +456,9 @@ without an internet connection, and they're made by
 | [The branch model](docs/img/git_branch_model.svg) | develop, beta and master, and the one push | setup, git workflow |
 | [The journey](docs/img/journey_map.svg) | every phase, its hours and its status | Handbook, roadmap |
 | [What a test run does](docs/img/ci_checks.svg) | the seven machines GitHub tests on, and the five steps on each | Phase 1, Handbook |
+| [Five sources, one graph](docs/img/sources_map.svg) | what each source needs first, its licence, and what it adds | Phase 2, Handbook |
+| [Where a key lives](docs/img/secrets_env.svg) | `.env`, the sealed trip to NCBI, and the gate in front of GitHub | Phase 2, Handbook |
+| [An API answer, kept](docs/img/api_snapshot.svg) | dated snapshots, the manifest written last, a provenance row per answer | Phase 2 |
 
 | Interactive page (download, then open) | What you can do |
 |---|---|
@@ -585,17 +608,40 @@ boundary clause by clause.*
   four small records in the MIBiG 4.0 layout so the tests can run offline: a
   cut-down copy of the real surfactin entry from the MIBiG 4.0 archive, and three
   records invented to exercise edge cases. Each one says what it is in its own
-  `comment` field. They are never part of the graph.
+  `comment` field. The Phase 2 records are real answers from PubChem, NCBI and
+  KEGG, captured on 2026-10-12, and
+  [`tests/fixtures/README.md`](tests/fixtures/README.md) lists each one with its
+  fingerprint. None of them is ever part of the graph.
 - **This project's own code and documentation are MIT-licensed** (see
   [`LICENSE`](LICENSE)). Anyone may use, modify and redistribute them, including
   commercially, provided the copyright notice is kept. I picked MIT because a
   repository written to teach isn't much use if people aren't clearly allowed to
   reuse it. The MIT licence covers *this repository's* work only; the upstream
   data carries its own terms, listed below.
-- **Licences are respected and recorded.** MIBiG data is CC-BY (attributed here
-  and in the app); KEGG is used under its academic-use terms with attribution;
-  PubChem and NCBI are public-domain US government resources. Each source
-  adapter records its licence in the provenance log.
+- **Licences are respected and recorded.** Each source adapter writes its
+  source's terms into every row of the provenance log, and the next section
+  lists them. KEGG is the one source that isn't open, so its rows stay on the
+  machine that fetched them.
+
+---
+
+## Data sources and licences
+
+Before reusing anything from this project, check the terms of the source it came
+from. The code and documentation here are MIT-licensed; the data is not mine to
+license.
+
+| Source | What it supplies | Terms | Please cite |
+|---|---|---|---|
+| [MIBiG 4.0](https://mibig.secondarymetabolites.org) | Gene clusters, their organisms, compounds and activities (Phase 1) | [CC BY 4.0](https://doi.org/10.5281/zenodo.14169073): reuse allowed, with credit | Zdouc MM et al. (2025) *Nucleic Acids Research* 53(D1):D678-D690, [doi:10.1093/nar/gkae1115](https://doi.org/10.1093/nar/gkae1115) |
+| [PubChem](https://pubchem.ncbi.nlm.nih.gov) | Compound identity: formula, weights, structure, synonyms, KEGG and ChEBI numbers (Phase 2) | NCBI places no restrictions on use; some depositors claim rights in what they contributed ([policy](https://www.ncbi.nlm.nih.gov/home/about/policies/)) | Kim S et al. (2025) *Nucleic Acids Research* 53(D1):D1516-D1525, [doi:10.1093/nar/gkae1059](https://doi.org/10.1093/nar/gkae1059) |
+| [NCBI Taxonomy](https://www.ncbi.nlm.nih.gov/taxonomy) | The family tree of organisms and pathogens (Phase 2) | NCBI places no restrictions on use. It is not an authority on scientific names | Schoch CL et al. (2020) *Database* baaa062, [doi:10.1093/database/baaa062](https://doi.org/10.1093/database/baaa062) |
+| [KEGG](https://www.kegg.jp) | Which pathway maps a compound appears on (Phase 2) | **Academic use by academic users only**; other use needs a commercial licence, and serving KEGG data to others needs a licence too ([terms](https://www.kegg.jp/kegg/legal.html)). Fetched locally, never published by this project | Kanehisa M et al. (2025) *Nucleic Acids Research* 53(D1):D672-D677, [doi:10.1093/nar/gkae909](https://doi.org/10.1093/nar/gkae909) |
+| [The curated bridge](curation/README.md) | Cited compound → pathogen → crop findings (Phase 2) | MIT, as part of this repository | The paper cited on each row |
+| UniProt | Enzymes encoded by each cluster (Phase 3) | Arrives with Phase 3 | Arrives with Phase 3 |
+
+The public app and the data release planned for Phase 9 publish only openly
+licensed data, so they will leave KEGG rows out.
 
 ---
 
@@ -620,6 +666,7 @@ microbegraph/
 ├── requirements-ml.txt              ← embedding libraries, only for Phase 7        ✅
 ├── requirements.lock.txt            ← exact versions known to work (pip freeze)    ✅
 ├── .env.example                     ← template for optional API keys (copy to .env) ✅
+├── .env                             ← your keys, if any. GITIGNORED, never committed
 ├── .gitignore                       ← what Git must never publish                 ✅
 ├── .github/workflows/ci.yml         ← tests on Windows, macOS, Linux, RHEL 8 at every push ✅
 ├── .streamlit/
@@ -638,9 +685,9 @@ microbegraph/
 │   ├── CONTAINERS.md            ← Docker · Podman · Prefect compared          ✅
 │   ├── CONTAINERIZATION.md      ← packaging the whole app in a box            ✅
 │   ├── 03-ingestion-mibig.md    ← Phase 1: evidence locker, provenance, tests ✅
-│   ├── 04..11                   ← Release 1.0: more sources, proteins, resolve,
-│   │                              analytics, R validation, graph ML, app,
-│   │                              GraphRAG                                    ⬜
+│   ├── 04-more-sources-secrets.md ← Phase 2: APIs, snapshots, keys, licences ✅
+│   ├── 05..11                   ← Release 1.0: proteins, resolve, analytics,
+│   │                              R validation, graph ML, app, GraphRAG       ⬜
 │   ├── 12..15                   ← Release 2.0: dbt, Postgres+AGE+pgvector,
 │   │                              Airflow, Snowflake                          ⬜
 │   ├── 16..21                   ← Release 3.0: FastAPI, React, MCP,
@@ -658,13 +705,19 @@ microbegraph/
 │   ├── paths.py                     ← where every file lives, on any computer     ✅
 │   ├── provenance.py                ← the append-only provenance log              ✅
 │   ├── validate.py                  ← the twelve rules of the rulebook, as code   ✅
+│   ├── settings.py                  ← private settings from .env; keys never shown ✅
+│   ├── staging.py                   ← read and write per-source tables, rules first ✅
 │   ├── fetch.py                     ← the ingestion command (probe / fetch / tidy) ✅
 │   ├── sources/                     ← one socket, many plugs
-│   │   ├── __init__.py              ← the list of plugged-in sources             ✅
+│   │   ├── __init__.py              ← the list of plugged-in sources, in run order ✅
 │   │   ├── base.py                  ← the socket: probe · fetch · tidy, politely  ✅
+│   │   ├── api.py                   ← shared by web APIs: snapshots, pacing       ✅
 │   │   ├── mibig.py                 ← Phase 1: MIBiG 4.0                          ✅
-│   │   └── ...                      ← PubChem · NCBI · KEGG · curated bridge ·
-│   │                                  UniProt (Phases 2-3)                        ⬜
+│   │   ├── pubchem.py               ← Phase 2: compound identity                  ✅
+│   │   ├── ncbi_taxonomy.py         ← Phase 2: the family tree                    ✅
+│   │   ├── kegg.py                  ← Phase 2: pathway maps (academic use)        ✅
+│   │   ├── curation.py              ← Phase 2: the cited bridge, checked 13 ways  ✅
+│   │   └── uniprot.py               ← Phase 3: the enzymes                        ⬜
 │   ├── resolve.py                   ← entity resolution + the resolution ledger   ⬜
 │   ├── build_graph.py               ← nodes/edges → DuckDB → NetworkX             ⬜
 │   ├── analytics.py                 ← paths, centrality, communities              ⬜
@@ -674,7 +727,8 @@ microbegraph/
 │   └── answer.py                    ← the GraphRAG answer layer (optional)        ⬜
 │
 ├── curation/                        ← the hand-curated bridge layer (versioned)
-│   └── compound_pathogen_crop.csv   ← one row = one cited literature fact         ⬜
+│   ├── README.md                    ← the columns, the confidence scale, adding a row ✅
+│   └── compound_pathogen_crop.csv   ← one row = one cited literature fact         ✅
 │
 ├── artifacts/                       ← small precomputed outputs the app reads
 │   ├── graph.graphml                ← the built graph, portable format            ⬜
@@ -711,14 +765,18 @@ microbegraph/
 │
 ├── tests/                           ← automated checks (pytest), grown each phase ✅
 │   ├── conftest.py                  ← shared helpers: sample archive, fake server ✅
+│   ├── fixtures/README.md           ← where every test record came from          ✅
+│   ├── fixtures/capture_samples.py  ← captures real answers for the tests        ✅
 │   ├── fixtures/mibig/              ← four test records in the MIBiG 4.0 layout   ✅
+│   ├── fixtures/pubchem/, ncbi_taxonomy/, kegg/ ← real answers, byte for byte    ✅
 │   └── test_*.py                    ← the promises the code makes, one test each  ✅
 ├── notebooks/                       ← optional exploratory notebooks              ⬜
 │
 ├── data/                            ← NOT in Git; rebuilt by the pipeline
 │   ├── raw/                         ← the evidence locker: untouched downloads
 │   │   ├── provenance.csv           ← what was fetched, from where, when
-│   │   └── mibig/                   ← mibig_json_4.0.tar.gz, exactly as published
+│   │   ├── mibig/                   ← mibig_json_4.0.tar.gz, exactly as published
+│   │   └── pubchem/, ncbi_taxonomy/, kegg/ ← one dated snapshot folder per fetch
 │   └── processed/
 │       ├── staging/                 ← per-source tables: mibig_nodes.csv, ...
 │       └── ...                      ← nodes.csv, edges.csv, microbegraph.duckdb (Phase 4)
@@ -755,7 +813,7 @@ or secret, and secrets never go into version control.
 
 ## How to run
 
-*The commands marked Phase 1 work today. The others arrive with their phases,
+*The commands marked Phases 1-2 work today. The others arrive with their phases,
 so for now this shows the shape the finished project will take. The
 [Handbook](docs/HANDBOOK.md) goes through each of them in order.*
 
@@ -788,8 +846,9 @@ pytest                                 # the automated checks
 # pip install -r requirements.lock.txt
 
 # Build everything on your laptop
-python -m microbegraph.fetch --probe        # Phase 1: see what's available, free
-python -m microbegraph.fetch --all          # Phase 1: download, verify, tidy
+cp .env.example .env                        # optional NCBI key (Windows: copy ...)
+python -m microbegraph.fetch --probe        # Phases 1-2: see what's available, free
+python -m microbegraph.fetch --all          # Phases 1-2: download, verify, tidy
 python -m microbegraph.resolve              # Phase 4: merge aliases
 python -m microbegraph.build_graph          # Phase 4: DuckDB + NetworkX
 python -m microbegraph.analytics            # Phase 5: paths, hubs, communities

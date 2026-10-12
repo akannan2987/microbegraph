@@ -1,0 +1,191 @@
+<?xml version="1.0" ?>
+<!DOCTYPE TaxaSet PUBLIC "-//NLM//DTD Taxon, 14th January 2002//EN" "https://www.ncbi.nlm.nih.gov/entrez/query/DTD/taxon.dtd">
+<TaxaSet><Taxon>
+    <TaxId>435890</TaxId>
+    <ScientificName>Uronemita filifica</ScientificName>
+    <OtherNames>
+        <Synonym>Uronema filificum</Synonym>
+        <Synonym>Uronemella filificum</Synonym>
+        <Synonym>Uronemita filificum</Synonym>
+        <Name>
+            <ClassCDE>authority</ClassCDE>
+            <DispName>Uronema filificum Kahl, 1931</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>authority</ClassCDE>
+            <DispName>Uronemella filificum (Kahl, 1931) Song &amp; Wilbert, 2002</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>authority</ClassCDE>
+            <DispName>Uronemita filifica (Kahl, 1931) Jankowski, 1980</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>authority</ClassCDE>
+            <DispName>Uronemita filificum Kahl 1931</DispName>
+        </Name>
+    </OtherNames>
+    <ParentTaxId>1984870</ParentTaxId>
+    <Rank>species</Rank>
+    <Division>Invertebrates</Division>
+    <GeneticCode>
+        <GCId>6</GCId>
+        <GCName>Ciliate Nuclear; Dasycladacean Nuclear; Hexamita Nuclear</GCName>
+    </GeneticCode>
+    <MitoGeneticCode>
+        <MGCId>4</MGCId>
+        <MGCName>Mold Mitochondrial; Protozoan Mitochondrial; Coelenterate Mitochondrial; Mycoplasma; Spiroplasma</MGCName>
+    </MitoGeneticCode>
+    <Lineage>cellular organisms; Eukaryota; Sar; Alveolata; Ciliophora; Intramacronucleata; Oligohymenophorea; Scuticociliatia; Philasterida; Uronematidae; Uronemita</Lineage>
+    <LineageEx>
+        <Taxon>
+            <TaxId>131567</TaxId>
+            <ScientificName>cellular organisms</ScientificName>
+            <Rank>cellular root</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2759</TaxId>
+            <ScientificName>Eukaryota</ScientificName>
+            <Rank>domain</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2698737</TaxId>
+            <ScientificName>Sar</ScientificName>
+            <Rank>clade</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>33630</TaxId>
+            <ScientificName>Alveolata</ScientificName>
+            <Rank>clade</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>5878</TaxId>
+            <ScientificName>Ciliophora</ScientificName>
+            <Rank>phylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>431838</TaxId>
+            <ScientificName>Intramacronucleata</ScientificName>
+            <Rank>subphylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>6020</TaxId>
+            <ScientificName>Oligohymenophorea</ScientificName>
+            <Rank>class</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>35094</TaxId>
+            <ScientificName>Scuticociliatia</ScientificName>
+            <Rank>subclass</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>198613</TaxId>
+            <ScientificName>Philasterida</ScientificName>
+            <Rank>order</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>35105</TaxId>
+            <ScientificName>Uronematidae</ScientificName>
+            <Rank>family</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1984870</TaxId>
+            <ScientificName>Uronemita</ScientificName>
+            <Rank>genus</Rank>
+        </Taxon>
+    </LineageEx>
+    <Properties>
+        <Property>
+            <PropName>pgcode</PropName>
+            <PropValueInt>11</PropValueInt>
+        </Property>
+    </Properties>
+    <CreateDate>2007/04/04 13:04:43</CreateDate>
+    <UpdateDate>2026/09/22 09:03:36</UpdateDate>
+    <PubDate>2007/04/17 18:00:24</PubDate>
+    <AkaTaxIds>
+        <TaxId>2056260</TaxId>
+    </AkaTaxIds>
+</Taxon>
+<Taxon>
+    <TaxId>326423</TaxId>
+    <ScientificName>Bacillus velezensis FZB42</ScientificName>
+    <OtherNames>
+        <Synonym>Bacillus amyloliquefaciens FZB42</Synonym>
+        <Synonym>Bacillus amyloliquefaciens subsp. plantarum FZB42</Synonym>
+        <Synonym>Bacillus methylotrophicus FZB42</Synonym>
+    </OtherNames>
+    <ParentTaxId>492670</ParentTaxId>
+    <Rank>strain</Rank>
+    <Division>Bacteria</Division>
+    <GeneticCode>
+        <GCId>11</GCId>
+        <GCName>Bacterial, Archaeal and Plant Plastid</GCName>
+    </GeneticCode>
+    <MitoGeneticCode>
+        <MGCId>0</MGCId>
+        <MGCName>Unspecified</MGCName>
+    </MitoGeneticCode>
+    <Lineage>cellular organisms; Bacteria; Bacillati; Bacillota; Bacilli; Caryophanales; Bacillaceae; Bacillus; Bacillus subtilis group; Bacillus amyloliquefaciens group; Bacillus velezensis</Lineage>
+    <LineageEx>
+        <Taxon>
+            <TaxId>131567</TaxId>
+            <ScientificName>cellular organisms</ScientificName>
+            <Rank>cellular root</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2</TaxId>
+            <ScientificName>Bacteria</ScientificName>
+            <Rank>domain</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1783272</TaxId>
+            <ScientificName>Bacillati</ScientificName>
+            <Rank>kingdom</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1239</TaxId>
+            <ScientificName>Bacillota</ScientificName>
+            <Rank>phylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>91061</TaxId>
+            <ScientificName>Bacilli</ScientificName>
+            <Rank>class</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1385</TaxId>
+            <ScientificName>Caryophanales</ScientificName>
+            <Rank>order</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>186817</TaxId>
+            <ScientificName>Bacillaceae</ScientificName>
+            <Rank>family</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1386</TaxId>
+            <ScientificName>Bacillus</ScientificName>
+            <Rank>genus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>653685</TaxId>
+            <ScientificName>Bacillus subtilis group</ScientificName>
+            <Rank>species group</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1938374</TaxId>
+            <ScientificName>Bacillus amyloliquefaciens group</ScientificName>
+            <Rank>species subgroup</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>492670</TaxId>
+            <ScientificName>Bacillus velezensis</ScientificName>
+            <Rank>species</Rank>
+        </Taxon>
+    </LineageEx>
+    <CreateDate>2005/04/27 16:56:25</CreateDate>
+    <UpdateDate>2016/04/01 17:33:10</UpdateDate>
+    <PubDate>2005/05/02 18:00:31</PubDate>
+</Taxon>
+
+</TaxaSet>

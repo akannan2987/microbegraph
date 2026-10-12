@@ -287,8 +287,7 @@ top to bottom.
 | # | Phase | Commit message |
 |---|---|---|
 | 1 | Ingestion: MIBiG | `feat: add MIBiG source adapter with evidence locker and provenance log` (with a second `-m` for the description; see [`03-ingestion-mibig.md`, section 19](03-ingestion-mibig.md#19-committing-this-phase)) |
-| 2 | PubChem · NCBI · KEGG | `feat: add PubChem, NCBI Taxonomy and KEGG adapters` |
-| 2 | The cited curated bridge | `feat: add the cited compound-pathogen-crop bridge` |
+| 2 | PubChem · NCBI · KEGG · the cited bridge | `feat: add PubChem, NCBI Taxonomy and KEGG adapters and the cited bridge` (with a second `-m`; see [`04-more-sources-secrets.md`, section 19](04-more-sources-secrets.md#19-committing-this-phase)) |
 | 3 | UniProt proteins | `feat: add UniProt adapter and the protein layer` |
 | 4 | Entity resolution & build | `feat: add entity resolution, resolution ledger, and graph build` |
 | 5 | Graph analytics | `feat: add path finding, centrality, and community detection` |
@@ -349,6 +348,9 @@ pattern:
 | Deleted something unused | `refactor: remove the unused notebooks folder` |
 | Corrected your own earlier mistake | `fix: correct stale phase numbers in the README` |
 | Moved the test workflow to newer action versions | `ci: move checkout and setup-python to v7` |
+| Added a cited row to the curated bridge | `feat: add surfactin vs grey mould on jujube to the bridge` |
+| Corrected a bridge row | `fix: use NCBI's current name for the take-all fungus` |
+| Refreshed the captured test answers | `test: refresh the PubChem samples after a format change` |
 
 The last row is worth a second look. Committing a correction to your own work is
 completely normal, and to anyone reading the history it shows care. I find a
@@ -527,6 +529,14 @@ git restore --staged path/to/file     # take it out of the basket
 Then add the right pattern to `.gitignore` and re-run the gate. **Never commit
 past a failing gate.** The check exists for exactly the kind of mistake that
 can't be undone.
+
+**If it names a key** (check 2, "No key-shaped strings"): take the key out of
+that file and keep it only in `.env`. If the gate caught it before any push, the
+key never left your computer and that's the end of it. If the key was ever
+pushed, replace it at the service straight away (for NCBI: Account settings,
+API Key Management), because removing it from the repository afterwards doesn't
+remove the copies people may already have
+([`04-more-sources-secrets.md`, Step 3](04-more-sources-secrets.md#7-step-3-your-first-api-key-optional)).
 
 ### `git push` was rejected
 

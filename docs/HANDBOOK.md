@@ -4,9 +4,10 @@
 
 ![MicrobeGraph: from a microbe's genes to a crop's disease, with the evidence for every arrow](img/cover_microbegraph.svg)
 
-**Handbook version:** 1.2 · **Last updated:** 2026-10-11 · **Repository state it
-describes:** Phase 0 (design and setup) and Phase 1 (MIBiG ingestion) built and
-tested; Phase 2 (more sources) next.
+**Handbook version:** 1.3 · **Last updated:** 2026-10-12 · **Repository state it
+describes:** Phase 0 (design and setup), Phase 1 (MIBiG ingestion) and Phase 2
+(PubChem, NCBI Taxonomy, KEGG and the cited bridge) built and tested; Phase 3
+(the proteomics layer) next.
 
 **Read this document first, and come back to it whenever you lose your place.**
 It follows the whole journey in order: understanding the project, setting up a
@@ -51,9 +52,9 @@ the repository exactly as it stood on the date at the top.
 
 ## The project in one minute
 
-**The scenario.** Picture a strawberry grower who is losing fruit to grey mould,
-a fungus called *Botrytis cinerea*, and who would rather not spray more synthetic
-fungicide. Some soil bacteria make natural molecules that suppress fungi, so the
+**The scenario.** Picture a jujube grower who is losing harvested fruit to grey
+mould, a fungus called *Botrytis cinerea*, and who would rather not spray more
+synthetic fungicide. Some soil bacteria make natural molecules that suppress fungi, so the
 grower's question is: which bacteria, making which molecules, have evidence behind
 them for *this* disease?
 
@@ -62,7 +63,7 @@ which bacterium carries which gene cluster and what molecule it makes, another
 knows the molecule's chemistry, and another knows how organisms are related. The
 last link, "this molecule suppresses that fungus", lives mostly in the text of
 scientific papers, so there is no single place where you can walk from the
-strawberry back to the bacterium.
+jujube back to the bacterium.
 
 **The idea.** MicrobeGraph puts every piece into one **knowledge graph**, with dots
 for things (microbes, gene clusters, enzymes, molecules, diseases, crops) and
@@ -101,8 +102,8 @@ for the same plan.
 | 2 | Version control and the end-of-phase ritual | 0 | 30 min | ✅ | [`GIT-WORKFLOW.md`](GIT-WORKFLOW.md) |
 | 3 | The rulebook: ontology and data model | 0 | 1 h | ✅ | [`02-ontology-and-data-model.md`](02-ontology-and-data-model.md) |
 | 4 | Ingestion: the MIBiG backbone | 1 | 7-9 h | ✅ | [`03-ingestion-mibig.md`](03-ingestion-mibig.md) |
-| 5 | More sources: PubChem, NCBI Taxonomy, KEGG, the curated bridge | 2 | 6-8 h | ⏳ next | `04-more-sources-secrets.md` |
-| 6 | The proteomics layer: UniProt | 3 | 5-7 h | ⬜ | `05-proteomics-uniprot.md` |
+| 5 | More sources: PubChem, NCBI Taxonomy, KEGG, the curated bridge | 2 | 6-8 h | ✅ | [`04-more-sources-secrets.md`](04-more-sources-secrets.md) |
+| 6 | The proteomics layer: UniProt | 3 | 5-7 h | ⏳ next | `05-proteomics-uniprot.md` |
 | 7 | Entity resolution and the graph build | 4 | 10-12 h | ⬜ | `06-entity-resolution-graph-build.md` |
 | 8 | Graph analytics | 5 | 8-10 h | ⬜ | `07-graph-analytics.md` |
 | 9 | Statistical validation in R | 6 | 6-8 h | ⬜ | `08-statistical-validation-r.md` |
@@ -343,27 +344,63 @@ with machine learning and a public app. This release is complete on its own.*
 
 ## Stage 5. More sources (Phase 2)
 
-**What.** Four more sources plug into the same socket: PubChem (each
-compound's identity, formula and synonyms), NCBI Taxonomy (every organism's family
-tree), KEGG (biochemical pathways), and the **curated bridge**
-([`curation/compound_pathogen_crop.csv`](../curation/compound_pathogen_crop.csv)).
-The bridge holds the cited compound → pathogen → crop rows that no public database
-provides, each one with a DOI, loaded at `curated_literature`. This is also where
-your first optional API key appears (for NCBI); it goes into `.env` and **never
-into the repository**. You record each source's licence in the provenance log and
-add a short *data sources and licences* section to the README.
+![Five sources, one graph: what each needs first, its licence, and what it adds](img/sources_map.svg)
 
-**Why.** The socket from Phase 1 gets its first real test here: four new sources
-arrive and nothing downstream has to change. Without the bridge rows the chain
-couldn't reach a crop at all, and the loader's citation rule (rule 10) refuses any
-bridge row that has no citation.
+**What.** Follow [`04-more-sources-secrets.md`](04-more-sources-secrets.md). Four
+more sources plug into the socket from Phase 1:
 
-**Open:** `04-more-sources-secrets.md` (arrives with the phase);
-[`01-setup.md`, Step 9](01-setup.md#11-step-9-protect-your-secrets-before-you-have-any) for `.env`.
-**Checkpoint:** the staging tables for every source pass the twelve rules, `--probe`
-reports all five sources, and every row of the bridge file has a real citation.
-**Commit message:** `feat: add PubChem, NCBI Taxonomy and KEGG adapters` (and, for
-the bridge, `feat: add the cited compound-pathogen-crop bridge`).
+* **PubChem** gives each compound MIBiG numbered a precise chemical identity:
+  formula, weight, structure, its other names, and its numbers in KEGG and ChEBI.
+* **NCBI Taxonomy** gives every organism its family tree, as `MEMBER_OF` arrows
+  from strain to species to genus and on up.
+* **KEGG** places compounds on its maps of metabolism (`PARTICIPATES_IN`).
+* **The curated bridge**, [`curation/compound_pathogen_crop.csv`](../curation/compound_pathogen_crop.csv),
+  holds the cited findings no database publishes: which compound acts against
+  which crop pathogen. Its first eight rows, from six papers, add the
+  `INHIBITS` and `INFECTS` arrows, so the chain finally reaches a crop.
+
+This is also where the project meets its first **API key**: NCBI's free, optional
+key, which lives in `.env` on your computer and never in the repository.
+
+```bash
+python -m microbegraph.fetch --list                # five sources, each with its licence
+python -m microbegraph.fetch --probe               # what is out there? (no download)
+python -m microbegraph.fetch --all                 # fetch and tidy all five, in order
+python -m microbegraph.fetch --tidy-only --all     # rebuild every table, offline
+pytest                                             # 144 promises, checked
+```
+
+**Why.** The socket gets its first real test: four sources arrive and nothing
+written in Phase 1 has to change. Three new habits join the four from Phase 1.
+An answer from an API changes from day to day, so each fetch is kept as a dated
+**snapshot**, with its own provenance rows. A key is a secret, so it is read from
+`.env`, shown only as "set", and sent only inside a request's body. And a
+licence is part of the data: KEGG is for academic use only, so its rows stay on
+your machine and out of anything published.
+
+![Where a key lives, and where it never goes](img/secrets_env.svg)
+
+**New ideas in this stage:** web APIs, GET and POST, speed limits, API keys,
+environment variables and `.env`, snapshots and manifests, sources that build on
+each other, licence terms, taxonomy ranks and lineages, synonyms, test records
+captured from real answers.
+
+**Open:** [`04-more-sources-secrets.md`](04-more-sources-secrets.md);
+[`curation/README.md`](../curation/README.md) for adding a bridge row;
+[`01-setup.md`, Step 9](01-setup.md#11-step-9-protect-your-secrets-before-you-have-any) for how `.env` was protected.
+**Checkpoint:** `pytest` passes; `data/raw/` holds one finished snapshot each
+for PubChem, NCBI Taxonomy and KEGG; `data/processed/staging/` holds the tables of
+all five sources; `git status` never lists `.env`; the **Actions** tab is green.
+**What you should get:** on the first run (2026-10-12), PubChem knew 1,171 of
+the 1,176 compounds asked about; NCBI answered for all 1,485 taxids, giving
+2,441 organism nodes and 2,433 `MEMBER_OF` arrows; KEGG gave 85
+`PARTICIPATES_IN` arrows to 39 maps. The bridge gives exactly 8 rows, 7
+`INHIBITS` and 7 `INFECTS` arrows from 6 papers, every row confirmed against
+NCBI. The live sources may give slightly different counts on another day; the
+sanity checks are in
+[`04-more-sources-secrets.md`, Step 10](04-more-sources-secrets.md#14-step-10-run-it-for-real).
+**Commit message:** `feat: add PubChem, NCBI Taxonomy and KEGG adapters and the cited bridge`.
+**Estimated time:** 6-8 hours.
 
 ---
 
@@ -387,8 +424,10 @@ rules, and the surfactin cluster shows its synthetase enzymes.
 ## Stage 7. Entity resolution and the graph build (Phase 4)
 
 **What.** Decide when two names are one thing ("surfactin", "surfactin A",
-`npatlas:NPA018495`), write every merge decision in a **resolution ledger**, match
-compounds to PubChem identities, then load the merged tables into DuckDB (the
+`npatlas:NPA018495`), write every merge decision in a **resolution ledger**, join
+MIBiG's compounds to the PubChem compounds from Phase 2 (each one records which
+MIBiG compound gave its number) and look the rest up by name, move organisms whose
+NCBI numbers were merged, then load the merged tables into DuckDB (the
 single source of truth) and rebuild the NetworkX graph from it. The twelve rules
 run on everything, and any failure stops the build. This stage also produces the
 first `QUERY_COOKBOOK.md`, a collection of tested SQL recipes.
@@ -396,7 +435,8 @@ first `QUERY_COOKBOOK.md`, a collection of tested SQL recipes.
 **Why.** This step decides whether you end up with a graph you can trust or one
 that looks fine while being quietly wrong. A wrong merge does more harm than a
 missed one, so the engine refuses to guess. It's also the stage where an organism
-that is both a producer and a crop pathogen (some *Fusarium* species are) gets
+that is both a producer and a crop pathogen (*Botrytis cinerea* and some
+*Fusarium* species are; Phase 2 counts them as `pathogens_also_organisms`) gets
 caught by rule 1, and you resolve it on purpose.
 
 **Open:** `06-entity-resolution-graph-build.md`; the rules in
@@ -408,7 +448,7 @@ explains every merge. **Commit message:** `feat: add entity resolution, resoluti
 
 ## Stage 8. Graph analytics (Phase 5)
 
-**What.** Find evidence paths (the strawberry question, walked backwards), hubs
+**What.** Find evidence paths (the jujube question, walked backwards), hubs
 (centrality), bridges and communities, then draw the first interactive network
 views.
 
@@ -680,6 +720,11 @@ ritual from [Stage 2](#stage-2-version-control-and-the-end-of-phase-ritual).
 | `pip` fails with compiler errors | [`01-setup.md`, T11](01-setup.md#t11-pip-fails-to-build-a-package-with-c-compiler-errors) (usually a too-new Python) |
 | Behind a company proxy or firewall | [`01-setup.md`, T12](01-setup.md#t12-corporate-proxy--firewall-blocks-pip) |
 | A download fails or a checksum does not match | [`03-ingestion-mibig.md`, section 17](03-ingestion-mibig.md#17-what-could-go-wrong) |
+| "... is missing, and ... builds on it" | A source ran before the one it needs; [`04-more-sources-secrets.md`, section 17](04-more-sources-secrets.md#17-what-could-go-wrong) |
+| PubChem, NCBI or KEGG refuses, is busy, or sends something odd | [`04-more-sources-secrets.md`, section 17](04-more-sources-secrets.md#17-what-could-go-wrong) |
+| The probe says `API key : not set` although you made `.env` | [`04-more-sources-secrets.md`, Step 3](04-more-sources-secrets.md#7-step-3-your-first-api-key-optional) |
+| A key was published by mistake | Replace it at the service first: [`04-more-sources-secrets.md`, Step 3](04-more-sources-secrets.md#7-step-3-your-first-api-key-optional) |
+| The bridge refuses a row ("check ...") | [`curation/README.md`](../curation/README.md); the check numbers are in [`04-more-sources-secrets.md`, Step 8](04-more-sources-secrets.md#12-step-8-the-curated-bridge) |
 | A test fails | The test's name says which promise broke; the phase guide's *What could go wrong* table |
 | `$'\r': command not found` from the safety gate (Windows) | [`01-setup.md`, T14](01-setup.md#t14-bash-check-public-safesh-fails-with-r-command-not-found-windows) |
 | The Actions tab shows no run after a push | [`03-ingestion-mibig.md`, *Starting a run by hand*](03-ingestion-mibig.md#starting-a-run-by-hand) |
@@ -706,7 +751,10 @@ ritual from [Stage 2](#stage-2-version-control-and-the-end-of-phase-ritual).
 | [`01-setup.md`](01-setup.md) | Blank computer to working workshop, three operating systems | Stage 1 |
 | [`02-ontology-and-data-model.md`](02-ontology-and-data-model.md) | The rulebook: nodes, edges, identifiers, evidence, twelve rules | Stage 3 |
 | [`03-ingestion-mibig.md`](03-ingestion-mibig.md) | Phase 1: the evidence locker, provenance, tests, CI | Stage 4 |
-| `04-...` to `21-...` | One guide per later phase | As each stage arrives |
+| [`04-more-sources-secrets.md`](04-more-sources-secrets.md) | Phase 2: web APIs, snapshots, the first API key, licences, the curated bridge | Stage 5 |
+| `05-...` to `21-...` | One guide per later phase | As each stage arrives |
+| [`curation/README.md`](../curation/README.md) | The bridge file's columns, the confidence scale, how to add a row | Stage 5, and whenever you add a finding |
+| [`tests/fixtures/README.md`](../tests/fixtures/README.md) | Where every test record came from, with fingerprints | Stage 5, and when a source changes its format |
 | [`ROADMAP.md`](ROADMAP.md) | The plan, the reasons for every tool, the product checklist | Stage 0, and per release |
 | [`GIT-WORKFLOW.md`](GIT-WORKFLOW.md) | Commit messages, the branch flow, fixing git mistakes | Stage 2, and when stuck |
 | [`PRIOR-ART.md`](PRIOR-ART.md) | Related work and what this project does not claim | Stage 0 |
@@ -749,6 +797,7 @@ mentions it in that same commit, and add a change-log line.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3 | 2026-10-12 | Phase 2 built and run against the live services: Stage 5 rewritten around the new guide, with the first run's counts and two new pictures (the five sources, and where a key lives); the running example now ends at grey mould on jujube, the crop for which a paper tested surfactin; Stage 7 notes what Phase 2 hands to entity resolution; new troubleshooting rows for missing tables, API trouble, keys and bridge checks; the document map lists the Phase 2 guide, `curation/README.md` and `tests/fixtures/README.md` |
 | 1.2 | 2026-10-11 | After Phase 1: the test workflow moved to version 7 of `actions/checkout` and `actions/setup-python`, each job now stops after 20 minutes, and the code checkout leaves no login behind. Stage 4 gains "Looking after the automatic tests" with a new picture of what a run does; the troubleshooting map covers a push that starts no run and the version warnings |
 | 1.1 | 2026-10-11 | Corrections from the first full run of Phase 1 on a Phase 0 checkout. `src/microbegraph/__init__.py` is new in Phase 1, not carried over from Phase 0. The unused top-level `sources/` and `figures/` folders are removed with `git rm`. New troubleshooting entry for `ModuleNotFoundError` during `pip install -e .`. The Phase 1 guide's probe output is now a real run against Zenodo, with the archive size as the program prints it (9.5 MB). The real MIBiG 4.0 archive is not gzip-compressed despite its name, so archives are now read by their contents, and a fetch logs the file it filed even if it then can't open it. MIBiG 4.0 writes activity names in two styles; both are now read, curators' comments are kept on the compound as `activity_notes`, and the surfactin test record is a cut-down copy of the real one. The Phase 1 checkpoint now gives the expected counts |
 | 1.0 | 2026-10-10 | First edition: Stages 0-4 complete (design, setup, rulebook, MIBiG ingestion); Stages 5-23 described from the roadmap; journey map, setup loop, branch model, ontology and evidence pictures added |

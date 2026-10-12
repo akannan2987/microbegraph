@@ -121,27 +121,45 @@ tables pass all twelve rules; `pytest` passes offline; the Actions tab is green.
 
 ---
 
-## Phase 2. More sources: PubChem · NCBI Taxonomy · KEGG
+## Phase 2. More sources: PubChem · NCBI Taxonomy · KEGG ✅
+
+**Status:** built and tested. Guide: [`04-more-sources-secrets.md`](04-more-sources-secrets.md).
 
 **What gets built:** three more adapters plugged into the same socket, the
 **curated bridge** loader (`curation/compound_pathogen_crop.csv`, every row cited,
-entering at `curated_literature`), the first real use of the secrets setup from
-[`01-setup.md`](01-setup.md) (an optional NCBI key in `.env`, never the
-repository), and a *data sources and licences* section in the README listing each
-source's terms.
+entering at `curated_literature`, checked thirteen ways), the first real use of
+the secrets setup from [`01-setup.md`](01-setup.md) (an optional NCBI key in
+`.env`, never the repository), and a *data sources and licences* section in the
+README listing each source's terms and how to cite it. Answers from live web
+services are kept as dated **snapshots**, with a provenance row for every answer.
 
-**Why:** this phase is the first real test of the framework. Three new sources
-arrive and nothing downstream has to change, which is what the contract from
-Phase 1 was for.
+**Why:** this phase is the first real test of the framework. Four new sources
+arrive and nothing written in Phase 1 has to change, which is what the contract
+was for.
 
 **Why these three:** PubChem gives every compound a stable identity and a synonym
 list (the raw material Phase 4 needs); NCBI Taxonomy gives the lineage ladder that
 makes "all *Bacillus*" a single query; KEGG adds pathway context, so chemically
 unrelated compounds that share a biological process become connected.
 
-**New concepts:** API keys and why they're secrets, the environment as a place to
-store configuration, licence terms as a real constraint (KEGG is academic-use with
-attribution and must not be bulk-scraped).
+**New concepts:** web APIs, GET and POST, speed limits, API keys and why they're
+secrets, the environment as a place to store configuration, snapshots of answers
+that change, sources that build on each other, licence terms as a real
+constraint (KEGG's API is for academic use by academic users only), test records
+captured from real answers.
+
+**New tools:** `python-dotenv` (first real use).
+
+**Checkpoint:** a finished snapshot each for PubChem, NCBI Taxonomy and KEGG in
+`data/raw/`; staging tables for all five sources that pass the twelve rules; the
+bridge passing all thirteen checks against NCBI; `.env` never tracked; the
+Actions tab green.
+
+**Handed on to later phases:** PubChem compounds remember which MIBiG compound
+gave their number, for Phase 4 to join; taxids NCBI merged or deleted are listed
+for Phase 4; a pathogen that is also a producer (*Botrytis cinerea*) is counted
+for Phase 4 to reconcile; KEGG rows are excluded from the public app and data
+release in Phase 9.
 
 **Effort:** ~6-8 hours.
 
@@ -198,9 +216,17 @@ grounds. The ledger answers "how do you know these are the same thing?", and
 trusting anything else the graph says depends on being able to answer that.
 
 **A case it must handle on purpose:** an organism that is both a producer (from
-MIBiG) and a crop pathogen (from the bridge). Some *Fusarium* species are both.
-If both sources use the same identifier, rule 1 (unique `node_id`) stops the
-build, and the ledger records how the two roles were reconciled.
+MIBiG) and a crop pathogen (from the bridge). *Botrytis cinerea* and some
+*Fusarium* species are both, and Phase 2 already counts them
+(`pathogens_also_organisms`). If both sources use the same identifier, rule 1
+(unique `node_id`) stops the build, and the ledger records how the two roles were
+reconciled.
+
+**What Phase 2 hands over:** each PubChem compound lists the MIBiG compounds that
+gave its number (`mibig_compound_ids`), so most compound joins are exact; the
+rest are looked up by name. Taxids NCBI has merged are listed old → new in
+`ncbi_taxonomy_summary.json`, and MIBiG's organisms are moved to the current
+number, with the move written in the ledger.
 
 **New concepts:** entity resolution, normalisation before comparison, why a wrong
 merge is worse than a missed one, validation that *refuses* rather than warns,
@@ -222,7 +248,7 @@ spent.
 **What gets built:** evidence-path finding, degree and betweenness centrality,
 community detection, and the first interactive network visualisations.
 
-**Why:** this is where the graph starts *answering* questions. The strawberry
+**Why:** this is where the graph starts *answering* questions. The jujube
 question (walk backwards from a crop to candidate microbes) works for the first
 time here, and every path comes with its own evidence chain attached.
 
@@ -490,7 +516,9 @@ up and put down: one-command setup scripts (`scripts/setup.sh` for macOS, Linux
 and RHEL 8, `scripts/setup.ps1` for Windows), `docs/HOSTING.md` (how and where the
 app is hosted), `docs/UNINSTALL.md` (how to remove everything cleanly),
 `CONTRIBUTING.md`, `CITATION.cff` (how to cite the project), a versioned data
-release of `nodes.csv` and `edges.csv` with its own DOI, release notes from
+release of `nodes.csv` and `edges.csv` with its own DOI (openly licensed sources
+only: KEGG's terms don't allow redistribution, so its rows are left out of the
+release and the public app), release notes from
 `CHANGELOG.md`, and the `v1.0.0` tag.
 
 **GraphRAG in one line:** answer a question by *walking the graph* to collect the
@@ -983,7 +1011,9 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | | A resolution ledger explaining every merge | Phase 4 |
 | | Null-model statistics and a second-language cross-check | Phase 6 |
 | | Predictions stored as `inferred`, never mixed with evidence | Phase 7 |
-| | Data sources and licences listed, attribution in the app | Phase 2, Phase 8 |
+| | Data sources and licences listed, attribution in the app | ✅ Phase 2, Phase 8 |
+| | Secrets kept out of the repository: `.env`, a safety gate that catches key-shaped text | ✅ Phase 0, first key in Phase 2 |
+| | Answers from live services kept as dated snapshots, one provenance row per answer | ✅ Phase 2 |
 | **Engineering** | Installable package, bounded dependencies, lockfile | ✅ Phase 0-1 |
 | | Automated tests on Windows, macOS, Linux and RHEL 8 at every push | ✅ Phase 1 |
 | | One-command setup scripts per operating system | Phase 9 |

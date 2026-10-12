@@ -211,7 +211,7 @@ estimated at 20-40% of global production.
 Yet **essentially none of it is downloadable as structured data.** It exists as
 prose: sentences in papers, written for humans. There is no public table you can
 query with *"which compounds have reported activity against
-Botrytis cinerea on strawberry, and which organisms produce them?"*
+Botrytis cinerea on jujube, and which organisms produce them?"*
 
 Imagine every restaurant review ever written existing only as flowing
 paragraphs, with no ratings, cuisine tags or price fields. All the knowledge

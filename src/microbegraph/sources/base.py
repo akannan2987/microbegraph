@@ -2,9 +2,9 @@
 MicrobeGraph, the contract every data source follows.
 
 THE BIG IDEA: ONE SOCKET, MANY PLUGS
-    MicrobeGraph reads from several public databases: MIBiG now, then PubChem,
-    NCBI Taxonomy, KEGG and UniProt, plus our own curated file. Each one has
-    its own website, file format and rules.
+    MicrobeGraph reads from several public databases: MIBiG, PubChem, NCBI
+    Taxonomy and KEGG now, UniProt next, plus our own curated file. Each one
+    has its own website, file format and rules.
 
     Instead of writing a separate, tangled script for each, this file defines
     ONE shape that every source must fit, and each source becomes a small
@@ -23,12 +23,13 @@ THE CONTRACT: THREE VERBS
 
     fetch()  "Bring it home, untouched."  Downloads the raw data into the
              EVIDENCE LOCKER (data/raw/<source>/), checks it arrived intact,
-             and writes one row to the PROVENANCE LOG. It never edits
-             anything.
+             and writes a row to the PROVENANCE LOG for every file it saves.
+             It never edits anything.
 
-    tidy()   "Make it fit our rulebook."  Reads ONLY what is already in the
-             locker, never the internet, and writes rows shaped exactly like
-             docs/02-ontology-and-data-model.md describes, into
+    tidy()   "Make it fit our rulebook."  Reads ONLY what is already on your
+             machine (the locker, plus the staging tables of any source it
+             builds on), never the internet, and writes rows shaped exactly
+             like docs/02-ontology-and-data-model.md describes, into
              data/processed/staging/<source>_nodes.csv and _edges.csv.
 
     Keeping fetch() and tidy() apart is more useful than it might look.
@@ -244,7 +245,8 @@ class Source(ABC):
             reraise=True,
         )
 
-    def http_get(self, url: str, *, stream: bool = False) -> requests.Response:
+    def http_get(self, url: str, *, params: dict[str, str] | None = None,
+                 stream: bool = False) -> requests.Response:
         """
         One polite GET request, retried only when retrying could help.
 
@@ -255,12 +257,37 @@ class Source(ABC):
         """
         for attempt in self._retrying():
             with attempt:
-                return self._get_once(url, stream=stream)
+                return self._get_once(url, params=params, stream=stream)
         raise AssertionError("unreachable: tenacity either returns or re-raises")
 
-    def _get_once(self, url: str, *, stream: bool = False) -> requests.Response:
+    def http_post(self, url: str, data: dict[str, str]) -> requests.Response:
+        """
+        One polite POST request, with the same retry rules as http_get().
+
+        A POST carries its details in the request BODY instead of the web
+        address. That matters twice over here: a list of 200 identifiers is
+        too long for an address, and a key in the body never appears in an
+        error message, a log or a browser history, while a key in an address
+        can turn up in all three.
+        """
+        for attempt in self._retrying():
+            with attempt:
+                return self._check(url, self.session.post(url, data=data, timeout=TIMEOUT))
+        raise AssertionError("unreachable: tenacity either returns or re-raises")
+
+    def _get_once(self, url: str, *, params: dict[str, str] | None = None,
+                  stream: bool = False) -> requests.Response:
         """A single GET, turning HTTP refusals into clear errors. No retrying here."""
-        response = self.session.get(url, stream=stream, timeout=TIMEOUT)
+        return self._check(url, self.session.get(url, params=params, stream=stream,
+                                                 timeout=TIMEOUT))
+
+    def _check(self, url: str, response: requests.Response) -> requests.Response:
+        """
+        Turn an HTTP refusal into an error a person can act on.
+
+        The message names the address WITHOUT its query or body, so nothing
+        sent along with the request (an identifier list, a key) is repeated.
+        """
         if response.status_code == 429 or response.status_code >= 500:
             response.close()
             raise TransientHTTPError(

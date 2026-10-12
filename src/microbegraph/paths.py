@@ -26,6 +26,10 @@ THE LAYOUT
 
     data/ is never committed to Git. The pipeline rebuilds it on demand,
     and that rebuild is also how you know the pipeline works.
+
+    Sources answered by a web API (PubChem, NCBI Taxonomy, KEGG, from Phase 2)
+    keep one folder per fetch inside their shelf, named by the moment it
+    started, for example data/raw/pubchem/2026-10-12T055202Z/.
 """
 
 from __future__ import annotations
@@ -41,6 +45,13 @@ RAW_DIR: Path = DATA_DIR / "raw"
 PROCESSED_DIR: Path = DATA_DIR / "processed"
 STAGING_DIR: Path = PROCESSED_DIR / "staging"
 PROVENANCE_LOG: Path = RAW_DIR / "provenance.csv"
+
+# Things that ARE in the repository (unlike data/, which never is).
+CURATION_DIR: Path = REPO_ROOT / "curation"
+BRIDGE_FILE: Path = CURATION_DIR / "compound_pathogen_crop.csv"
+
+# Your private settings, such as API keys. Never in the repository.
+ENV_FILE: Path = REPO_ROOT / ".env"
 
 
 def relative_to_repo(path: Path) -> str:

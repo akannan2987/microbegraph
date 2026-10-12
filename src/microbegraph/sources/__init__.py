@@ -5,19 +5,35 @@ Every adapter is registered here by its short name. The fetch command
 (src/microbegraph/fetch.py) reads this list, so a new source becomes usable
 as soon as it's added below, without touching any other file.
 
-    Phase 1   mibig       gene clusters, organisms, compounds, activities
-    Phase 2   pubchem, ncbi_taxonomy, kegg, curation       (planned)
-    Phase 3   uniprot                                       (planned)
+    Phase 1   mibig           gene clusters, organisms, compounds, activities
+    Phase 2   pubchem         compound identity, structure and other names
+              ncbi_taxonomy   the family tree above organisms and pathogens
+              kegg            which pathway maps compounds appear on
+              curation        the cited bridge: compound -> pathogen -> crop
+    Phase 3   uniprot         (planned)
+
+THE ORDER MATTERS
+    Later sources build on earlier ones: PubChem asks about MIBiG's compound
+    numbers, KEGG reads PubChem's KEGG numbers, the bridge is checked against
+    MIBiG and NCBI. `--all` runs them in the order written below.
 """
 
 from __future__ import annotations
 
 from microbegraph.sources.base import Source
+from microbegraph.sources.curation import CurationSource
+from microbegraph.sources.kegg import KeggSource
 from microbegraph.sources.mibig import MibigSource
+from microbegraph.sources.ncbi_taxonomy import NcbiTaxonomySource
+from microbegraph.sources.pubchem import PubchemSource
 
 # name -> adapter class. Order is the order sources run in.
 SOURCES: dict[str, type[Source]] = {
     MibigSource.name: MibigSource,
+    PubchemSource.name: PubchemSource,
+    NcbiTaxonomySource.name: NcbiTaxonomySource,
+    KeggSource.name: KeggSource,
+    CurationSource.name: CurationSource,
 }
 
 

@@ -1,0 +1,53 @@
+{
+  "PropertyTable": {
+    "Properties": [
+      {
+        "CID": 811,
+        "MolecularFormula": "C5H6O4",
+        "MolecularWeight": "130.10",
+        "SMILES": "C=C(CC(=O)O)C(=O)O",
+        "ConnectivitySMILES": "C=C(CC(=O)O)C(=O)O",
+        "InChIKey": "LVHBHZANLOWSRM-UHFFFAOYSA-N",
+        "IUPACName": "2-methylidenebutanedioic acid",
+        "MonoisotopicMass": "130.02660867",
+        "Title": "Itaconic acid"
+      },
+      {
+        "CID": 5281917,
+        "MolecularFormula": "C43H42ClN3O13",
+        "MolecularWeight": "844.3",
+        "SMILES": "CC1(C(C(C(C(O1)O[C@]23C=CC=C2C#C/C/4=C\\C#C[C@H]3OC5=C(C=C(C=C5Cl)[C@H](CC(=O)OC[C@@H]4OC(=O)C6=C7C(=CC(=C6)OC)OC(=C)C(=O)N7)N)O)O)O)N(C)C)C",
+        "ConnectivitySMILES": "CC1(C(C(C(C(O1)OC23C=CC=C2C#CC4=CC#CC3OC5=C(C=C(C=C5Cl)C(CC(=O)OCC4OC(=O)C6=C7C(=CC(=C6)OC)OC(=C)C(=O)N7)N)O)O)O)N(C)C)C",
+        "InChIKey": "DGGZCXUXASNDAC-VXNBTGQKSA-N",
+        "IUPACName": "[(1R,7S,12R,13E,20R)-7-amino-4-chloro-20-[5-(dimethylamino)-3,4-dihydroxy-6,6-dimethyloxan-2-yl]oxy-25-hydroxy-9-oxo-2,10-dioxatetracyclo[11.7.3.23,6.016,20]pentacosa-3(25),4,6(24),13(23),16,18-hexaen-14,21-diyn-12-yl] 7-methoxy-2-methylidene-3-oxo-4H-1,4-benzoxazine-5-carboxylate",
+        "MonoisotopicMass": "843.2406161",
+        "Title": "C-1027 Chromophore"
+      },
+      {
+        "CID": 16132390,
+        "MolecularFormula": "C129H208N36O41S3",
+        "MolecularWeight": "3015.5",
+        "SMILES": "CC[C@H](C)[C@@H](C(=O)N[C@@H](C)C(=O)NCC(=O)N[C@@H](C)C(=O)NCC(=O)O)NC(=O)CNC(=O)[C@H](CC(=O)O)NC(=O)[C@@H]1CCCN1C(=O)[C@H]([C@@H](C)CC)NC(=O)[C@@H]2CCCN2C(=O)CNC(=O)[C@H](CC(=O)O)NC(=O)[C@H](C(C)C)NC(=O)[C@H](CC(C)C)NC(=O)[C@H](CS)NC(=O)[C@H](C)NC(=O)[C@H](C)NC(=O)CNC(=O)[C@H]([C@@H](C)CC)NC(=O)[C@H](CO)NC(=O)[C@H](CS)NC(=O)[C@H]([C@@H](C)O)NC(=O)[C@H](C)NC(=O)[C@H](CS)NC(=O)CNC(=O)[C@H](CCCCN)NC(=O)[C@H](CC(=O)N)NC(=O)CNC(=O)[C@H](CC3=CNC4=CC=CC=C43)NC(=O)[C@H](CC(C)C)NC(=O)CNC(=O)[C@H](CC(C)C)NC(=O)CN",
+        "ConnectivitySMILES": "CCC(C)C(C(=O)NC(C)C(=O)NCC(=O)NC(C)C(=O)NCC(=O)O)NC(=O)CNC(=O)C(CC(=O)O)NC(=O)C1CCCN1C(=O)C(C(C)CC)NC(=O)C2CCCN2C(=O)CNC(=O)C(CC(=O)O)NC(=O)C(C(C)C)NC(=O)C(CC(C)C)NC(=O)C(CS)NC(=O)C(C)NC(=O)C(C)NC(=O)CNC(=O)C(C(C)CC)NC(=O)C(CO)NC(=O)C(CS)NC(=O)C(C(C)O)NC(=O)C(C)NC(=O)C(CS)NC(=O)CNC(=O)C(CCCCN)NC(=O)C(CC(=O)N)NC(=O)CNC(=O)C(CC3=CNC4=CC=CC=C43)NC(=O)C(CC(C)C)NC(=O)CNC(=O)C(CC(C)C)NC(=O)CN",
+        "InChIKey": "NRQODXJXWWUXFE-LYQFAKRDSA-N",
+        "IUPACName": "(3S)-3-[[(2S)-1-[(2S,3S)-2-[[(2S)-1-[2-[[(2S)-2-[[(2S)-2-[[(2S)-2-[[(2R)-2-[[(2S)-2-[[(2S)-2-[[2-[[(2S,3S)-2-[[(2S)-2-[[(2R)-2-[[(2S,3R)-2-[[(2S)-2-[[(2R)-2-[[2-[[(2S)-6-amino-2-[[(2S)-4-amino-2-[[2-[[(2S)-2-[[(2S)-2-[[2-[[(2S)-2-[(2-aminoacetyl)amino]-4-methylpentanoyl]amino]acetyl]amino]-4-methylpentanoyl]amino]-3-(1H-indol-3-yl)propanoyl]amino]acetyl]amino]-4-oxobutanoyl]amino]hexanoyl]amino]acetyl]amino]-3-sulfanylpropanoyl]amino]propanoyl]amino]-3-hydroxybutanoyl]amino]-3-sulfanylpropanoyl]amino]-3-hydroxypropanoyl]amino]-3-methylpentanoyl]amino]acetyl]amino]propanoyl]amino]propanoyl]amino]-3-sulfanylpropanoyl]amino]-4-methylpentanoyl]amino]-3-methylbutanoyl]amino]-3-carboxypropanoyl]amino]acetyl]pyrrolidine-2-carbonyl]amino]-3-methylpentanoyl]pyrrolidine-2-carbonyl]amino]-4-[[2-[[(2S,3S)-1-[[(2S)-1-[[2-[[(2S)-1-(carboxymethylamino)-1-oxopropan-2-yl]amino]-2-oxoethyl]amino]-1-oxopropan-2-yl]amino]-3-methyl-1-oxopentan-2-yl]amino]-2-oxoethyl]amino]-4-oxobutanoic acid",
+        "MonoisotopicMass": "3013.4459837",
+        "Title": "SboA protein, Bacillus subtilis"
+      },
+      {
+        "CID": 102196435,
+        "MolecularFormula": "C22H15Cl2N3O4",
+        "MolecularWeight": "456.3",
+        "SMILES": "CN1C(=O)C2(C3=C(C4=C(C2(C1=O)OC)C5=C(N4)C=C(C=C5)Cl)NC6=C3C=CC(=C6)Cl)O",
+        "ConnectivitySMILES": "CN1C(=O)C2(C3=C(C4=C(C2(C1=O)OC)C5=C(N4)C=C(C=C5)Cl)NC6=C3C=CC(=C6)Cl)O",
+        "InChIKey": "AFSTYHWLXPLSTJ-UHFFFAOYSA-N",
+        "IUPACName": "6,20-dichloro-11-hydroxy-15-methoxy-13-methyl-3,13,23-triazahexacyclo[14.7.0.02,10.04,9.011,15.017,22]tricosa-1(16),2(10),4(9),5,7,17(22),18,20-octaene-12,14-dione",
+        "MonoisotopicMass": "455.0439614",
+        "Title": "6,20-Dichloro-11-hydroxy-15-methoxy-13-methyl-3,13,23-triazahexacyclo[14.7.0.02,10.04,9.011,15.017,22]tricosa-1(16),2(10),4(9),5,7,17(22),18,20-octaene-12,14-dione"
+      },
+      {
+        "CID": 406870990
+      }
+    ]
+  }
+}

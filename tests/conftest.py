@@ -16,6 +16,10 @@ WHY THE TESTS NEVER TOUCH THE INTERNET
     a small archive from the four records in tests/fixtures/mibig/ and stand
     in a fake server that answers from memory. The real download is checked
     by hand, once, on your machine (docs/03-ingestion-mibig.md, Step 8).
+
+    From Phase 2 the fake server answers with REAL answers, captured once
+    from PubChem, NCBI and KEGG and kept in tests/fixtures/<source>/.
+    tests/fixtures/README.md says where each one came from.
 """
 
 from __future__ import annotations
@@ -34,6 +38,19 @@ import requests
 from microbegraph.sources.mibig import FILENAME, MibigSource
 
 FIXTURES = Path(__file__).parent / "fixtures" / "mibig"
+
+
+@pytest.fixture(autouse=True)
+def never_read_your_real_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Every test runs without reading your real .env file, so a key you keep
+    there can never end up inside a test run (or its output). "autouse" means
+    pytest applies this to every test without being asked. Tests about
+    settings pass their own temporary .env file instead.
+    """
+    import microbegraph.fetch
+
+    monkeypatch.setattr(microbegraph.fetch, "load_settings", lambda *args, **kwargs: False)
 
 
 def build_archive(target: Path, extra: dict[str, bytes] | None = None,
@@ -96,12 +113,16 @@ class FakeResponse:
     like a connection dropping halfway through a download."""
 
     def __init__(self, status: int = 200, body: bytes = b"", json_body: Any = None,
-                 break_after: int | None = None) -> None:
+                 break_after: int | None = None, headers: dict[str, str] | None = None) -> None:
         self.status_code = status
         self._body = json.dumps(json_body).encode() if json_body is not None else body
-        self.headers = {"Content-Length": str(len(self._body))}
+        self.headers = {"Content-Length": str(len(self._body)), **(headers or {})}
         self.closed = False
         self.break_after = break_after
+
+    @property
+    def content(self) -> bytes:
+        return self._body
 
     def json(self) -> Any:
         return json.loads(self._body)
@@ -124,15 +145,28 @@ class FakeSession:
     `script` maps a URL to a list of answers, used in order. An answer is a
     FakeResponse, or an exception to raise (to imitate a dropped connection).
     Every call is recorded in `calls`, so a test can check how many requests
-    were made, which is how we prove "no download happened".
+    were made, which is how we prove "no download happened". What each
+    request carried (its query or its POST body) is kept in `sent`, so a
+    test can check, for example, that a key never travels in the address.
     """
 
     def __init__(self, script: dict[str, list[Any]]) -> None:
         self.script = {url: list(answers) for url, answers in script.items()}
         self.headers: dict[str, str] = {}
         self.calls: list[str] = []
+        self.sent: list[tuple[str, str, dict[str, str]]] = []
 
-    def get(self, url: str, stream: bool = False, timeout: Any = None) -> FakeResponse:
+    def get(self, url: str, params: dict[str, str] | None = None, stream: bool = False,
+            timeout: Any = None) -> FakeResponse:
+        self.sent.append(("GET", url, dict(params or {})))
+        return self._answer(url)
+
+    def post(self, url: str, data: dict[str, str] | None = None,
+             timeout: Any = None) -> FakeResponse:
+        self.sent.append(("POST", url, dict(data or {})))
+        return self._answer(url)
+
+    def _answer(self, url: str) -> FakeResponse:
         self.calls.append(url)
         answers = self.script.get(url)
         if not answers:
@@ -145,3 +179,81 @@ class FakeSession:
 
 def md5_of(data: bytes) -> str:
     return hashlib.md5(data).hexdigest()
+
+
+# --- Phase 2 helpers: the API sources -----------------------------------------------
+PHASE2_FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def fixture_bytes(source: str, name: str) -> bytes:
+    """A real captured answer from tests/fixtures/<source>/ (see the README there)."""
+    return (PHASE2_FIXTURES / source / name).read_bytes()
+
+
+def write_mibig_staging(staging_dir: Path, compounds: dict[str, str | None] | None = None,
+                        organisms: list[str] | None = None) -> Path:
+    """
+    A small mibig_nodes.csv, standing in for the Phase 1 output that the
+    Phase 2 sources build on. `compounds` maps a compound id to its PubChem
+    CID (or None); `organisms` lists NCBI taxids.
+    """
+    from microbegraph.sources.base import NODE_COLUMNS, write_table
+
+    rows = []
+    for node_id, cid in (compounds or {}).items():
+        props = {"pubchem_cid": int(cid)} if cid else {}
+        rows.append({"node_id": node_id, "node_type": "Compound",
+                     "name": node_id.split(":", 1)[1], "properties": json.dumps(props),
+                     "source": "mibig", "retrieved_at": "2026-10-10"})
+    for taxid in organisms or []:
+        rows.append({"node_id": f"ncbitaxon:{taxid}", "node_type": "Organism",
+                     "name": f"organism {taxid}", "properties": "{}",
+                     "source": "mibig", "retrieved_at": "2026-10-10"})
+    path = staging_dir / "mibig_nodes.csv"
+    write_table(path, NODE_COLUMNS, rows)
+    return path
+
+
+def make_snapshot(locker: Path, files: dict[str, bytes], asked_for: dict[str, Any],
+                  context: dict[str, Any] | None = None,
+                  started_at: str = "2026-10-12T05:52:02Z",
+                  source_version: str = "test") -> Path:
+    """
+    A finished snapshot folder built straight from captured answers, the way
+    fetch() would have left it, so tidy() can be tested on its own.
+    """
+    folder = locker / started_at.replace(":", "")
+    folder.mkdir(parents=True)
+    answers = []
+    for name, body in files.items():
+        (folder / name).write_bytes(body)
+        answers.append({"file": name, "method": "POST", "url": "https://example.org",
+                        "sent": {}, "n_bytes": len(body),
+                        "sha256": hashlib.sha256(body).hexdigest(), "n_records": ""})
+    manifest = {"source": locker.name, "started_at": started_at, "finished_at": started_at,
+                "source_version": source_version, "licence": "", "asked_for": asked_for,
+                "context": context or {}, "answers": answers, "notes": {}}
+    (folder / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    return folder
+
+
+@pytest.fixture
+def make_source(tmp_path: Path) -> Callable[..., Any]:
+    """A factory for any adapter class, living entirely inside a temporary folder."""
+
+    def _make(cls: type, session: Any = None, **kwargs: Any) -> Any:
+        from microbegraph.sources.api import ApiSource
+
+        if issubclass(cls, ApiSource):
+            kwargs.setdefault("pause_seconds", 0)     # never really wait in a test
+        kwargs.setdefault("quiet", True)
+        return cls(
+            raw_dir=tmp_path / "raw",
+            staging_dir=tmp_path / "staging",
+            provenance_log=tmp_path / "raw" / "provenance.csv",
+            session=session,
+            retry_wait_seconds=0,
+            **kwargs,
+        )
+
+    return _make

@@ -59,15 +59,16 @@ NODE_TEXT = {
     "Protein": ("An enzyme encoded by the cluster: the machine that performs one chemical step.",
                 "Phase 3 (UniProt)"),
     "Compound": ("The molecule the cluster makes.",
-                 "Phase 1 (MIBiG); matched to PubChem identities in Phase 4"),
+                 "Phase 1 (MIBiG); PubChem identities in Phase 2, joined to MIBiG's in Phase 4"),
     "CompoundClass": ("A family of chemically related molecules.",
-                      "Phase 1 (when MIBiG gives one) and Phase 2 (PubChem)"),
+                      "Phase 1 (MIBiG, when it gives one)"),
     "Activity": ("What a molecule has been seen to do: antibacterial, antifungal, surfactant...",
                  "Phase 1 (MIBiG)"),
     "Pathogen": ("An organism that causes a plant disease.",
-                 "Phase 2 (the cited curated bridge, with NCBI Taxonomy identifiers)"),
+                 "Phase 2 (the cited curated bridge; name, lineage and group from NCBI Taxonomy)"),
     "Crop": ("A cultivated plant that the disease harms.", "Phase 2 (the cited curated bridge)"),
-    "Pathway": ("A chain of biochemical reactions the molecule takes part in.", "Phase 2 (KEGG)"),
+    "Pathway": ("A chain of biochemical reactions the molecule takes part in.",
+                "Phase 2 (KEGG; only the maps our compounds appear on)"),
 }
 
 EDGE_TEXT = {
@@ -75,7 +76,7 @@ EDGE_TEXT = {
     "ENCODES": ("The cluster's genes are the instructions for the protein.", "UniProt, Phase 3"),
     "CATALYZES": ("The protein performs a step in making the molecule.", "UniProt, Phase 3"),
     "PRODUCES": ("The cluster is known to make the molecule: the direct shortcut.", "MIBiG, Phase 1"),
-    "BELONGS_TO": ("The molecule is a member of a chemical family.", "MIBiG Phase 1, PubChem Phase 2"),
+    "BELONGS_TO": ("The molecule is a member of a chemical family.", "MIBiG, Phase 1"),
     "HAS_ACTIVITY": ("The molecule has been seen to do this.", "MIBiG, Phase 1"),
     "INHIBITS": ("The molecule suppresses the pathogen.",
                  "the cited curated bridge, Phase 2 (always with a citation)"),
@@ -294,7 +295,7 @@ CHAIN_NODES = [
     ("mg.activity:antibacterial", "Activity", "antibacterial", 400, 380),
     ("mg.activity:surfactant", "Activity", "surfactant", 740, 380),
     ("ncbitaxon:40559", "Pathogen", "Botrytis cinerea (grey mould)", 820, 150),
-    ("mg.crop:strawberry", "Crop", "strawberry", 1070, 150),
+    ("mg.crop:jujube", "Crop", "jujube", 1070, 150),
 ]
 CHAIN_EDGES = [
     ("ncbitaxon:326423", "mibig:BGC0000433", "HARBORS", "curated_experimental", "mibig",
@@ -306,9 +307,9 @@ CHAIN_EDGES = [
     ("mg.compound:surfactin", "mg.activity:surfactant", "HAS_ACTIVITY", "database_assertion",
      "mibig", "BGC0000433", "", "0.50", False),
     ("mg.compound:surfactin", "ncbitaxon:40559", "INHIBITS", "curated_literature", "curation",
-     "compound_pathogen_crop.csv", "(a real DOI, added with the row in Phase 2)", "0.70", True),
-    ("ncbitaxon:40559", "mg.crop:strawberry", "INFECTS", "curated_literature", "curation",
-     "compound_pathogen_crop.csv", "(a real DOI, added with the row in Phase 2)", "0.90", True),
+     "compound_pathogen_crop.csv", "doi:10.1186/s13568-023-01543-w", "0.90", True),
+    ("ncbitaxon:40559", "mg.crop:jujube", "INFECTS", "curated_literature", "curation",
+     "compound_pathogen_crop.csv", "doi:10.1186/s13568-023-01543-w", "0.90", True),
 ]
 LEVEL_STYLE = {"curated_experimental": (4.5, ""), "database_assertion": (3, ""),
                "curated_literature": (2.2, ""), "inferred": (2, "7 6")}
@@ -367,7 +368,7 @@ def evidence_chain() -> str:
                       "on_path"], e)) for e in CHAIN_EDGES]
     body = f"""
 <h1>One chain, every arrow with its evidence</h1>
-<p class="lede">From a soil bacterium to a strawberry disease. Hover or focus an arrow to see where it
+<p class="lede">From a soil bacterium to grey mould on jujube fruit. Hover or focus an arrow to see where it
 came from. Untick an evidence level to hide those arrows, and watch what still connects: this is the
 "show me only what is actually known" filter the app gets in Phase 8.</p>
 <div class="controls" role="group" aria-label="Evidence filters">{boxes}</div>
@@ -378,8 +379,10 @@ came from. Untick an evidence level to hide those arrows, and watch what still c
 <th>source_record_id</th><th>citation</th><th class="num">confidence</th></tr>{rows}</table>
 <p class="muted">The four MIBiG rows are what Phase 1 writes from the public entry BGC0000433 on its
 own, which MIBiG grades "questionable" (hence confidence 0.50). Other surfactin entries in the full
-release can add their record numbers and citations to the same arrows. The two curation rows illustrate the cited bridge
-that arrives in Phase 2; the real rows carry a real citation, and the loader rejects any that do not.</p>
+release can add their record numbers and citations to the same arrows. The two curation rows come
+from one row of the cited bridge (Phase 2): Xiao et al. (2023) found that purified surfactin inhibited
+<i>Botrytis cinerea</i> and reduced grey mould on harvested winter jujube. The bridge refuses any row
+without a citation.</p>
 </details>"""
     script = f"""
 const EDGES = {json.dumps(data)};
@@ -392,7 +395,7 @@ function summary() {{
   const pathLen = EDGES.filter(e => e.on_path).length;
   if (visible.length < pathLen) {{
     panel.innerHTML = `<h2>The chain is broken</h2><p>With the hidden levels removed, nothing connects
-      the bacterium to the strawberry any more. That gap is information: it shows exactly which kind of
+      the bacterium to the jujube any more. That gap is information: it shows exactly which kind of
       evidence the connection depends on.</p>`;
     return;
   }}

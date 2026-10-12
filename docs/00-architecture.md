@@ -246,21 +246,23 @@ and turned into rows: [`03-ingestion-mibig.md`](03-ingestion-mibig.md).
 
 ### PubChem, the chemistry
 
-PubChem is run by the US National Institutes of Health. Give it a compound name
-and it returns a stable numeric identifier (a **CID**), a molecular formula, a weight, and a list
-of synonyms.
+PubChem is run by the US National Institutes of Health. Give it a compound's
+number (a **CID**) and it returns the molecular formula, the weight, the
+structure and a list of synonyms; give it a name and it can look the number up.
+Phase 2 asks about the CIDs MIBiG already records, and Phase 4 uses the name
+lookup for the rest.
 
 We need it for two reasons. First, it makes compounds *comparable*: every
 compound in the graph gets one canonical PubChem identity. Second, its synonym
 lists are the raw material for entity resolution in Layer 3. PubChem is how we
 learn that "surfactin" and "surfactin A" are the same molecule.
 
-**Access:** free, no account, no key.
+**Access:** free, no account, no key. At most 5 requests a second.
 
 ### NCBI Taxonomy, the family tree of life
 
-Every named organism has a numeric **taxon ID** and a lineage: species → genus →
-family → order → class → phylum → kingdom.
+Every named organism has a numeric **taxon ID** and a lineage: strain → species
+→ genus → family → order → class → phylum → kingdom → domain.
 
 This is what lets a question like "*show me everything from the genus
 Bacillus*" work even when the graph contains a dozen different Bacillus species
@@ -269,6 +271,10 @@ spelled inconsistently, because the lineage is a ladder we can climb.
 Postal addresses work the same way: street → city → region → country. If someone
 asks "how many customers in Switzerland?", you don't need a Switzerland column;
 you climb the ladder from each street address.
+
+**Access:** free, no account needed. NCBI allows 3 requests a second, or 10 with
+a free API key, which is the project's first secret: it lives in `.env`, never
+in the repository ([`04-more-sources-secrets.md`](04-more-sources-secrets.md)).
 
 ### UniProt, the proteins in between
 
@@ -299,11 +305,14 @@ named stations.
 It adds a layer of *biological meaning*: two unrelated compounds that turn out
 to sit in the same pathway are connected in a way pure chemistry wouldn't show.
 
-**Licence caution:** KEGG is free for academic use, requires attribution, and
-must not be bulk-scraped. The adapter fetches only the specific compounds in our
-graph, slowly and politely, and records the licence in the provenance log.
-Respecting a data source's terms is part of doing this properly, and it's a
-habit worth building early.
+**Licence caution:** KEGG is not open data. Its API is provided for academic
+use by academic users, non-academic use needs a commercial licence, and serving
+KEGG data to others needs a licence too. The adapter asks four questions in all
+(one of them is KEGG's own compound-to-pathway list, about 20,000 short lines),
+stays under KEGG's limit of 3 requests a second, and records the terms in the
+provenance log. KEGG rows stay on your machine and out of the public app and
+data release. Respecting a data source's terms is part of doing this properly,
+and it's a habit worth building early.
 
 ### The curated bridge, the honest gap
 
@@ -373,8 +382,10 @@ completely different machines, but they all end in the same plug, and the socket
 doesn't need to know anything about kettles. A new appliance works as long as it
 has the right plug.
 
-You'll see the payoff in Phase 2, when three new sources are added and *nothing
-downstream changes*. The contract is what makes that possible.
+The payoff came in Phase 2: four sources were added (three web APIs and the
+curated bridge) and *nothing written for Phase 1 had to change*. The only
+addition to the socket itself was the ability to send POST requests. The
+contract is what made that possible.
 
 ### Idea 2: the evidence locker
 
@@ -464,7 +475,7 @@ each answers questions the other is bad at.
 |---|---|---|
 | How many antifungal compounds are in the graph? | **Table** (SQL) | Counting rows that match a filter |
 | Which sources contributed the most edges? | **Table** (SQL) | Grouping and summing |
-| What's the shortest evidence chain from strawberry to a microbe? | **Graph** | Following arrows an unknown number of hops |
+| What's the shortest evidence chain from jujube to a microbe? | **Graph** | Following arrows an unknown number of hops |
 | Which compound, if removed, would disconnect the most chains? | **Graph** | Requires knowing the whole connection structure |
 | Show every edge added since last month | **Table** (SQL) | Filtering by a date column |
 
@@ -493,7 +504,7 @@ The analytics layer asks four families of question.
 ### Paths, "how do I get from A to B?"
 
 This is the graph equivalent of route-finding: *"Show me the chain from
-strawberry back to a microbe."* The answer is a sequence of arrows, and because
+jujube back to a microbe."* The answer is a sequence of arrows, and because
 each arrow carries its source and evidence level, the answer comes with its own
 bibliography.
 
@@ -627,7 +638,7 @@ friend, but the second answer is far more reliable.
 
 **GraphRAG** is RAG where the fetched information comes from walking a
 knowledge graph rather than searching documents. Ask *"which microbes might
-help against grey mould on strawberries?"* and the system:
+help against grey mould on jujube fruit?"* and the system:
 
 1. finds the `Botrytis cinerea` node,
 2. walks backwards along `INFECTS` ← `INHIBITS` ← `PRODUCES` ← `HARBORS`,

@@ -37,9 +37,14 @@ fi
 
 # --- 2. Does any tracked file contain something that looks like a key? ---
 echo -n "2. No key-shaped strings ............ "
-# sk-ant-... = Anthropic; ghp_ = GitHub token; long quoted value after api_key.
+# What counts as key-shaped:
+#   sk-ant-...            the language-model key used from Phase 9
+#   ghp_... github_pat_   GitHub tokens
+#   ...API_KEY=<20+ characters>, api_key: "<20+ characters>", api_key=<...>
+#                         any API key written next to its name: in a settings
+#                         line (NCBI_API_KEY=...), in JSON, or in a web address
 # .env.example is excluded because it holds empty placeholders on purpose.
-hits=$(git grep -nIE '(sk-ant-[A-Za-z0-9_-]{10,}|ghp_[A-Za-z0-9]{20,}|api[_-]?key[[:space:]]*=[[:space:]]*["'"'"'][A-Za-z0-9]{16,})' \
+hits=$(git grep -nIE '(sk-ant-[A-Za-z0-9_-]{10,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|[Aa][Pp][Ii][_-]?[Kk][Ee][Yy]["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"']?[A-Za-z0-9_-]{20,})' \
         -- ':!.env.example' ':!check-public-safe.sh' ':!docs/*' 2>/dev/null || true)
 if [ -n "$hits" ]; then
   echo "FAIL"

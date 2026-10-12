@@ -158,11 +158,11 @@ runs through biological and linked-data systems.
 | `ncbitaxon` | NCBI Taxonomy | `ncbitaxon:326423` | Organisms and pathogens |
 | `mibig` | MIBiG | `mibig:BGC0000433` | Gene clusters |
 | `pubchem.compound` | PubChem | `pubchem.compound:<CID>` | Compounds, once resolved |
-| `kegg.pathway` | KEGG | `kegg.pathway:map01110` | Pathways |
+| `kegg.pathway` | KEGG | `kegg.pathway:map00660` | Pathways |
 | `uniprot` | UniProt | `uniprot:P27206` | Proteins (enzymes) |
 | `mg.class` | *this project* | `mg.class:lipopeptide` | Compound classes |
 | `mg.activity` | *this project* | `mg.activity:antifungal` | Biological activities |
-| `mg.crop` | *this project* | `mg.crop:strawberry` | Crops |
+| `mg.crop` | *this project* | `mg.crop:jujube` | Crops |
 | `mg.compound` | *this project* | `mg.compound:surfactin` | Compounds not (yet) matched to PubChem |
 | `mg.organism` | *this project* | `mg.organism:<name>` | Strains with no NCBI number |
 | `mg.protein` | *this project* | `mg.protein:<name>` | Proteins with no UniProt entry |
@@ -178,6 +178,12 @@ runs through biological and linked-data systems.
 >
 > This is why entity resolution is a phase of its own rather than a footnote.
 > The identifiers really are missing, and making them up is not an option.
+>
+> Phase 2 measured the same thing on the tidied tables: of the 3,842 compound
+> nodes Phase 1 builds from MIBiG 4.0, 1,176 carry a PubChem number. Phase 2
+> asks PubChem about exactly those 1,176 and writes them as
+> `pubchem.compound:<CID>` nodes, each remembering which `mg.compound` it came
+> from (`mibig_compound_ids`). Joining the two is Phase 4's job.
 
 The prefixes also make the graph open about its own sources. `mg.` marks the
 things *this project* invented because no public authority numbers them, so
@@ -209,10 +215,22 @@ names a strain that has no NCBI entry.
 
 | Property | Type | Meaning |
 |---|---|---|
-| `name` | text | Scientific name, e.g. `Bacillus velezensis` |
-| `rank` | text | `species`, `genus`, `strain` |
-| `lineage` | text | `Bacteria; Firmicutes; Bacilli; ...`, the full ladder |
-| `kingdom` | text | `Bacteria`, `Fungi`, `Other` |
+| `name` | text | Scientific name, e.g. `Bacillus velezensis FZB42` |
+| `rank` | text | NCBI's rank: `strain`, `species`, `genus`, `family`... |
+| `lineage` | text | The full ladder as NCBI writes it, e.g. `cellular organisms; Bacteria; Bacillati; Bacillota; Bacilli; ...` |
+| `group` | text | A broad group for colouring and filtering: `Bacteria`, `Archaea`, `Fungi`, `Oomycetes`, `Plants`, `Animals`, `Viruses` or `Other` |
+| `division` | text | NCBI's own coarse label, e.g. `Bacteria`, `Plants and Fungi` |
+| `synonyms` | text | Other names NCBI lists, pipe-separated |
+| `merged_from` | text | Old taxids NCBI has merged into this one, if any |
+
+The family tree itself is not a property: it's `MEMBER_OF` arrows from each
+organism up through its species, genus, family and so on (section 5). Those
+and every property except `name` arrive from NCBI Taxonomy in Phase 2.
+
+**Why `group` and not `kingdom`?** In 2025 NCBI gave bacteria a real `kingdom`
+rank (*Bacillus* sits in the kingdom *Bacillati*), so "kingdom" now means
+something specific and would be confusing as a loose label. `group` is ours,
+worked out from the names in the lineage, and only used to colour and filter.
 
 ### 2. `GeneCluster`
 
@@ -270,6 +288,23 @@ no entry (so the gap stays visible instead of being hidden).
 | `smiles` | text | The structure written as a line of text, when MIBiG gives one |
 | `activity_notes` | text | Curators' comments on what this compound does, pipe-separated, each starting with the activity it describes (for example `antifungal: ...`). They stay on the compound because they describe this molecule, not the activity in general |
 
+Compounds that come from PubChem (Phase 2) are `pubchem.compound:<CID>` nodes
+with PubChem's own description:
+
+| Property | Type | Meaning |
+|---|---|---|
+| `name` | text | PubChem's title, e.g. `Itaconic acid` |
+| `pubchem_cid` | number | The CID itself |
+| `formula` | text | e.g. `C5H6O4` |
+| `molecular_weight` | number | The average mass, e.g. `130.1` |
+| `monoisotopic_mass` | number | The mass counting each element's most common isotope |
+| `iupac_name` | text | The systematic chemical name |
+| `inchikey` | text | A fixed-length fingerprint of the structure, the same in every database |
+| `smiles`, `connectivity_smiles` | text | The structure as text, with and without its 3D detail |
+| `synonyms` | text | The first 20 other names PubChem lists, pipe-separated |
+| `kegg_compound_ids`, `kegg_drug_ids`, `chebi_ids` | text | Numbers in KEGG and ChEBI, found among those names |
+| `mibig_compound_ids` | text | The MIBiG compound(s) that recorded this CID, for Phase 4 |
+
 ### 5. `CompoundClass`
 
 A family of chemically related compounds (*the product category*).
@@ -321,33 +356,38 @@ in its documentation.
 
 | Property | Type | Meaning |
 |---|---|---|
-| `name` | text | e.g. `Botrytis cinerea` |
-| `common_name` | text | e.g. `grey mould` |
-| `pathogen_type` | text | `fungus`, `oomycete`, `bacterium` |
+| `name` | text | NCBI's current scientific name, e.g. `Botrytis cinerea` |
+| `pathogen_type` | text | `fungus`, `oomycete`, `bacterium`, `virus`, `nematode` or `other` |
+| `diseases` | text | Each disease with its crop, pipe-separated, e.g. `grey mould (jujube)` |
+| `rank`, `lineage`, `group`, `division`, `synonyms` | text | As for `Organism`, from NCBI Taxonomy |
+
+The first three come from the curated bridge, the rest from NCBI Taxonomy, and
+both arrive in Phase 2.
 
 ### 8. `Crop`
 
 A cultivated plant that gets infected, which makes it *the one who suffers*.
 
-**Identifier:** `mg.crop:<slug>`, e.g. `mg.crop:strawberry`
+**Identifier:** `mg.crop:<slug>`, e.g. `mg.crop:jujube`
 
 | Property | Type | Meaning |
 |---|---|---|
-| `name` | text | Common name |
-| `scientific_name` | text | e.g. `Fragaria × ananassa` |
-| `category` | text | `fruit`, `cereal`, `vegetable` |
+| `name` | text | Common name, e.g. `jujube` |
+| `scientific_name` | text | e.g. `Ziziphus jujuba` |
+| `category` | text | `cereal`, `fruit`, `vegetable`, `legume`, `fibre`, `oilseed` or `other` |
 
 ### 9. `Pathway`
 
 A chain of biochemical reactions that a cell performs. Think of it as *the wider
 production process the product belongs to*.
 
-**Identifier:** `kegg.pathway:<id>`
+**Identifier:** `kegg.pathway:<id>`, e.g. `kegg.pathway:map00660`
 
 | Property | Type | Meaning |
 |---|---|---|
-| `name` | text | Pathway name |
-| `category` | text | KEGG's top-level grouping |
+| `name` | text | Pathway name, e.g. `C5-Branched dibasic acid metabolism` |
+| `category` | text | KEGG's top-level grouping, e.g. `Metabolism` |
+| `subcategory` | text | The grouping below it, e.g. `Carbohydrate metabolism` |
 
 ---
 
@@ -508,17 +548,19 @@ node_id,node_type,name,properties,source,retrieved_at
 ncbitaxon:326423,Organism,Bacillus velezensis FZB42,{},mibig,2026-10-10
 mibig:BGC0000433,GeneCluster,surfactin BGC,"{""bgc_class"": ""NRPS"", ""completeness"": ""complete"", ""entry_version"": 5, ""loci"": ""AJ575642.1"", ""quality"": ""questionable""}",mibig,2026-10-10
 mg.compound:surfactin,Compound,surfactin,"{""database_ids"": ""chemspider:391754|npatlas:NPA018495"", ""formula"": ""C52H91N7O13"", ""mass"": 1021.6674859720001, ""smiles"": ""[H][C@@]1(CCC(O)=O)NC(=O)CC(CCCCCCCCCCC)OC(=O)[C@]([H])(CC(C)C)NC(=O)[C@@]([H])(CC(C)C)NC(=O)[C@]([H])(CC(O)=O)NC(=O)[C@@]([H])(NC(=O)[C@@]([H])(CC(C)C)NC(=O)[C@]([H])(CC(C)C)NC1=O)C(C)C""}",mibig,2026-10-10
-ncbitaxon:40559,Pathogen,Botrytis cinerea,"{""common_name"": ""grey mould""}",curation,2026-08-28
-mg.crop:strawberry,Crop,strawberry,"{""category"": ""fruit""}",curation,2026-08-28
+ncbitaxon:40559,Pathogen,Botrytis cinerea,"{""diseases"": ""grey mould (jujube)"", ""pathogen_type"": ""fungus""}",curation,2026-10-12
+mg.crop:jujube,Crop,jujube,"{""category"": ""fruit"", ""scientific_name"": ""Ziziphus jujuba""}",curation,2026-10-12
 ```
 
 The first three rows are copied from the first real Phase 1 run, on 2026-10-10
 ([`03-ingestion-mibig.md`](03-ingestion-mibig.md)); your own run will show the
 date of your download instead. The long `smiles` value is surfactin's structure
 written as one line of text. The organism's
-properties are empty at that point: its rank and family tree arrive from NCBI
-Taxonomy in Phase 2. The doubled quotes (`""`) are how a CSV file writes a quote
-mark inside a quoted cell.
+properties are empty in MIBiG's table: its rank and family tree come from NCBI
+Taxonomy's table in Phase 2, and Phase 4 merges the two. The last two rows are
+what the curated bridge writes in Phase 2, dated by the day each row was added.
+The doubled quotes (`""`) are how a CSV file writes a quote mark inside a quoted
+cell.
 
 **Why a JSON blob for `properties` instead of a column per property?** Because
 the nine node types need different properties, and one wide table with a column
@@ -553,8 +595,8 @@ ncbitaxon:326423,mibig:BGC0000433,HARBORS,curated_experimental,mibig,BGC0000433,
 mibig:BGC0000433,mg.compound:surfactin,PRODUCES,curated_experimental,mibig,BGC0000433,pubmed:14762003,0.50,2026-10-10
 mg.compound:surfactin,mg.activity:antibacterial,HAS_ACTIVITY,database_assertion,mibig,BGC0000433,,0.50,2026-10-10
 mg.compound:surfactin,mg.activity:surfactant,HAS_ACTIVITY,database_assertion,mibig,BGC0000433,,0.50,2026-10-10
-mg.compound:surfactin,ncbitaxon:40559,INHIBITS,curated_literature,curation,compound_pathogen_crop.csv,<doi of the paper>,0.70,2026-10-09
-ncbitaxon:40559,mg.crop:strawberry,INFECTS,curated_literature,curation,compound_pathogen_crop.csv,<doi of the paper>,0.90,2026-10-09
+mg.compound:surfactin,ncbitaxon:40559,INHIBITS,curated_literature,curation,compound_pathogen_crop.csv,doi:10.1186/s13568-023-01543-w,0.90,2026-10-12
+ncbitaxon:40559,mg.crop:jujube,INFECTS,curated_literature,curation,compound_pathogen_crop.csv,doi:10.1186/s13568-023-01543-w,0.90,2026-10-12
 ```
 
 The first four rows are what Phase 1 writes from the surfactin entry on its own,
@@ -580,8 +622,10 @@ That gives the graph two facts about the same molecule, from two kinds of
 source, carrying two different weights. If both were recorded as plain arrows,
 the difference between them would be lost.
 
-*(The DOIs above are placeholders in this schema illustration. Real rows in
-`curation/` carry real citations, and the loader rejects any row that doesn't.)*
+The citation is Xiao et al. (2023), who tested purified surfactin against
+*Botrytis cinerea* on harvested winter jujube. Every row in
+`curation/compound_pathogen_crop.csv` carries a real citation like this one, and
+the loader rejects any row that doesn't.
 
 ---
 
@@ -679,20 +723,23 @@ spell-checker's highlights annoy you forever.
 
 ## 10. A worked example: one chain, end to end
 
-Follow the strawberry question through the whole model.
+Follow one grower's question through the whole model.
 
-**The question:** *Which microbes might help against grey mould on strawberries?*
+**The question:** *Which microbes might help against grey mould on jujube fruit?*
+
+(Jujube, *Ziziphus jujuba*, is a fruit tree grown widely in China. After
+harvest the fruit rots easily, and grey mould is one of the causes.)
 
 **Step 1, find the crop node.**
-`mg.crop:strawberry`
+`mg.crop:jujube`
 
 **Step 2, walk `INFECTS` backwards.** Which pathogens attack it?
 → `ncbitaxon:40559` (*Botrytis cinerea*, grey mould)
-*Evidence: `curated_literature`, cited.*
+*Evidence: `curated_literature`, cited (`doi:10.1186/s13568-023-01543-w`).*
 
 **Step 3, walk `INHIBITS` backwards.** Which compounds suppress it?
 → `mg.compound:surfactin`
-*Evidence: `curated_literature`, cited.*
+*Evidence: `curated_literature`, cited (the same paper).*
 
 **Step 4, walk `PRODUCES` backwards.** Which production lines make it?
 → `mibig:BGC0000433`
@@ -702,20 +749,30 @@ Follow the strawberry question through the whole model.
 → `ncbitaxon:326423` (*Bacillus velezensis* FZB42)
 *Evidence: `curated_experimental`.*
 
+**Step 6, walk `MEMBER_OF` upwards** (from Phase 2). What else is related?
+→ `ncbitaxon:492670` (*Bacillus velezensis*, the species) → `ncbitaxon:1386`
+(*Bacillus*, the genus) → and on up to `ncbitaxon:2` (Bacteria).
+*Evidence: `database_assertion`, from NCBI Taxonomy.* This is the step that
+turns "this one strain" into "and what about the rest of its genus?".
+
 **The answer, assembled:**
 
 > *Bacillus velezensis* FZB42 carries the surfactin gene cluster
-> (MIBiG BGC0000433), which produces surfactin, which has been reported to
-> suppress *Botrytis cinerea*, which causes grey mould on strawberries.
+> (MIBiG BGC0000433), which produces surfactin. Purified surfactin inhibited
+> *Botrytis cinerea* and reduced grey mould on harvested winter jujube
+> (Xiao et al. 2023).
 >
 > **Evidence chain:** experimental, experimental, literature (cited), literature
 > (cited). **Weakest link: curated literature.** The two biological links come
-> from this project's reading of published work, not from a database. MIBiG
+> from this project's reading of a published paper, not from a database. MIBiG
 > itself records surfactin only as antibacterial and a surfactant.
 
 That last line is what makes the answer defensible instead of merely confident.
 Along with the conclusion, the chain tells you how much weight to put on it and
-where to look if you want to check.
+where to look if you want to check. It also shows what the chain does *not*
+say: the paper tested the molecule, so the arrow is about surfactin, not about
+FZB42 on a jujube tree. Whether that strain makes enough surfactin on real fruit
+is a different question, and the graph doesn't pretend to answer it.
 
 No single database contains that sentence. It exists only because four arrows
 from MIBiG and the cited bridge were joined, and that, in one example, is what the project is
@@ -735,6 +792,11 @@ sits in the curated layer with a citation attached instead of at
 I only found this by opening the actual record. Which is the argument for the
 whole evidence model: a plausible fact and a checked fact look the same once
 they are arrows on a screen.
+
+The crop changed for the same reason. The first version of this example ended
+at strawberries, but when the bridge was being filled in Phase 2, I couldn't
+find a paper that tested surfactin against grey mould on strawberry. I did find
+one for winter jujube, so the example now follows the study I can cite.
 
 ---
 
@@ -885,6 +947,12 @@ It's correct to leave it empty at this stage. **Rows are only added when a real
 citation is in hand.** That discipline is what makes this layer trustworthy, and
 starting with an empty file makes it the default from the beginning instead of
 something bolted on later.
+
+> **Phase 2 widens this header.** Once real rows arrived, they needed five more
+> columns: `pathogen_type`, `disease`, `crop_scientific_name`, `crop_category`
+> and `added_on`. The current header, the first eight rows and how to add one are
+> in [`04-more-sources-secrets.md`](04-more-sources-secrets.md) and
+> [`curation/README.md`](../curation/README.md).
 
 ---
 

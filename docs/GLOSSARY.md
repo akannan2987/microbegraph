@@ -56,6 +56,15 @@ BGC throughout.
 **Crop**: a cultivated plant grown for food or material. In this project it sits
 at the end of the chain, as the one who ultimately suffers from the disease.
 
+**Damping-off**: seedlings rotting at the soil line and collapsing, just before
+or after they come up. Soil organisms such as *Globisporangium ultimum* (long
+called *Pythium ultimum*) and *Rhizoctonia solani* cause it. Two bridge rows are
+about damping-off of cotton.
+
+**Domain**: the top rank of NCBI's ladder of life: Bacteria, Archaea and
+Eukaryota (living things whose cells have a nucleus, which includes fungi,
+plants and animals). NCBI called this rank "superkingdom" until 2025.
+
 **EC number**: Enzyme Commission number, the standard code describing what
 reaction an enzyme performs. You can think of it as a job title chosen from a
 fixed vocabulary.
@@ -67,6 +76,11 @@ and over.
 **Fungus** (plural *fungi*): a kingdom of life including moulds, yeasts and
 mushrooms. Some fungi attack crops; others protect them.
 
+**Fusarium head blight**: a disease of wheat and barley ears, caused mainly by
+the fungus *Fusarium graminearum*. It shrivels the grain and can leave toxins in
+it. The same fungus causes **Gibberella ear rot** on maize, a pink to red mould
+on the ear (Gibberella was the older name of the fungus's sexual stage).
+
 **Gene**: one instruction in an organism's DNA, usually the recipe for one
 protein.
 
@@ -74,11 +88,31 @@ protein.
 it's the entire book rather than any one recipe.
 
 **Grey mould**: a common name for the disease caused by the fungus *Botrytis
-cinerea*, which rots soft fruit including strawberries and grapes. The docs use
-it as their running example throughout.
+cinerea*, which rots many fruits after harvest, including grapes, strawberries
+and jujubes. The docs use grey mould on jujube as their running example, because
+that's where a paper tested surfactin against it (Xiao et al. 2023).
 
-**Kingdom**: a very broad grouping of life: Bacteria, Fungi, Plants, Animals.
-Kingdom is the top rung of the taxonomy ladder used here.
+**Group**: MicrobeGraph's own broad label for an organism (`Bacteria`,
+`Archaea`, `Fungi`, `Oomycetes`, `Plants`, `Animals`, `Viruses` or `Other`),
+worked out from the names in its NCBI lineage. It's used for colouring and
+filtering and isn't an official rank (see **Kingdom** for why it isn't called
+that).
+
+**Jujube** (*Ziziphus jujuba*): a fruit tree grown widely in China, whose fruit
+rots easily after harvest. It's the crop in the running example, because Xiao
+and colleagues (2023) showed that purified surfactin reduced grey mould on
+harvested winter jujube.
+
+**Kingdom**: a very broad rank in the taxonomy ladder, just below domain. Fungi,
+plants (Viridiplantae) and animals (Metazoa) are kingdoms; since 2025 NCBI also
+gives bacteria kingdoms, such as *Bacillati*, which holds *Bacillus*. Because the
+word now has that exact meaning, MicrobeGraph's own broad label is called
+`group` (see **Group**).
+
+**Lineage**: the full list of groups an organism belongs to, from the top of the
+tree down, as NCBI writes it. For *Bacillus velezensis* FZB42 it starts
+`cellular organisms; Bacteria; Bacillati; Bacillota; Bacilli; ...`. MicrobeGraph
+keeps it as text on the node, and turns the main ranks into `MEMBER_OF` arrows.
 
 **Lipopeptide**: a class of molecules that are part fat, part protein-fragment.
 Many are soapy, which is how they damage the membranes of other microbes.
@@ -103,12 +137,20 @@ at each in isolation. The difficulty is that each layer has different units,
 scales and identifiers, and that is exactly why the ontology and entity
 resolution phases exist.
 
+**Oomycete**: a fungus-like organism that belongs to a different branch of life
+from true fungi (it's closer to brown seaweeds). Oomycetes look like moulds and
+cause serious plant diseases, so the bridge records them as their own
+`pathogen_type`. *Globisporangium ultimum* is one.
+
 **Pathogen**: an organism that causes disease. In this project, specifically a
 *plant* pathogen, something that attacks crops.
 
 **Pathway (biochemical)**: a chain of chemical reactions a cell performs in
 sequence. Think of a production line with named stations, where each station's
 output feeds the next.
+
+**Powdery mildew**: a white, powdery fungal growth on leaves. On melons and
+cucumbers one cause is *Podosphaera fusca*, also called *Podosphaera xanthii*.
 
 **Protein**: a molecular machine built from an organism's genetic instructions.
 To carry on with the cookbook: if the genome is the book and a gene is a recipe,
@@ -117,6 +159,10 @@ project the proteins that matter are the enzymes encoded by a gene cluster.
 
 **Proteomics**: the study of the full set of proteins in a sample. One of the
 three molecular layers this project joins together.
+
+**Rank**: one rung on the taxonomy ladder: strain, species, genus, family,
+order, class, phylum, kingdom, domain. NCBI also uses in-between ranks such as
+"species group" and "clade"; MicrobeGraph makes nodes only for the main ones.
 
 **Secondary metabolite**: a molecule an organism makes that isn't needed for
 basic survival but gives it an advantage, such as a weapon, a signal or a
@@ -137,8 +183,17 @@ a strain is one particular car with its own history and quirks, and two strains
 of the same species can behave quite differently.
 
 **Surfactin**: a lipopeptide made by *Bacillus* bacteria. I use it as the
-running example in these docs because it's real and well studied, and it appears
-in every source database this project touches.
+running example in these docs because it's real and well studied, and its whole
+chain, from microbe to crop, can be backed by a citation.
+
+**Take-all**: a root disease of wheat caused by the fungus *Gaeumannomyces
+tritici* (in older papers, *G. graminis* var. *tritici*). It blackens the roots
+and leaves white, empty heads.
+
+**Taxid** (taxon ID): NCBI Taxonomy's number for an organism or a group, for
+example `326423` for *Bacillus velezensis* FZB42, written `ncbitaxon:326423`
+in this project. NCBI sometimes **merges** two numbers (asking for the old one
+returns the record under the new one) or **deletes** one.
 
 **Taxonomy**: the system for naming and classifying organisms, and the
 hierarchy it produces.
@@ -517,7 +572,9 @@ order and collect it, without wandering into the kitchen.
 
 **API key**: a string identifying who is making requests, so a service can apply
 limits fairly. Sometimes it's optional (a courtesy that raises your rate limit)
-and sometimes required. **It is always a secret.**
+and sometimes required. **It is always a secret.** In this project keys live in
+`.env`, are shown on screen only as "set" or "not set", and travel only inside a
+request's body. See [`img/secrets_env.svg`](img/secrets_env.svg).
 
 **Archive (tarball)**: many files bundled into one. A `.tar.gz` file is normally
 bundled with `tar` and then compressed with `gzip`. MIBiG 4.0 arrives as one, and
@@ -541,15 +598,36 @@ when websites move, so a citation with a DOI can always be found again.
 **Endpoint**: one specific address within an API that answers one kind of
 question.
 
+**`.env` file**: a plain-text file in the project folder holding your private
+settings, one `NAME=value` per line, such as an API key. It's listed in
+`.gitignore` so Git never sees it; the repository holds `.env.example`, the same
+names with every value empty. See [`04-more-sources-secrets.md`](04-more-sources-secrets.md), Step 3.
+
+**Environment variable**: a named setting your computer hands to a program when
+it starts, kept outside the program's own files. It's how programs usually
+receive secrets; `.env` is a convenient way to set them for one project.
+
+**E-utilities** (Entrez Programming Utilities): NCBI's API. MicrobeGraph uses two
+of its programs: `einfo` (facts about a database) and `efetch` (full records).
+
 **Evidence locker**: this project's name for `data/raw/`, the untouched original
 responses from every source, kept forever. They play the same part as the
 original receipts kept behind a tax return.
+
+**GET and POST**: the two common kinds of web request. A GET puts everything in
+the web address, like a postcard anyone handling it can read; a POST carries its
+details in the request **body**, like a sealed envelope. MicrobeGraph sends long
+lists and any key by POST.
 
 **HTTP**: the protocol web browsers and programs use to request things from
 servers.
 
 **Ingestion**: the act of getting data into your system, and the first pipeline
 stage.
+
+**Manifest**: the file `manifest.json` in each API snapshot, listing what was
+asked and what came back. It's written last, so its presence means the fetch
+finished.
 
 **`.part` file**: a download in progress, saved under a temporary name and
 renamed only once it is complete and verified, so a dropped connection never
@@ -559,12 +637,25 @@ leaves a half-file that looks finished.
 from, when, and under what terms. Written to `data/raw/provenance.csv` on every
 fetch.
 
+**PUG REST**: PubChem's API. You put what you want in the address (compounds by
+CID, their properties or synonyms) and the CIDs themselves in a POST body.
+
 **Rate limit**: a cap on how many requests you may make per second. Exceed it
 and you get blocked; respecting it is basic politeness to a free service.
+PubChem allows 5 a second, NCBI 3 (10 with a key) and KEGG 3.
+
+**Request body**: the part of a request that carries its details separately from
+the web address. Error messages, logs and browser histories show addresses, not
+bodies, which is why a key belongs in the body.
 
 **Retry with backoff**: when a request fails, waiting a moment and trying
 again, waiting longer each time. *Everyday example:* the phone is engaged; you
 don't redial forty times a second.
+
+**Snapshot**: one fetch from a web API, kept as a dated folder in the evidence
+locker: every answer exactly as it arrived, plus a manifest. A new day or a new
+set of questions makes a new snapshot; older ones are kept for comparison. See
+[`img/api_snapshot.svg`](img/api_snapshot.svg).
 
 **Source adapter**: the small piece of code that connects one data source to the
 project, by providing the three functions of the **contract**: `probe()` (what
@@ -580,6 +671,10 @@ standard columns but not yet merged with the others. Written by `tidy()` to
 404 = not found. 403 = refused. 429 = you're going too fast. 500 = the server
 broke.
 
+**Throttling**: a service slowing down or refusing requests that arrive too fast.
+PubChem reports how close you are with a traffic light in each answer's
+`X-Throttling-Control` header: Green, Yellow, Red or Black.
+
 **Timeout**: how long a program waits for an answer before giving up. Without
 one, a silent server can make a program hang forever.
 
@@ -591,9 +686,21 @@ when using public scientific APIs.
 
 ## The data sources used here
 
-**KEGG**: a database mapping compounds to the biochemical pathways they take
-part in. Free for academic use, it requires attribution and must not be
-bulk-scraped.
+**ChEBI** (Chemical Entities of Biological Interest): a free dictionary of small
+molecules, run by EMBL-EBI. Phase 2 reads ChEBI numbers from PubChem's synonyms
+(`CHEBI:30838` is itaconic acid).
+
+**CID** (compound identifier): PubChem's number for one chemical structure, for
+example `811` for itaconic acid, written `pubchem.compound:811` here.
+
+**InChIKey**: a 27-character fingerprint of a chemical structure, the same in
+every database, which makes it handy for matching compounds across sources.
+
+**KEGG**: the Kyoto Encyclopedia of Genes and Genomes, a set of hand-drawn maps
+of cell chemistry (pathway maps such as `map00660`) with the compounds on them
+(`C00490`). **Not open data:** its API is for academic use by academic users,
+other use needs a commercial licence, and serving its data to others needs a
+licence too. MicrobeGraph fetches it locally and never publishes KEGG rows.
 
 **MIBiG**: *Minimum Information about a Biosynthetic Gene Cluster*. A
 community-curated public repository of gene clusters that have been
@@ -606,22 +713,32 @@ supplies the organism → cluster → compound arrows.
 every arrow from that entry (0.95, 0.85, 0.70, 0.50).
 
 **NCBI**: the US National Center for Biotechnology Information. It runs Taxonomy
-(the classification of life) and Datasets (genome records), among much else, and
-its data is public domain.
+(the classification of life) and Datasets (genome records), among much else.
+NCBI places no restrictions on using its data, although some people who submit
+data to it claim rights in what they submitted.
 
 **Negative result**: a test that looked for something and did not find it. MIBiG
 records some bioactivities as `"observed": false`. MicrobeGraph counts them but
 never turns them into a `HAS_ACTIVITY` arrow, which would say the opposite.
 
 **PubChem**: the US National Institutes of Health's chemistry database. Given a
-compound name it returns a stable numeric ID (a CID), a formula, a weight and a
-synonym list. Access is free and needs no account. Its synonym lists are the raw
-material for entity resolution here.
+CID it returns a formula, weights, the structure and a synonym list; given a name
+it can find the CID. Access is free and needs no account. Its synonym lists are
+the raw material for entity resolution here.
+
+**SMILES**: a way of writing a molecule's structure as one line of text, for
+example `C=C(CC(=O)O)C(=O)O` for itaconic acid.
+
+**Synonym**: another name for the same thing. One molecule can have dozens
+(itaconic acid has about ninety in PubChem), which is why names alone can't be
+trusted to match records.
 
 **The curated bridge**: this project's own small, hand-assembled CSV linking
 compounds to pathogens to crops, because no public database publishes those
 links as a downloadable table. Every row carries a citation and every edge is
-labelled `curated_literature`, and the whole layer can be filtered out.
+labelled `curated_literature`, and the whole layer can be filtered out. Every
+row passes thirteen checks before it's loaded; how to add one is in
+[`curation/README.md`](../curation/README.md).
 
 **Zenodo**: a free, permanent archive for research outputs, run by CERN. Each
 upload gets a DOI and a checksum for every file. MIBiG publishes its releases

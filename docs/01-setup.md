@@ -1272,26 +1272,34 @@ keys the project can use.
 Create `.env.example` in the project root:
 
 ```bash
-# MicrobeGraph, optional API keys
+# MicrobeGraph, your private settings
 #
 # HOW TO USE:
 #   1. Copy this file:   cp .env.example .env      (Windows: copy .env.example .env)
-#   2. Fill in real values in .env
+#   2. Fill in real values in .env, never in this file
 #   3. .env is gitignored and must NEVER be committed
 #
 # Everything here is OPTIONAL. The project runs fully without any of it;
 # missing keys just mean slower fetching or a hidden AI feature.
+#
+# Rules for every line: no spaces around "=", no quotes needed, one setting
+# per line. The program never prints a value from this file: a key only ever
+# appears on screen as "set" or "not set".
+# The full walk-through is in docs/04-more-sources-secrets.md, Step 3.
 
-# NCBI (optional). A free key raises the request rate limit from 3/sec to 10/sec.
-# Get one: https://www.ncbi.nlm.nih.gov/account/  →  Account settings → API Key
+# NCBI (optional, used from Phase 2). A free key raises NCBI's limit from 3
+# requests a second to 10, so the NCBI Taxonomy fetch finishes sooner.
+# Get one: sign in at https://www.ncbi.nlm.nih.gov/ , click your user name
+# (top right) > Account settings > API Key Management > Create an API Key.
 NCBI_API_KEY=
 
-# NCBI asks tools to identify themselves by email. It's a courtesy rather
-# than a security measure.
+# NCBI asks programs to say who to contact if they misbehave. It's a
+# courtesy rather than a security measure, and it's never printed or saved.
 NCBI_EMAIL=
 
-# Anthropic (optional). Only needed for the plain-English answer layer.
-# Without it, that one feature hides itself and everything else works.
+# Language model (optional, from Phase 9). Only needed for the plain-English
+# answer layer. Without it, that one feature hides itself and everything
+# else works.
 ANTHROPIC_API_KEY=
 ```
 
@@ -1343,9 +1351,14 @@ fi
 
 # --- 2. Does any tracked file contain something that looks like a key? ---
 echo -n "2. No key-shaped strings ............ "
-# sk-ant-... = Anthropic; ghp_ = GitHub token; long quoted value after api_key.
+# What counts as key-shaped:
+#   sk-ant-...            the language-model key used from Phase 9
+#   ghp_... github_pat_   GitHub tokens
+#   ...API_KEY=<20+ characters>, api_key: "<20+ characters>", api_key=<...>
+#                         any API key written next to its name: in a settings
+#                         line (NCBI_API_KEY=...), in JSON, or in a web address
 # .env.example is excluded because it holds empty placeholders on purpose.
-hits=$(git grep -nIE '(sk-ant-[A-Za-z0-9_-]{10,}|ghp_[A-Za-z0-9]{20,}|api[_-]?key[[:space:]]*=[[:space:]]*["'"'"'][A-Za-z0-9]{16,})' \
+hits=$(git grep -nIE '(sk-ant-[A-Za-z0-9_-]{10,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|[Aa][Pp][Ii][_-]?[Kk][Ee][Yy]["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"']?[A-Za-z0-9_-]{20,})' \
         -- ':!.env.example' ':!check-public-safe.sh' ':!docs/*' 2>/dev/null || true)
 if [ -n "$hits" ]; then
   echo "FAIL"

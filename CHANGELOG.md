@@ -18,6 +18,75 @@ and start a new, empty *Unreleased* above it. The
 
 ## Unreleased (toward 1.0.0)
 
+### Phase 2: more sources, PubChem · NCBI Taxonomy · KEGG · the cited bridge
+
+- **Added** the PubChem adapter (`src/microbegraph/sources/pubchem.py`): it asks
+  about every CID MIBiG records, 100 at a time by POST, slows down when PubChem's
+  traffic light turns, and writes `pubchem.compound` nodes with formula, weights,
+  structure, synonyms, KEGG and ChEBI numbers, and the MIBiG compounds that gave
+  each CID.
+- **Added** the NCBI Taxonomy adapter (`src/microbegraph/sources/ncbi_taxonomy.py`):
+  the family tree of every MIBiG organism and bridge pathogen, as `MEMBER_OF`
+  arrows through the main ranks, with merged and deleted taxids handled and
+  counted. Organisms get a `group` property (Bacteria, Fungi, Oomycetes...)
+  instead of the `kingdom` the data model first planned, because NCBI now uses
+  "kingdom" as a real rank for bacteria.
+- **Added** the KEGG adapter (`src/microbegraph/sources/kegg.py`):
+  `PARTICIPATES_IN` arrows from compounds to the pathway maps they appear on,
+  leaving out maps of maps. KEGG is for academic use only, so its rows are never
+  published.
+- **Added** the curated bridge loader (`src/microbegraph/sources/curation.py`) and
+  the first eight cited rows in `curation/compound_pathogen_crop.csv`, from six
+  papers, with thirteen checks on every row. The file gained five columns
+  (`pathogen_type`, `disease`, `crop_scientific_name`, `crop_category`,
+  `added_on`); `curation/README.md` explains each column, the confidence scale,
+  and how to add a row.
+- **Added** snapshots for web APIs (`src/microbegraph/sources/api.py`): every fetch
+  is a dated folder of answers saved byte for byte, a provenance row per answer,
+  and a manifest written last; the same questions on the same day reuse the
+  folder.
+- **Added** private settings (`src/microbegraph/settings.py`): the optional NCBI
+  key is read from `.env`, sent only in a POST body, and shown only as "set" or
+  "not set".
+- **Added** POST requests to the socket (`sources/base.py`); error messages name
+  the address without anything sent with it.
+- **Added** `src/microbegraph/staging.py`, which checks the twelve rules before
+  writing any source's tables.
+- **Changed** the safety gate to also catch keys written as `NAME_API_KEY=...`,
+  in JSON, or in a web address, and its copy in `docs/01-setup.md` to match.
+- **Changed** `--list` to show each licence on its own line, and the sources now
+  run in dependency order: MIBiG, PubChem, NCBI Taxonomy, KEGG, the bridge.
+- **Added** 71 tests (144 in all), built from ten real answers captured from
+  PubChem, NCBI and KEGG on 2026-10-12 by `tests/fixtures/capture_samples.py`;
+  `tests/fixtures/README.md` lists each with its fingerprint, and
+  `.gitattributes` keeps their bytes exact on every system.
+- **Changed** the running example to grey mould on jujube (Xiao et al. 2023),
+  because no paper could be found that tested surfactin against grey mould on
+  strawberry. The figures, the interactive evidence chain and the guides follow.
+- **Added** the Phase 2 guide (`docs/04-more-sources-secrets.md`), a data sources
+  and licences section in the README, three pictures (`sources_map.svg`,
+  `secrets_env.svg`, `api_snapshot.svg`), and the new terms in the glossary.
+- **Measured on the first run** (2026-10-12, from the four new `*_summary.json`
+  files in `data/processed/staging/`):
+  - *PubChem:* 1,176 CIDs asked about in 24 requests (2.1 MB). 1,171 found and 5
+    not known to PubChem (listed in the summary, for Phase 4 to look into).
+    Of those found, 1,072 have other names, 131 a KEGG number and 717 a ChEBI
+    number. One request was answered `HTTP 502` and succeeded on the retry.
+  - *NCBI Taxonomy* (build `Build261011-2030.1`, with a key, 9 requests,
+    5.4 MB): 1,485 taxids asked about (1,480 organisms and 6 pathogens, one of
+    them in both), all found, 7 of them under a newer number. That gives 2,441
+    organism nodes joined by 2,433 `MEMBER_OF` arrows, and 4 pathogen nodes. Two
+    pathogens are also organisms, *Fusarium graminearum* and *Botrytis
+    cinerea*, left for Phase 4 to reconcile.
+  - *KEGG* (pathway and compound releases of 2026/10/09, 4 requests, 528 KB):
+    587 maps and 19,689 compound-to-map links. Of our 131 compounds with a KEGG
+    number, the links give 85 `PARTICIPATES_IN` arrows to 39 maps; 104 links to
+    maps of maps were left out, and 56 of our KEGG numbers are on no map.
+  - *The bridge:* 8 rows, 7 `INHIBITS` and 7 `INFECTS` arrows from 6 papers;
+    every row passed all thirteen checks, including NCBI's current names.
+  - A second run the same day reused all three snapshots and asked the services
+    nothing; the provenance log holds no key.
+
 ### After Phase 1: the test workflow
 
 - **Changed** `.github/workflows/ci.yml` to use version 7 of `actions/checkout`

@@ -5,9 +5,16 @@ USAGE (from the repository root, with .venv active)
 
     python -m microbegraph.fetch --list                  which sources exist
     python -m microbegraph.fetch --probe                 ask every source what it has (free)
-    python -m microbegraph.fetch --all                   fetch + tidy every source
+    python -m microbegraph.fetch --all                   fetch + tidy every source, in order
     python -m microbegraph.fetch --source mibig          fetch + tidy one source
+    python -m microbegraph.fetch --source pubchem --source kegg     several, in the order typed
     python -m microbegraph.fetch --tidy-only --all       re-tidy from the locker, offline
+
+YOUR PRIVATE SETTINGS
+    Before anything runs, the settings in .env (an optional NCBI key, for
+    example) are read into the environment. See src/microbegraph/settings.py.
+    Nothing from .env is ever printed: a key shows up only as "set" or
+    "not set".
 
 WHY "python -m microbegraph.fetch" AND NOT "python fetch.py"
     "-m" means "run this MODULE from the installed package". It works from
@@ -29,6 +36,7 @@ import tarfile
 
 import requests
 
+from microbegraph.settings import load_settings
 from microbegraph.sources import SOURCES, get_source
 from microbegraph.sources.base import SourceError
 
@@ -55,10 +63,13 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
+    load_settings()        # .env, if there is one; settings already in the environment win
 
     if args.list:
+        width = max(len(name) for name in SOURCES)
         for name, cls in SOURCES.items():
-            print(f"  {name:<10} {cls.homepage}  (licence {cls.licence})")
+            print(f"  {name:<{width}}  {cls.homepage}")
+            print(f"  {'':<{width}}  licence: {cls.licence}")
         return 0
 
     # Probing everything is harmless, so --probe alone means "all sources".
@@ -85,8 +96,9 @@ def main(argv: list[str] | None = None) -> int:
                 width = max((len(key) for key in result.counts), default=0)
                 for key, value in result.counts.items():
                     print(f"    {key:<{width}} {value:>6}")
-        except (SourceError, requests.RequestException, OSError,
+        except (SourceError, requests.RequestException, OSError, ValueError,
                 tarfile.TarError, EOFError) as error:   # EOFError: a cut-off archive
+            # ValueError covers an answer that isn't the JSON it should be.
             failures += 1
             if args.debug:
                 raise

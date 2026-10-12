@@ -9,7 +9,9 @@ WHAT PROVENANCE MEANS
     when?"
 
 WHAT GETS WRITTEN
-    data/raw/provenance.csv, one row per fetch, never edited, only added to.
+    data/raw/provenance.csv, never edited, only added to. One row for every
+    file a fetch saves: one per fetch for MIBiG (one archive), one per answer
+    for the web APIs from Phase 2 (PubChem, NCBI Taxonomy, KEGG).
 
     | column         | example (the first real MIBiG fetch)          |
     |----------------|-----------------------------------------------|

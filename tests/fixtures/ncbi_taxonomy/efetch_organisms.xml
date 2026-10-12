@@ -1,0 +1,531 @@
+<?xml version="1.0" ?>
+<!DOCTYPE TaxaSet PUBLIC "-//NLM//DTD Taxon, 14th January 2002//EN" "https://www.ncbi.nlm.nih.gov/entrez/query/DTD/taxon.dtd">
+<TaxaSet><Taxon>
+    <TaxId>326423</TaxId>
+    <ScientificName>Bacillus velezensis FZB42</ScientificName>
+    <OtherNames>
+        <Synonym>Bacillus amyloliquefaciens FZB42</Synonym>
+        <Synonym>Bacillus amyloliquefaciens subsp. plantarum FZB42</Synonym>
+        <Synonym>Bacillus methylotrophicus FZB42</Synonym>
+    </OtherNames>
+    <ParentTaxId>492670</ParentTaxId>
+    <Rank>strain</Rank>
+    <Division>Bacteria</Division>
+    <GeneticCode>
+        <GCId>11</GCId>
+        <GCName>Bacterial, Archaeal and Plant Plastid</GCName>
+    </GeneticCode>
+    <MitoGeneticCode>
+        <MGCId>0</MGCId>
+        <MGCName>Unspecified</MGCName>
+    </MitoGeneticCode>
+    <Lineage>cellular organisms; Bacteria; Bacillati; Bacillota; Bacilli; Caryophanales; Bacillaceae; Bacillus; Bacillus subtilis group; Bacillus amyloliquefaciens group; Bacillus velezensis</Lineage>
+    <LineageEx>
+        <Taxon>
+            <TaxId>131567</TaxId>
+            <ScientificName>cellular organisms</ScientificName>
+            <Rank>cellular root</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2</TaxId>
+            <ScientificName>Bacteria</ScientificName>
+            <Rank>domain</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1783272</TaxId>
+            <ScientificName>Bacillati</ScientificName>
+            <Rank>kingdom</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1239</TaxId>
+            <ScientificName>Bacillota</ScientificName>
+            <Rank>phylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>91061</TaxId>
+            <ScientificName>Bacilli</ScientificName>
+            <Rank>class</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1385</TaxId>
+            <ScientificName>Caryophanales</ScientificName>
+            <Rank>order</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>186817</TaxId>
+            <ScientificName>Bacillaceae</ScientificName>
+            <Rank>family</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1386</TaxId>
+            <ScientificName>Bacillus</ScientificName>
+            <Rank>genus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>653685</TaxId>
+            <ScientificName>Bacillus subtilis group</ScientificName>
+            <Rank>species group</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1938374</TaxId>
+            <ScientificName>Bacillus amyloliquefaciens group</ScientificName>
+            <Rank>species subgroup</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>492670</TaxId>
+            <ScientificName>Bacillus velezensis</ScientificName>
+            <Rank>species</Rank>
+        </Taxon>
+    </LineageEx>
+    <CreateDate>2005/04/27 16:56:25</CreateDate>
+    <UpdateDate>2016/04/01 17:33:10</UpdateDate>
+    <PubDate>2005/05/02 18:00:31</PubDate>
+</Taxon>
+<Taxon>
+    <TaxId>33</TaxId>
+    <ScientificName>Myxococcus fulvus</ScientificName>
+    <OtherNames>
+        <Synonym>Micrococcus fulvus</Synonym>
+        <Name>
+            <ClassCDE>authority</ClassCDE>
+            <DispName>&quot;Micrococcus fulvus&quot; Cohn 1875</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>authority</ClassCDE>
+            <DispName>Myxococcus fulvus (Cohn 1875) Jahn 1911</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>ATCC 25199</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>ATCC:25199</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>DSM 16525</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>DSM:16525</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>NBRC 100333</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>NBRC:100333</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>NCIMB 13349</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>NCIMB:13349</DispName>
+        </Name>
+    </OtherNames>
+    <ParentTaxId>32</ParentTaxId>
+    <Rank>species</Rank>
+    <Division>Bacteria</Division>
+    <GeneticCode>
+        <GCId>11</GCId>
+        <GCName>Bacterial, Archaeal and Plant Plastid</GCName>
+    </GeneticCode>
+    <MitoGeneticCode>
+        <MGCId>0</MGCId>
+        <MGCName>Unspecified</MGCName>
+    </MitoGeneticCode>
+    <Lineage>cellular organisms; Bacteria; Pseudomonadati; Myxococcota; Myxococcia; Myxococcales; Cystobacterineae; Myxococcaceae; Myxococcus</Lineage>
+    <LineageEx>
+        <Taxon>
+            <TaxId>131567</TaxId>
+            <ScientificName>cellular organisms</ScientificName>
+            <Rank>cellular root</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2</TaxId>
+            <ScientificName>Bacteria</ScientificName>
+            <Rank>domain</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3379134</TaxId>
+            <ScientificName>Pseudomonadati</ScientificName>
+            <Rank>kingdom</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2818505</TaxId>
+            <ScientificName>Myxococcota</ScientificName>
+            <Rank>phylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>32015</TaxId>
+            <ScientificName>Myxococcia</ScientificName>
+            <Rank>class</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>29</TaxId>
+            <ScientificName>Myxococcales</ScientificName>
+            <Rank>order</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>80811</TaxId>
+            <ScientificName>Cystobacterineae</ScientificName>
+            <Rank>suborder</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>31</TaxId>
+            <ScientificName>Myxococcaceae</ScientificName>
+            <Rank>family</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>32</TaxId>
+            <ScientificName>Myxococcus</ScientificName>
+            <Rank>genus</Rank>
+        </Taxon>
+    </LineageEx>
+    <CreateDate>1995/02/27 09:24:00</CreateDate>
+    <UpdateDate>2020/01/27 14:39:44</UpdateDate>
+    <PubDate>1999/08/05 01:00:00</PubDate>
+</Taxon>
+<Taxon>
+    <TaxId>109376</TaxId>
+    <ScientificName>Brassica oleracea var. oleracea</ScientificName>
+    <OtherNames>
+        <Synonym>Brassica oleracea subsp. oleracea</Synonym>
+    </OtherNames>
+    <ParentTaxId>3712</ParentTaxId>
+    <Rank>varietas</Rank>
+    <Division>Plants and Fungi</Division>
+    <GeneticCode>
+        <GCId>1</GCId>
+        <GCName>Standard</GCName>
+    </GeneticCode>
+    <MitoGeneticCode>
+        <MGCId>1</MGCId>
+        <MGCName>Standard</MGCName>
+    </MitoGeneticCode>
+    <Lineage>cellular organisms; Eukaryota; Viridiplantae; Streptophyta; Streptophytina; Embryophyta; Tracheophyta; Euphyllophyta; Spermatophyta; Magnoliopsida; Mesangiospermae; eudicotyledons; Gunneridae; Pentapetalae; rosids; malvids; Brassicales; Brassicaceae; Brassiceae; Brassica; Brassica oleracea</Lineage>
+    <LineageEx>
+        <Taxon>
+            <TaxId>131567</TaxId>
+            <ScientificName>cellular organisms</ScientificName>
+            <Rank>cellular root</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2759</TaxId>
+            <ScientificName>Eukaryota</ScientificName>
+            <Rank>domain</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>33090</TaxId>
+            <ScientificName>Viridiplantae</ScientificName>
+            <Rank>kingdom</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>35493</TaxId>
+            <ScientificName>Streptophyta</ScientificName>
+            <Rank>phylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>131221</TaxId>
+            <ScientificName>Streptophytina</ScientificName>
+            <Rank>subphylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3193</TaxId>
+            <ScientificName>Embryophyta</ScientificName>
+            <Rank>clade</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>58023</TaxId>
+            <ScientificName>Tracheophyta</ScientificName>
+            <Rank>clade</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>78536</TaxId>
+            <ScientificName>Euphyllophyta</ScientificName>
+            <Rank>clade</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>58024</TaxId>
+            <ScientificName>Spermatophyta</ScientificName>
+            <Rank>clade</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3398</TaxId>
+            <ScientificName>Magnoliopsida</ScientificName>
+            <Rank>class</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1437183</TaxId>
+            <ScientificName>Mesangiospermae</ScientificName>
+            <Rank>clade</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>71240</TaxId>
+            <ScientificName>eudicotyledons</ScientificName>
+            <Rank>clade</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>91827</TaxId>
+            <ScientificName>Gunneridae</ScientificName>
+            <Rank>clade</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1437201</TaxId>
+            <ScientificName>Pentapetalae</ScientificName>
+            <Rank>clade</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>71275</TaxId>
+            <ScientificName>rosids</ScientificName>
+            <Rank>clade</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>91836</TaxId>
+            <ScientificName>malvids</ScientificName>
+            <Rank>clade</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3699</TaxId>
+            <ScientificName>Brassicales</ScientificName>
+            <Rank>order</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3700</TaxId>
+            <ScientificName>Brassicaceae</ScientificName>
+            <Rank>family</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>981071</TaxId>
+            <ScientificName>Brassiceae</ScientificName>
+            <Rank>tribe</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3705</TaxId>
+            <ScientificName>Brassica</ScientificName>
+            <Rank>genus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3712</TaxId>
+            <ScientificName>Brassica oleracea</ScientificName>
+            <Rank>species</Rank>
+        </Taxon>
+    </LineageEx>
+    <Properties>
+        <Property>
+            <PropName>pgcode</PropName>
+            <PropValueInt>11</PropValueInt>
+        </Property>
+    </Properties>
+    <CreateDate>1999/12/02 10:35:00</CreateDate>
+    <UpdateDate>2018/10/31 19:21:06</UpdateDate>
+    <PubDate>2000/08/09 12:03:00</PubDate>
+</Taxon>
+<Taxon>
+    <TaxId>746360</TaxId>
+    <ScientificName>Pseudomonas fluorescens WH6</ScientificName>
+    <OtherNames>
+        <EquivalentName>Pseudomonas fluorescens str. WH6</EquivalentName>
+        <EquivalentName>Pseudomonas fluorescens strain WH6</EquivalentName>
+    </OtherNames>
+    <ParentTaxId>294</ParentTaxId>
+    <Rank>strain</Rank>
+    <Division>Bacteria</Division>
+    <GeneticCode>
+        <GCId>11</GCId>
+        <GCName>Bacterial, Archaeal and Plant Plastid</GCName>
+    </GeneticCode>
+    <MitoGeneticCode>
+        <MGCId>0</MGCId>
+        <MGCName>Unspecified</MGCName>
+    </MitoGeneticCode>
+    <Lineage>cellular organisms; Bacteria; Pseudomonadati; Pseudomonadota; Gammaproteobacteria; Pseudomonadales; Pseudomonadaceae; Pseudomonas; Pseudomonas fluorescens group; Pseudomonas fluorescens</Lineage>
+    <LineageEx>
+        <Taxon>
+            <TaxId>131567</TaxId>
+            <ScientificName>cellular organisms</ScientificName>
+            <Rank>cellular root</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2</TaxId>
+            <ScientificName>Bacteria</ScientificName>
+            <Rank>domain</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3379134</TaxId>
+            <ScientificName>Pseudomonadati</ScientificName>
+            <Rank>kingdom</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1224</TaxId>
+            <ScientificName>Pseudomonadota</ScientificName>
+            <Rank>phylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1236</TaxId>
+            <ScientificName>Gammaproteobacteria</ScientificName>
+            <Rank>class</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>72274</TaxId>
+            <ScientificName>Pseudomonadales</ScientificName>
+            <Rank>order</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>135621</TaxId>
+            <ScientificName>Pseudomonadaceae</ScientificName>
+            <Rank>family</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>286</TaxId>
+            <ScientificName>Pseudomonas</ScientificName>
+            <Rank>genus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>136843</TaxId>
+            <ScientificName>Pseudomonas fluorescens group</ScientificName>
+            <Rank>species group</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>294</TaxId>
+            <ScientificName>Pseudomonas fluorescens</ScientificName>
+            <Rank>species</Rank>
+        </Taxon>
+    </LineageEx>
+    <CreateDate>2010/03/17 12:17:55</CreateDate>
+    <UpdateDate>2018/11/23 17:31:12</UpdateDate>
+    <PubDate>2010/03/18 18:00:19</PubDate>
+</Taxon>
+<Taxon>
+    <TaxId>2961896</TaxId>
+    <ScientificName>Pseudomonas nunensis</ScientificName>
+    <OtherNames>
+        <Includes>Pseudomonas sp. 655</Includes>
+        <Includes>Pseudomonas sp. In5</Includes>
+        <Includes>Pseudomonas sp. In5(2022)</Includes>
+        <Includes>Pseudomonas sp. In614</Includes>
+        <Name>
+            <ClassCDE>authority</ClassCDE>
+            <DispName>Pseudomonas nunensis Ntana et al. 2023</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>BCCM/LMG 32653</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>BCCM/LMG-32653</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>BCCM/LMG32653</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>BCCM/LMG:32653</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>BCCM/LMG:32653</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>LMG 32653</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>LMG:32653</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>NCIMB 15428</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>NCIMB-15428</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>NCIMB15428</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>NCIMB:15428</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>NCIMB:15428</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>personal::In5</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>type material</ClassCDE>
+            <DispName>strain In5</DispName>
+        </Name>
+    </OtherNames>
+    <ParentTaxId>286</ParentTaxId>
+    <Rank>species</Rank>
+    <Division>Bacteria</Division>
+    <GeneticCode>
+        <GCId>11</GCId>
+        <GCName>Bacterial, Archaeal and Plant Plastid</GCName>
+    </GeneticCode>
+    <MitoGeneticCode>
+        <MGCId>0</MGCId>
+        <MGCName>Unspecified</MGCName>
+    </MitoGeneticCode>
+    <Lineage>cellular organisms; Bacteria; Pseudomonadati; Pseudomonadota; Gammaproteobacteria; Pseudomonadales; Pseudomonadaceae; Pseudomonas</Lineage>
+    <LineageEx>
+        <Taxon>
+            <TaxId>131567</TaxId>
+            <ScientificName>cellular organisms</ScientificName>
+            <Rank>cellular root</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2</TaxId>
+            <ScientificName>Bacteria</ScientificName>
+            <Rank>domain</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3379134</TaxId>
+            <ScientificName>Pseudomonadati</ScientificName>
+            <Rank>kingdom</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1224</TaxId>
+            <ScientificName>Pseudomonadota</ScientificName>
+            <Rank>phylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>1236</TaxId>
+            <ScientificName>Gammaproteobacteria</ScientificName>
+            <Rank>class</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>72274</TaxId>
+            <ScientificName>Pseudomonadales</ScientificName>
+            <Rank>order</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>135621</TaxId>
+            <ScientificName>Pseudomonadaceae</ScientificName>
+            <Rank>family</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>286</TaxId>
+            <ScientificName>Pseudomonas</ScientificName>
+            <Rank>genus</Rank>
+        </Taxon>
+    </LineageEx>
+    <CreateDate>2022/07/01 11:34:35</CreateDate>
+    <UpdateDate>2023/02/10 14:34:44</UpdateDate>
+    <PubDate>2022/07/05 01:00:57</PubDate>
+</Taxon>
+
+</TaxaSet>

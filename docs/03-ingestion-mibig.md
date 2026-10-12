@@ -663,13 +663,14 @@ change or none does.
 ## 10. Step 6. The command you will type
 
 [`src/microbegraph/sources/__init__.py`](../src/microbegraph/sources/__init__.py)
-holds the list of plugged-in sources (just `mibig` for now).
+holds the list of plugged-in sources (just `mibig` in this phase; Phase 2 adds four).
 [`src/microbegraph/fetch.py`](../src/microbegraph/fetch.py) turns your typing into
 calls on those sources:
 
 | You type | It does |
 |---|---|
 | `python -m microbegraph.fetch --list` | Lists the sources, their homepages and licences |
+| `python -m microbegraph.fetch --source pubchem --source kegg` | Several sources, in the order typed (from Phase 2) |
 | `python -m microbegraph.fetch --probe` | Probes every source (nothing downloaded) |
 | `python -m microbegraph.fetch --source mibig` | Fetch, then tidy, for MIBiG |
 | `python -m microbegraph.fetch --all` | Fetch, then tidy, for every source |
@@ -770,8 +771,14 @@ archive lands on your machine.
    ```
 
    ```
-     mibig      https://mibig.secondarymetabolites.org  (licence CC-BY-4.0)
+     mibig          https://mibig.secondarymetabolites.org
+                    licence: CC-BY-4.0
    ```
+
+   If you're working on a copy that already includes Phase 2, four more sources
+   follow it (pubchem, ncbi_taxonomy, kegg and curation), each with its licence;
+   [`04-more-sources-secrets.md`, Step 1](04-more-sources-secrets.md#5-step-1-put-the-new-files-in-place)
+   shows the full list.
 
 2. **Probe.** This step downloads nothing.
 
@@ -1258,6 +1265,7 @@ before running the safety gate.
 
 ---
 
-**Next:** Phase 2, `04-more-sources-secrets.md`: PubChem, NCBI Taxonomy, KEGG and
-the cited curated bridge plug into the same socket, and the first API key is kept
-where it belongs. The plan is in the [Handbook, Stage 5](HANDBOOK.md#stage-5-more-sources-phase-2).
+**Next:** Phase 2, [`04-more-sources-secrets.md`](04-more-sources-secrets.md):
+PubChem, NCBI Taxonomy, KEGG and the cited curated bridge plug into the same
+socket, and the first API key is kept where it belongs. The plan is in the
+[Handbook, Stage 5](HANDBOOK.md#stage-5-more-sources-phase-2).

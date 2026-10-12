@@ -26,3 +26,8 @@
 
 *.png  binary
 *.gz   binary
+
+# Answers captured from real servers (tests/fixtures/<source>/) are kept
+# byte for byte on every system, with no line-ending changes, so the
+# fingerprints listed in tests/fixtures/README.md stay true everywhere.
+tests/fixtures/*/** -text

@@ -86,8 +86,8 @@ NODE_INFO = {
     "CompoundClass": ("metabolomics", "mg.class:lipopeptide", "the supermarket aisle"),
     "Activity": ("metabolomics", "mg.activity:antibacterial", "what it is for"),
     "Pathogen": ("phenotype", "ncbitaxon:40559", "the problem"),
-    "Crop": ("phenotype", "mg.crop:strawberry", "who suffers"),
-    "Pathway": ("context", "kegg.pathway:map01110", "the wider process"),
+    "Crop": ("phenotype", "mg.crop:jujube", "who suffers"),
+    "Pathway": ("context", "kegg.pathway:map00660", "the wider process"),
 }
 
 
@@ -445,9 +445,9 @@ def _table(cx: float, cy: float, c: str) -> str:
 
 
 def adapter_contract() -> str:
-    sources = [("MIBiG", "Phase 1", True), ("PubChem", "Phase 2", False),
-               ("NCBI Taxonomy", "Phase 2", False), ("KEGG", "Phase 2", False),
-               ("curated bridge", "Phase 2", False), ("UniProt", "Phase 3", False)]
+    sources = [("MIBiG", "Phase 1", True), ("PubChem", "Phase 2", True),
+               ("NCBI Taxonomy", "Phase 2", True), ("KEGG", "Phase 2", True),
+               ("curated bridge", "Phase 2", True), ("UniProt", "Phase 3", False)]
     parts = [t(32, 46, "One socket, many plugs: the adapter contract", size=22, weight=700),
              t(32, 70, "Every source fits the same three verbs, so adding one changes nothing downstream.",
                size=14, fill=INK2)]
@@ -467,10 +467,10 @@ def adapter_contract() -> str:
     for k in range(3):
         parts.append(rect(366 + k * 38, 262, 14, 34, fill=INK2, rx=4))
     parts.append(t(420, 318, "probe · fetch · tidy", size=12, fill=INK2, anchor="middle", family=MONO))
-    verbs = [("probe()", "What is out there?", "asks about version, size and checksum;",
+    verbs = [("probe()", "What is out there?", "asks about version, size, limits and keys;",
               "downloads nothing", _magnifier),
-             ("fetch()", "Bring it home, untouched.", "into data/raw/<source>/, checksum verified,",
-              "one provenance row per fetch", _download),
+             ("fetch()", "Bring it home, untouched.", "into data/raw/<source>/, fingerprinted,",
+              "one provenance row for every file", _download),
              ("tidy()", "Make it fit the rulebook.", "reads only the locker, never the internet;",
               "writes staging CSVs that pass the 12 rules", _table)]
     for i, (name, q, l1, l2, draw) in enumerate(verbs):
@@ -779,6 +779,202 @@ def ci_checks() -> str:
                "then pytest.")
 
 
+# =============================================================================
+# Phase 2 figures
+# =============================================================================
+def _file_icon(x: float, y: float, c: str, fill: str = PLANE) -> str:
+    """A small page with a folded corner, its top-left at (x, y)."""
+    return (f'<path d="M{x} {y} h14 l6 6 v20 h-20 z" fill="{fill}" stroke="{c}" stroke-width="1.6" '
+            f'stroke-linejoin="round"/><path d="M{x + 14} {y} v6 h6" fill="none" stroke="{c}" '
+            f'stroke-width="1.6" stroke-linejoin="round"/>')
+
+
+def _padlock(cx: float, cy: float, c: str) -> str:
+    return (f'<path d="M{cx - 7} {cy - 2} v-6 a7 7 0 0 1 14 0 v6" fill="none" stroke="{c}" '
+            f'stroke-width="2.6" stroke-linecap="round"/>'
+            + rect(cx - 11, cy - 3, 22, 17, fill=c, rx=3)
+            + f'<circle cx="{cx}" cy="{cy + 5}" r="2.4" fill="{SURFACE}"/>')
+
+
+def _envelope(cx: float, cy: float, c: str) -> str:
+    return (rect(cx - 18, cy - 12, 36, 24, fill=SURFACE, stroke=c, rx=3, sw=2.2)
+            + f'<path d="M{cx - 18} {cy - 11} L{cx} {cy + 2} L{cx + 18} {cy - 11}" fill="none" '
+            f'stroke="{c}" stroke-width="2.2" stroke-linejoin="round"/>')
+
+
+def sources_map() -> str:
+    """Phase 2: five sources, what each one needs first, and what each adds to the graph."""
+    rows = [
+        ("1", "MIBiG", "Phase 1", "CC BY 4.0", GOOD, "needs: nothing",
+         ["Organism", "GeneCluster", "Compound", "Activity"],
+         "HARBORS · PRODUCES · HAS_ACTIVITY · BELONGS_TO"),
+        ("2", "PubChem", "Phase 2", "no NCBI restrictions", GOOD, "needs: MIBiG's compound numbers",
+         ["Compound"], "formula, structure, other names, KEGG and ChEBI numbers"),
+        ("3", "NCBI Taxonomy", "Phase 2", "no NCBI restrictions", GOOD,
+         "needs: MIBiG's organisms, the bridge's pathogens",
+         ["Organism", "Pathogen"], "MEMBER_OF: strain > species > genus > ... > domain"),
+        ("4", "KEGG", "Phase 2", "academic use only", CRITICAL, "needs: PubChem's KEGG numbers",
+         ["Pathway"], "PARTICIPATES_IN: compound > pathway map"),
+        ("5", "curated bridge", "Phase 2", "MIT, this repository", GOOD,
+         "checked against: MIBiG and NCBI", ["Pathogen", "Crop"],
+         "INHIBITS · INFECTS, every row cited (curated_literature)"),
+    ]
+    parts = [t(32, 46, "Five sources, one graph", size=22, weight=700),
+             t(32, 70, "They run in this order, because each one builds on what the ones above "
+               "it wrote. Every licence is recorded.", size=14, fill=INK2)]
+    parts.append(t(84, 104, "SOURCE, AND WHAT IT NEEDS FIRST", size=12, weight=700, fill=MUTED))
+    parts.append(t(640, 104, "WHAT IT ADDS TO THE GRAPH", size=12, weight=700, fill=MUTED))
+    for i, (num, name, phase, licence, lic_colour, needs, kinds, adds) in enumerate(rows):
+        y = 118 + i * 92
+        parts.append(f'<circle cx="52" cy="{y + 38}" r="16" fill="{LAYER["genomics"]}"/>')
+        parts.append(t(52, y + 43.5, num, size=14, weight=700, fill=SURFACE, anchor="middle"))
+        if i < len(rows) - 1:
+            parts.append(line(52, y + 56, 52, y + 106, color=BASE, sw=2))
+        parts.append(rect(84, y, 470, 76, fill=SURFACE, stroke=HAIR, rx=12))
+        parts.append(t(104, y + 28, name, size=16, weight=700))
+        parts.append(t(252, y + 28, phase, size=12, fill=MUTED))
+        parts.append(t(104, y + 54, needs, size=13, fill=INK2))
+        parts.append(chip(360, y + 12, licence, lic_colour, w=180, size=11.5))
+        parts.append(line(558, y + 38, 628, y + 38, color=INK2, sw=2))
+        parts.append(rect(632, y, 536, 76, fill=PLANE, stroke=HAIR, rx=12))
+        for k, kind in enumerate(kinds):
+            cx = 660 + k * 48
+            parts.append(f'<circle cx="{cx}" cy="{y + 26}" r="19" fill="{SURFACE}" '
+                         f'stroke="{LAYER[NODE_INFO[kind][0]]}" stroke-width="2.2"/>')
+            parts.append(icon(kind, cx, y + 26, 25))
+        parts.append(t(648 + len(kinds) * 48, y + 31, " · ".join(kinds), size=13, weight=600))
+        parts.append(t(648, y + 64, adds, size=12, fill=INK2,
+                       family=MONO if adds.isupper() or "_" in adds else FONT))
+    y = 118 + len(rows) * 92 + 6
+    parts.append(chip(84, y, "open: reuse allowed, with credit", GOOD, w=250, size=11.5))
+    parts.append(chip(346, y, "academic use only: never in a public release", CRITICAL, w=330, size=11.5))
+    parts.append(t(1168, y + 17, "python -m microbegraph.fetch --all runs 1 to 5", size=12, fill=MUTED,
+                   anchor="end", family=MONO))
+    return svg(1200, y + 46, "".join(parts), "Five sources, one graph",
+               "MIBiG, PubChem, NCBI Taxonomy, KEGG and the curated bridge, in the order they "
+               "run, with what each needs first, its licence, and the node and edge types it adds.")
+
+
+def secrets_env() -> str:
+    """Phase 2: where an API key lives, how it travels, and every place it never goes."""
+    blue = LAYER["genomics"]
+    parts = [t(32, 46, "Where a key lives, and where it never goes", size=22, weight=700),
+             t(32, 70, "One private file on your computer, one sealed trip to NCBI, and a gate that "
+               "stops it reaching GitHub.", size=14, fill=INK2)]
+    # your computer
+    parts.append(rect(32, 96, 452, 300, fill=PLANE, stroke=INK2, rx=16, sw=2))
+    parts.append(t(258, 124, "your computer", size=15, weight=700, anchor="middle"))
+    parts.append(rect(56, 142, 404, 92, fill=SURFACE, stroke=blue, rx=12, sw=2))
+    parts.append(_file_icon(74, 160, blue, fill=SURFACE))
+    parts.append(t(106, 176, ".env", size=15, weight=700, family=MONO))
+    parts.append(_padlock(430, 172, blue))
+    parts.append(t(74, 206, "NCBI_API_KEY=a1b2...(36 characters)", size=12, fill=INK, family=MONO))
+    parts.append(t(74, 224, "listed in .gitignore, so Git never sees it", size=12, fill=INK2))
+    parts.append(line(258, 238, 258, 262, color=INK2, sw=2))
+    parts.append(rect(56, 266, 404, 110, fill=SURFACE, stroke=HAIR, rx=12))
+    parts.append(t(74, 292, "python -m microbegraph.fetch", size=13, weight=700, family=MONO))
+    parts.append(t(74, 314, "reads .env when it starts", size=12.5, fill=INK2))
+    parts.append(t(74, 340, "on screen:  API key : set", size=12.5, fill=INK, family=MONO))
+    parts.append(t(74, 362, "never the key itself", size=12.5, fill=INK2))
+    # the trip to NCBI
+    parts.append(line(488, 186, 690, 186, color=blue, sw=2.5))
+    parts.append(_envelope(589, 160, blue))
+    parts.append(t(589, 210, "POST body (sealed)", size=12.5, weight=700, fill=blue, anchor="middle"))
+    parts.append(t(589, 228, "id=..., api_key=...", size=11.5, fill=INK2, anchor="middle", family=MONO))
+    parts.append(rect(694, 140, 274, 92, fill=SURFACE, stroke=HAIR, rx=12))
+    parts.append(t(831, 172, "NCBI E-utilities", size=15, weight=700, anchor="middle"))
+    parts.append(t(831, 194, "10 requests a second", size=12.5, fill=INK2, anchor="middle"))
+    parts.append(t(831, 212, "instead of 3", size=12.5, fill=INK2, anchor="middle"))
+    # github
+    parts.append(rect(694, 262, 274, 134, fill=PLANE, stroke=INK2, rx=16, sw=2))
+    parts.append(t(831, 288, "GitHub (public)", size=15, weight=700, anchor="middle"))
+    parts.append(_file_icon(714, 302, INK2, fill=SURFACE))
+    parts.append(t(744, 318, ".env.example", size=13, weight=700, family=MONO))
+    parts.append(t(744, 336, "NCBI_API_KEY=   (empty)", size=11.5, fill=INK2, family=MONO))
+    parts.append(cross_mark(726, 368, 9))
+    parts.append(t(744, 373, ".env, or any key-shaped text", size=12, fill=INK))
+    parts.append(path("M460 330 C560 330 600 360 690 366", color=CRITICAL, sw=2, dash="6 5"))
+    parts.append(rect(500, 340, 178, 26, fill=SURFACE, rx=6))
+    parts.append(t(589, 358, "check-public-safe.sh", size=12, weight=700, fill=CRITICAL, anchor="middle",
+                   family=MONO))
+    parts.append(t(589, 384, "stops the push", size=12, fill=INK2, anchor="middle"))
+    # where it never goes
+    parts.append(t(32, 434, "THE KEY IS NEVER", size=12, weight=700, fill=MUTED))
+    never = ["in a web address", "in provenance.csv", "in a manifest", "on screen", "in a commit"]
+    for k, where in enumerate(never):
+        x = 32 + k * 190
+        parts.append(cross_mark(x + 10, 460, 9))
+        parts.append(t(x + 26, 465, where, size=13))
+    parts.append(t(32, 500, "Without a key everything still works, just more slowly.", size=13,
+                   fill=INK2, style="italic"))
+    return svg(1000, 520, "".join(parts), "Where a key lives",
+               "The NCBI key sits in .env on your computer, which Git ignores. The program reads "
+               "it, shows only 'set', and sends it to NCBI inside a POST body. GitHub only ever "
+               "gets .env.example with empty values, and the safety gate stops any push that "
+               "contains a key.")
+
+
+def api_snapshot() -> str:
+    """Phase 2: how an answer from a web API is kept as evidence."""
+    blue = LAYER["genomics"]
+    parts = [t(32, 46, "An answer from an API, kept as evidence", size=22, weight=700),
+             t(32, 70, "Answers change from day to day, so every fetch gets its own dated folder, and "
+               "nothing in it is ever edited.", size=14, fill=INK2)]
+    # the service
+    parts.append(rect(32, 110, 196, 120, fill=SURFACE, stroke=HAIR, rx=12))
+    parts.append(t(130, 142, "PubChem", size=16, weight=700, anchor="middle"))
+    parts.append(t(130, 166, "24 questions,", size=12.5, fill=INK2, anchor="middle"))
+    parts.append(t(130, 184, "100 compounds each,", size=12.5, fill=INK2, anchor="middle"))
+    parts.append(t(130, 202, "paced under its limit", size=12.5, fill=INK2, anchor="middle"))
+    parts.append(line(232, 170, 290, 170, color=INK2, sw=2.5))
+    # the snapshot folder
+    parts.append(rect(294, 96, 420, 268, fill=PLANE, stroke=INK2, rx=14, sw=2))
+    parts.append(t(314, 124, "data/raw/pubchem/2026-10-12T055202Z/", size=13, weight=700, family=MONO))
+    files = [("properties_001.json", "answer 1, as it arrived"),
+             ("synonyms_001.json", "answer 2"),
+             ("...", ""),
+             ("synonyms_012.json", "answer 24")]
+    for k, (name, note) in enumerate(files):
+        y = 142 + k * 38
+        if name == "...":
+            parts.append(t(330, y + 22, "...", size=14, fill=MUTED))
+            continue
+        parts.append(_file_icon(314, y + 4, INK2, fill=SURFACE))
+        parts.append(t(344, y + 21, name, size=12.5, family=MONO))
+        parts.append(t(556, y + 21, note, size=11.5, fill=MUTED))
+    parts.append(rect(310, 300, 388, 50, fill=SURFACE, stroke=blue, rx=10, sw=2))
+    parts.append(_file_icon(324, 312, blue, fill=SURFACE))
+    parts.append(t(354, 322, "manifest.json", size=13, weight=700, family=MONO))
+    parts.append(t(354, 340, "what was asked; written LAST, so it marks 'finished'", size=11.5,
+                   fill=INK2))
+    # provenance
+    parts.append(line(718, 230, 774, 230, color=INK2, sw=2))
+    parts.append(rect(778, 186, 390, 88, fill=SURFACE, stroke=HAIR, rx=12))
+    parts.append(t(798, 214, "provenance.csv", size=13.5, weight=700, family=MONO))
+    parts.append(t(798, 238, "+1 row for every answer: when, from where,", size=12, fill=INK2))
+    parts.append(t(798, 256, "size, and its SHA-256 fingerprint", size=12, fill=INK2))
+    # the shelf over time
+    parts.append(t(32, 410, "THE SHELF OVER TIME: tidy reads the newest FINISHED folder", size=12,
+                   weight=700, fill=MUTED))
+    shelf = [("2026-10-12T055202Z", "finished", True, ""),
+             ("2026-10-12T091510Z", "no manifest: the line dropped, so tidy skips it", False, ""),
+             ("2026-11-03T074005Z", "finished, newest: tidy reads this one", True, "newest")]
+    for k, (name, note, ok, tag) in enumerate(shelf):
+        x = 32 + k * 380
+        parts.append(rect(x, 424, 364, 76, fill=SURFACE, stroke=blue if tag else HAIR, rx=12,
+                          sw=2 if tag else 1.5, dash="" if ok else "6 5"))
+        parts.append((check_mark if ok else cross_mark)(x + 24, 450, 10))
+        parts.append(t(x + 44, 455, name, size=13, weight=700, family=MONO))
+        parts.append(t(x + 20, 484, note, size=12, fill=INK2))
+    parts.append(t(32, 532, "Same questions on the same day? The fetch reuses today's folder and asks "
+                   "nothing. A new day, or new questions, makes a new folder.", size=12.5,
+                   fill=INK2, style="italic"))
+    return svg(1200, 552, "".join(parts), "An API answer kept as evidence",
+               "PubChem's answers are saved byte for byte in a dated folder with a manifest "
+               "written last, each answer gets a provenance row, and tidy reads the newest "
+               "finished folder.")
+
+
 FIGURES = {
     "logo_microbegraph.svg": logo,
     "cover_microbegraph.svg": cover,
@@ -792,6 +988,9 @@ FIGURES = {
     "setup_flow.svg": setup_flow,
     "journey_map.svg": journey_map,
     "ci_checks.svg": ci_checks,
+    "sources_map.svg": sources_map,
+    "secrets_env.svg": secrets_env,
+    "api_snapshot.svg": api_snapshot,
 }
 
 
