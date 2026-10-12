@@ -48,6 +48,16 @@ HOW IT ASKS (PUG REST), IN THREE ROUNDS
     a compound with no number and no formula, because a name match is only
     accepted when the formula agrees too (src/microbegraph/resolution/compounds.py).
 
+    That web search is only used for a short list (up to 300 names) while
+    the names file below isn't on this computer yet. For a longer list,
+    which is the usual case, the adapter downloads PubChem's
+    file of every name, CID-Synonym-filtered.gz, once and searches it on
+    this computer instead (src/microbegraph/sources/pubchem_names.py says
+    why and how). The answers are saved in the snapshot in the same shape
+    either way, as names_from_file_001.json and so on, and logged with the
+    outcome "derived": worked out here from a downloaded file, not received
+    as an answer.
+
     Round 3, the numbers the name search found (Phase 4b): their formula,
     structure key and names, asked the same way as round 1.
 
@@ -60,8 +70,12 @@ PUBCHEM'S LIMITS, AND WHAT HAPPENED WHEN THEY WERE TESTED
     A name search costs PubChem's servers more than a number lookup. While
     this phase was being built, a survey asking four names a second was
     refused with "429 Too Many Requests" after about 400 names, and the
-    refusals went on for hours. So round 2 asks one name a second,
-    and waits 15, 30, 60 and 60 seconds before giving up on a request
+    refusals went on for hours. Asking one name a second was refused after
+    372 names on the same day. The limit seems to count name searches, not
+    their speed, so a list of 1,655 names can't be asked one by one in a
+    single day. That is why a long list is searched in PubChem's names file
+    (round 2 above). The web search, kept for short lists, asks one name a
+    second and waits 15, 30, 60 and 60 seconds before giving up on a request
     PubChem refuses as busy.
 
     If PubChem still refuses, the fetch stops cleanly: everything that
@@ -71,7 +85,9 @@ PUBCHEM'S LIMITS, AND WHAT HAPPENED WHEN THEY WERE TESTED
     Round 3 then waits for that next run (asking a server that is refusing
     only prolongs the block). If round 3 itself fails, every name-search
     answer is kept and carried over in the same way, and the next run repeats
-    round 3. Until then, tidy leaves out the search answers of every compound
+    round 3. Round 1's answers are carried over too when the stopped fetch
+    asked about exactly the same numbers, so a second run doesn't ask them
+    again. Until then, tidy leaves out the search answers of every compound
     whose search found a number round 3 had to describe.
 
 WHAT tidy() TURNS THE ANSWERS INTO
@@ -110,6 +126,7 @@ from typing import Any
 
 import requests
 
+from microbegraph import provenance
 from microbegraph.paths import CURATION_DIR, relative_to_repo
 from microbegraph.resolution.names import name_key, split_list
 from microbegraph.sources.api import ApiSource, Snapshot, batches_text, chunks
@@ -120,6 +137,7 @@ from microbegraph.sources.base import (
     TidyResult,
     TransientHTTPError,
 )
+from microbegraph.sources.pubchem_names import BULK_FILE, BULK_URL, search_synonym_file
 from microbegraph.staging import node_row, properties_of, read_table, write_tables
 
 PUG = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
@@ -138,6 +156,8 @@ SYNONYMS_KEPT = 20          # names kept per compound; PubChem lists the most us
 NAMES_PER_FILE = 50         # name-search answers saved together in one file
 MAX_NUMBERS_PER_NAME = 10   # a name filed under more numbers is too vague to choose from
 NAME_PAUSE_FACTOR = 4.0     # a name search waits 4 x pause_seconds: one a second
+NAMES_FROM_FILE_ABOVE = 300  # more names than PubChem lets one computer search: use its file
+NAMES_PER_SEARCH_FILE = 500  # answers from that file saved together in one file
 
 # What round 2 asks, written into every manifest so that two fetches asking
 # the same questions can be recognised (see reuse_today in api.py).
@@ -199,14 +219,36 @@ class PubchemSource(ApiSource):
             report.facts.append(f"to ask about   : {len(cids):,} CIDs from MIBiG and the review "
                                 f"file, {2 * n_batches} requests")
             most = sum(1 for item in compounds if item["cids"] or item["formula"])
-            report.facts.append(f"name search    : up to {most:,} names, one a second, decided "
-                                f"after the numbers are in")
+            report.facts.append(f"name search    : up to {most:,} names, decided after the numbers "
+                                f"are in; more than {NAMES_FROM_FILE_ABOVE} are searched in "
+                                f"{BULK_FILE}")
         except SourceError:
             report.facts.append("to ask about   : unknown until MIBiG is tidied (Phase 1)")
+        self._probe_bulk_file(report)
         facts, warnings = self.locker_facts()
         report.facts += facts
         report.warnings += warnings
         return report
+
+    def _probe_bulk_file(self, report: ProbeReport) -> None:
+        """Phase 4b: the size and date of PubChem's file of every name, and the locker's copy."""
+        try:
+            response = self.http_get(BULK_URL, stream=True)
+            size = int(response.headers.get("Content-Length") or 0)
+            changed = response.headers.get("Last-Modified", "?")
+            response.close()
+            report.facts.append(f"names file     : {BULK_FILE}, {size / 1_048_576:,.0f} MB on "
+                                f"PubChem's file server (last changed {changed})")
+        except (requests.RequestException, SourceError, ValueError) as error:
+            report.warnings.append(f"Could not ask PubChem's file server about {BULK_FILE} "
+                                   f"({error}). Check your connection.")
+        local = self.locker / BULK_FILE
+        if local.exists():
+            report.facts.append(f"downloaded     : yes, {local.stat().st_size / 1_048_576:,.0f} MB "
+                                f"in {relative_to_repo(self.locker)}/")
+        else:
+            report.facts.append("downloaded     : not yet (the fetch downloads it when there are "
+                                f"more than {NAMES_FROM_FILE_ABOVE} names to search)")
 
     # ======================================================================
     # what to ask
@@ -269,17 +311,29 @@ class PubchemSource(ApiSource):
         earlier, earlier_folder = self._earlier_name_answers(asked_for)
         snapshot = self.start_snapshot(asked_for, {"mibig_compounds_by_cid": by_cid})
 
-        # Round 1: the numbers MIBiG gives
-        self.say(f"  [{self.name}] round 1: asking about {len(cids):,} CIDs in "
-                 f"{batches_text(len(chunks(cids, BATCH_SIZE)))} of up to {BATCH_SIZE}")
-        try:
-            _, names_by_cid, titles = self._ask_numbers(snapshot, cids, first_file=1)
-        except TransientHTTPError as error:
-            raise SourceError(refused_message(error)) from error
+        # Round 1: the numbers MIBiG gives, unless a fetch that stopped halfway
+        # already has every answer to exactly these questions
+        carried, carried_from = self._earlier_round_one(cids)
+        if carried:
+            self.say(f"  [{self.name}] round 1: {len(cids):,} CIDs, answers carried over from "
+                     f"{carried_from}/, nothing to ask")
+            _, names_by_cid, titles = self._carry_numbers(snapshot, carried, carried_from)
+        else:
+            self.say(f"  [{self.name}] round 1: asking about {len(cids):,} CIDs in "
+                     f"{batches_text(len(chunks(cids, BATCH_SIZE)))} of up to {BATCH_SIZE}")
+            try:
+                _, names_by_cid, titles = self._ask_numbers(snapshot, cids, first_file=1)
+            except TransientHTTPError as error:
+                raise SourceError(refused_message(error)) from error
 
-        # Round 2: the name search
+        # Round 2: the name search, on the web or in PubChem's file of every name
         to_search = self._names_to_search(compounds, names_by_cid, titles)
-        searched, not_asked = self._search_names(snapshot, to_search, earlier, earlier_folder)
+        if (self.locker / BULK_FILE).exists() or len(to_search) > NAMES_FROM_FILE_ABOVE:
+            searched = self._search_names_in_file(snapshot, to_search, earlier, earlier_folder)
+            not_asked: list[str] = []
+        else:
+            searched, not_asked = self._search_names(snapshot, to_search, earlier,
+                                                     earlier_folder)
 
         # Round 3: the numbers the name search found. Skipped when PubChem stopped
         # answering in round 2: asking a server that is refusing only prolongs the block.
@@ -348,17 +402,48 @@ class PubchemSource(ApiSource):
                         f"answer expected ({_fault_message(body)}). Run the fetch again in a "
                         f"few minutes; the unfinished folder is ignored by tidy."
                     )
-                data = json.loads(body)
-                if kind == "properties":
-                    for entry in data.get("PropertyTable", {}).get("Properties", []):
-                        properties[str(entry.get("CID"))] = entry
-                else:
-                    for entry in data.get("InformationList", {}).get("Information", []):
-                        names[str(entry.get("CID"))] = list(entry.get("Synonym") or [])
+                _read_numbers(kind, body, properties, names)
                 if light != "Green":
                     self.say(f"  [{self.name}] PubChem's traffic light is {light}; slowing down")
                 self.say(f"  [{self.name}] {relative_to_repo(path)}")
                 self.pause(THROTTLE_FACTOR[light])
+        titles = {cid: str(entry.get("Title") or "") for cid, entry in properties.items()}
+        return properties, names, titles
+
+    def _earlier_round_one(self, cids: list[str]) -> tuple[list[tuple[str, Path, dict[str, Any]]], str]:
+        """
+        Round 1's answer files from the newest fetch that stopped halfway
+        (complete is false) after asking about exactly these CIDs, if it has
+        every one of them; otherwise nothing. Resuming then costs PubChem no
+        requests for round 1.
+        """
+        n_batches = len(chunks(cids, BATCH_SIZE))
+        wanted = [f"{kind}_{n:03d}.json" for n in range(1, n_batches + 1)
+                  for kind in ("properties", "synonyms")]
+        for folder in reversed(self.snapshots()):
+            manifest = self.read_manifest(folder)
+            asked = manifest.get("asked_for", {})
+            if manifest.get("complete", True) or asked.get("cids") != cids \
+                    or asked.get("properties") != PROPERTIES:
+                continue
+            answers = {a["file"]: a for a in manifest.get("answers", [])}
+            if all(f in answers and (folder / f).exists() for f in wanted):
+                return [(f, folder / f, answers[f]) for f in wanted], relative_to_repo(folder)
+        return [], ""
+
+    def _carry_numbers(self, snapshot: Snapshot, carried: list[tuple[str, Path, dict[str, Any]]],
+                       carried_from: str,
+                       ) -> tuple[dict[str, dict[str, Any]], dict[str, list[str]], dict[str, str]]:
+        """File round 1's earlier answers in this snapshot (logged as already_present)."""
+        properties: dict[str, dict[str, Any]] = {}
+        names: dict[str, list[str]] = {}
+        for filename, path, answer in carried:
+            body = path.read_bytes()
+            snapshot.save(filename, body, url=answer["url"], method=answer.get("method", "POST"),
+                          sent={**answer.get("sent", {}), "carried_over_from": carried_from},
+                          n_records=answer.get("n_records", ""), source_version="live",
+                          outcome="already_present")
+            _read_numbers(filename.split("_", 1)[0], body, properties, names)
         titles = {cid: str(entry.get("Title") or "") for cid, entry in properties.items()}
         return properties, names, titles
 
@@ -398,6 +483,76 @@ class PubchemSource(ApiSource):
                             answers[item["compound"]] = item
             return answers, relative_to_repo(folder)
         return {}, ""
+
+    def _bulk_file(self) -> tuple[Path, str]:
+        """PubChem's file of every name, from the locker or downloaded once (SHA-256 logged)."""
+        path, outcome, n_bytes, md5, sha256 = self.download_to_locker(BULK_URL, BULK_FILE, None)
+        provenance.append(
+            {
+                "retrieved_at": provenance.utc_now(),
+                "source": self.name,
+                "source_version": "live",
+                "url": BULK_URL,
+                "local_path": relative_to_repo(path),
+                "n_bytes": n_bytes,
+                "md5": md5,
+                "sha256": sha256,
+                "n_records": "",
+                "licence": self.licence,
+                "outcome": outcome,
+            },
+            log_path=self.provenance_log,
+        )
+        self.say(f"  [{self.name}] {outcome}: {relative_to_repo(path)} "
+                 f"({n_bytes / 1_048_576:,.0f} MB), provenance logged")
+        return path, sha256
+
+    def _search_names_in_file(self, snapshot: Snapshot, to_search: list[tuple[str, str]],
+                              earlier: dict[str, dict[str, Any]], earlier_folder: str,
+                              ) -> dict[str, dict[str, Any]]:
+        """
+        Round 2 from PubChem's file of every name (see pubchem_names.py). Each
+        answer has the same shape as a web answer, plus "via": the file and the
+        first 12 characters of its SHA-256. A fetch that stopped in round 3
+        after searching the same file is carried over instead of searched again.
+        """
+        path, sha256 = self._bulk_file()
+        via = f"{BULK_FILE} {sha256[:12]}"
+        context = {"file": relative_to_repo(path), "sha256": sha256}
+        snapshot.context["names_from_file"] = context
+        if to_search and all(earlier.get(c, {}).get("via") == via for c, _ in to_search):
+            carried = [earlier[c] for c, _ in to_search]
+            snapshot.save("names_carried_over.json", _json_bytes(carried), url=BULK_URL,
+                          method="SEARCH", sent={"carried_over_from": earlier_folder},
+                          n_records=sum(1 for a in carried if a["cids"]), source_version="live",
+                          outcome="already_present")
+            self.say(f"  [{self.name}] round 2: {len(carried):,} names already searched in "
+                     f"{BULK_FILE}, carried over from {earlier_folder}/")
+            return {a["compound"]: a for a in carried}
+
+        self.say(f"  [{self.name}] round 2: the name search, {len(to_search):,} names, in "
+                 f"{BULK_FILE} on this computer (a few minutes)")
+        cids_by_name = search_synonym_file(path, [n for _, n in to_search], say=self.say)
+        searched: dict[str, dict[str, Any]] = {}
+        for compound, name in to_search:
+            numbers = cids_by_name[name]
+            searched[compound] = {
+                "compound": compound, "name": name, "status": 200 if numbers else 404,
+                "cids": numbers, "via": via,
+                "answer": {"IdentifierList": {"CID": [int(c) for c in numbers]}} if numbers
+                else {"Fault": {"Code": "PUGREST.NotFound",
+                                "Message": f"No CID lists this name in {BULK_FILE}"}}}
+        items = list(searched.values())
+        for number, start in enumerate(range(0, len(items), NAMES_PER_SEARCH_FILE), start=1):
+            batch = items[start:start + NAMES_PER_SEARCH_FILE]
+            snapshot.save(f"names_from_file_{number:03d}.json", _json_bytes(batch),
+                          url=BULK_URL, method="SEARCH",
+                          sent={"names": [a["name"] for a in batch], "file_sha256": sha256},
+                          n_records=sum(1 for a in batch if a["cids"]), source_version="live",
+                          outcome="derived")
+        found = sum(1 for a in items if a["cids"])
+        self.say(f"  [{self.name}] name search: {len(items):,} names searched, {found:,} found")
+        return searched
 
     def _search_names(self, snapshot: Snapshot, to_search: list[tuple[str, str]],
                       earlier: dict[str, dict[str, Any]], earlier_folder: str,
@@ -573,6 +728,18 @@ class PubchemSource(ApiSource):
             summary["name_search_complete"] = manifest.get("complete", True)
             summary["names_not_asked"] = not_asked
         return write_tables(self.name, nodes, [], summary, self.staging_dir)
+
+
+def _read_numbers(kind: str, body: bytes, properties: dict[str, dict[str, Any]],
+                  names: dict[str, list[str]]) -> None:
+    """Add one properties or synonyms answer to what is known about each CID."""
+    data = json.loads(body)
+    if kind == "properties":
+        for entry in data.get("PropertyTable", {}).get("Properties", []):
+            properties[str(entry.get("CID"))] = entry
+    else:
+        for entry in data.get("InformationList", {}).get("Information", []):
+            names[str(entry.get("CID"))] = list(entry.get("Synonym") or [])
 
 
 def refused_message(error: Exception) -> str:

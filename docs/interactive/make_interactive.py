@@ -546,6 +546,8 @@ CASES = [
             ["MIBiG BGC0000659", "pubchem:16913", "formula C11H20O"],
             ["PubChem 9237955", "its title", "methyl (2S,4S)-1-[[5-(3-bromophenyl)-...]...-2-"
              "carboxylate, C15H16BrN3O4S"],
+            ["PubChem 16913", "its title", "2-Bornanol, 2-methyl-, C11H20O"],
+            ["PubChem 11062802", "its title", "2-Methylisoborneol, C11H20O"],
         ],
         "phase4": "Phase 4 kept only the first entry's number and formula, so the two formulas "
                   "agreed and MIBiG's 2-methylisoborneol was joined to the bromine compound's "
@@ -553,27 +555,24 @@ CASES = [
         "steps": [
             ["info", "Every value, by entry", "Three entries give two numbers (9237955 once, "
              "16913 twice) and two formulas. Both numbers are candidates now."],
-            ["fail", "Clue 1, name", "PubChem's record 9237955 doesn't list the name. Record "
-             "16913 isn't in this PubChem snapshot yet: the next fetch asks about it."],
-            ["wait", "Clues 2 and 3", "Both need PubChem's name search, which hasn't run yet."],
-            ["info", "Clue 4, formula alone", "Would still join today: the only entry that "
-             "gives 9237955 (BGC0000657) gives its formula too, so the two agree. Once the name "
-             "search files the name under 16913, a different molecule, clue 4 is switched off."],
-            ["person", "The review file", "Until then, a person's decision stops it: someone "
-             "read PubChem's record 9237955 (a bromine and sulfur compound) and wrote "
-             "keep_apart, with that record as the source."],
+            ["person", "The review file", "A person read PubChem's record 9237955 (a bromine and "
+             "sulfur compound) and wrote keep_apart, with that record as the source. That number "
+             "is out, whatever the clues say."],
+            ["fail", "Clue 1, name", "Record 16913 is titled '2-Bornanol, 2-methyl-' and doesn't "
+             "list the name."],
+            ["pass", "Clue 2, same structure", "The name search files the name under 11062802. Its "
+             "InChIKey starts LFYXNXGVLGKVCJ, like 16913's: the same molecule, drawn with its 3D "
+             "shape (11062802) and without it (16913)."],
         ],
-        "rule": "reviewed_by_hand", "decision": "kept_apart",
-        "grounds": "Decided by hand on 2026-10-12: mg.compound:2-methylisoborneol and "
-                   "pubchem.compound:9237955 are different things. PubChem's record 9237955 is "
-                   "methyl (2S,4S)-1-[[5-(3-bromophenyl)-2-sulfanylidene-1,3,4-oxadiazol-3-yl]"
-                   "methyl]-4-hydroxypyrrolidine-2-carboxylate (C15H16BrN3O4S), a bromine and "
-                   "sulfur compound. 2-Methylisoborneol is C11H20O, as MIBiG's entries BGC0000658 "
-                   "and BGC0000659 say (they give CID 16913); only BGC0000657 carries the other "
-                   "record's number, formula and structure. Source: pubchem.compound:9237955 "
-                   "(curation/resolution_decisions.csv, line 2).",
-        "next": "When PubChem's name search runs, record 16913 is fetched and judged on the "
-                "clues; PubChem is expected to list the name under it.",
+        "rule": "pubchem_number_confirmed", "decision": "merged",
+        "grounds": "MIBiG gives CID 16913; PubChem doesn't list the name '2-methylisoborneol' "
+                   "under CID 16913 (its title is '2-Bornanol, 2-methyl-'), but files it under "
+                   "CID 11062802, the same molecule drawn another way: both InChIKeys start "
+                   "LFYXNXGVLGKVCJ; the formulas agree (C11H20O). Confirmed by name, through the "
+                   "same structure.",
+        "next": "Settled: one node, pubchem.compound:16913, named 2-methylisoborneol. 11062802 "
+                "stays out of the graph (16913 is better supported, being the number MIBiG "
+                "gives), and the decision by hand stays in the ledger.",
     },
     {
         "id": "des", "kind": "Compound", "title": "desosamine",
@@ -583,6 +582,10 @@ CASES = [
             ["MIBiG BGC0000899", "pubchem:419813", "formula C8H17NO3"],
             ["MIBiG BGC0000094 (methymycin)", "npatlas:NPA01238", "formula C25H43NO7"],
             ["PubChem 5282034", "its title", "Methymycin, C25H43NO7"],
+            ["PubChem 419813", "its title", "3,4,6-Trideoxy-3-(dimethylamino-b-D-xylo-"
+             "hexopyranose), C8H17NO3, the sugar drawn as a ring"],
+            ["PubChem 168997", "its title", "3,4,6-Trideoxy-3-(dimethylamino)-D-xylo-hexose, "
+             "C8H17NO3, the sugar drawn as an open chain"],
         ],
         "phase4": "Phase 4 joined desosamine to PubChem's methymycin record on the formula "
                   "alone, then the NPAtlas rule pulled MIBiG's methymycin into the same node: "
@@ -590,25 +593,24 @@ CASES = [
         "steps": [
             ["info", "Every value, by entry", "Two entries, two numbers, two formulas. Entry "
              "BGC0000898 gives desosamine methymycin's number, formula and NPAtlas number."],
-            ["fail", "Clue 1, name", "PubChem's record 5282034 is titled Methymycin and doesn't "
-             "list 'desosamine'."],
-            ["info", "Clue 4, formula alone", "Would still join today: the only entry that "
-             "gives 5282034 (BGC0000898) gives methymycin's formula too, so the two agree."],
-            ["stop", "The NPAtlas rule", "One NPAtlas number and one formula would join two MIBiG "
-             "names, but desosamine's entries disagree about its formula, so that can't "
-             "confirm the pair."],
             ["person", "The review file", "Two decisions, both citing the paper MIBiG cites "
              "(pubmed:9770448): desosamine is not PubChem's methymycin, and not MIBiG's "
              "methymycin."],
+            ["fail", "Clue 1, name", "Neither 5282034 (titled Methymycin) nor 419813 lists "
+             "'desosamine'."],
+            ["pass", "Clue 3, name search", "The name search finds 'desosamine' under 168997, "
+             "with the same formula as BGC0000899's, C8H17NO3."],
+            ["stop", "Clue 4 for 419813", "The name is filed under a record with another "
+             "structure key, so the formula alone isn't trusted. 419813 draws the sugar as a ring "
+             "and 168997 as an open chain (in water a sugar switches between the two), so their "
+             "first InChIKey blocks differ."],
         ],
-        "rule": "reviewed_by_hand", "decision": "kept_apart",
-        "grounds": "Decided by hand on 2026-10-12: mg.compound:desosamine and "
-                   "mg.compound:methymycin are different things. Desosamine is the sugar part of "
-                   "methymycin, not another name for it. The two share an NPAtlas number only "
-                   "because entry BGC0000898 gives desosamine methymycin's records. Source: "
-                   "pubmed:9770448 (curation/resolution_decisions.csv, line 4).",
-        "next": "The name search should find desosamine under 419813, the number BGC0000899 "
-                "gives, with a formula that agrees.",
+        "rule": "pubchem_name_search", "decision": "merged",
+        "grounds": "PubChem's name search finds 'desosamine' under CID 168997 ('3,4,6-Trideoxy-"
+                   "3-(dimethylamino)-D-xylo-hexose'); the formulas agree (C8H17NO3). Confirmed "
+                   "by name and formula.",
+        "next": "Settled: one node, pubchem.compound:168997, named desosamine. Methymycin has a "
+                "node of its own, PubChem's 5282034, which the name search found for it.",
     },
     {
         "id": "fer", "kind": "Compound", "title": "ferrichrome",
@@ -618,6 +620,7 @@ CASES = [
              "without iron"],
             ["MIBiG BGC0000901", "pubchem:644246", "formula C27H42FeN9O12, with iron"],
             ["PubChem 644246", "its title", "[55Fe] Ferrichrome, C27H42FeN9O12"],
+            ["PubChem 121489511", "its title", "Ferrichrome, C27H42FeN9O12"],
         ],
         "phase4": "Phase 4 compared the first formula (without iron) with PubChem's (with "
                   "iron): they differ, and PubChem doesn't list the name, so the two stayed "
@@ -628,18 +631,22 @@ CASES = [
              "an entry lists is a candidate so far.)"],
             ["fail", "Clue 1, name", "PubChem titles the record '[55Fe] Ferrichrome', the "
              "molecule built with radioactive iron-55, and doesn't list 'ferrichrome'."],
-            ["stop", "Clue 4, formula alone", "One formula now agrees, but the entries disagree, "
-             "so it can't confirm the number. Without this rule, keeping every value would have "
-             "joined ferrichrome to the radioactive record."],
+            ["pass", "Clue 2, same structure", "The name search files 'ferrichrome' under "
+             "121489511. Both InChIKeys start GGUNGDGGXMHBMJ, so 644246, the number both entries "
+             "give, is confirmed and 121489511 stays apart."],
+            ["info", "What clue 2 can't see", "The first InChIKey block leaves isotopes out, so it "
+             "can't tell iron-55 from ordinary iron. The two records describe the same molecule, "
+             "but 644246 is the radioactive one; 121489511 is ferrichrome itself."],
         ],
-        "rule": "pubchem_number_confirmed", "decision": "kept_apart",
-        "grounds": "MIBiG gives CID 644246; PubChem doesn't list the name 'ferrichrome' (its "
-                   "title is '[55Fe] Ferrichrome'); MIBiG's entries give it different formulas "
-                   "(C26H43N9O12, C27H42FeN9O12), so one of them agreeing with PubChem's "
-                   "(C27H42FeN9O12) can't confirm the number. Nothing else confirms it, so the "
-                   "two stay apart.",
-        "next": "The name search asks PubChem for 'ferrichrome'; a record that lists the name "
-                "with an agreeing formula would be joined.",
+        "rule": "pubchem_number_confirmed", "decision": "merged",
+        "grounds": "MIBiG gives CID 644246; PubChem doesn't list the name 'ferrichrome' under "
+                   "CID 644246 (its title is '[55Fe] Ferrichrome'), but files it under CID "
+                   "121489511, the same molecule drawn another way: both InChIKeys start "
+                   "GGUNGDGGXMHBMJ; the formulas agree (C27H42FeN9O12). Confirmed by name, "
+                   "through the same structure.",
+        "next": "Still to settle: ferrichrome belongs with 121489511. The roadmap does it "
+                "before Phase 5, with a decision by hand or a clue 2 that prefers the record "
+                "PubChem files the name under when the two differ only in isotopes.",
     },
     {
         "id": "las", "kind": "Compound", "title": "lasalocid",
@@ -650,6 +657,7 @@ CASES = [
             ["MIBiG BGC0001648", "no number", "formula C34H54O8, the acid"],
             ["PubChem 2724110", "its title", "Sodium;6-[7-[5-ethyl-...]...]-2-hydroxy-3-"
              "methylbenzoate, C34H53NaO8"],
+            ["PubChem 5360807", "its title", "Lasalocid A, C34H54O8"],
         ],
         "phase4": "Phase 4 kept the first formula, the salt's, which matched PubChem's salt "
                   "record, so the two were joined on the formula alone.",
@@ -660,16 +668,14 @@ CASES = [
              "list 'lasalocid'."],
             ["stop", "Clue 4, formula alone", "Switched off: the entries disagree about the "
              "formula."],
+            ["pass", "Clue 3, name search", "The name search finds 'lasalocid' under 5360807, "
+             "'Lasalocid A', whose formula agrees with the acid's (BGC0001648)."],
         ],
-        "rule": "pubchem_number_confirmed", "decision": "kept_apart",
-        "grounds": "MIBiG gives CID 2724110; PubChem doesn't list the name 'lasalocid' (its "
-                   "title is 'Sodium;6-[7-[5-ethyl-5-(5-ethyl-5-hydroxy-6-methyloxan-2-yl)-3-"
-                   "methyloxolan-2-yl]-4-hydroxy-3,5-dimethyl-6-oxononyl]-2-hydroxy-3-"
-                   "methylbenzoate'); MIBiG's entries give it different formulas (C34H53NaO8, "
-                   "C34H54O8), so one of them agreeing with PubChem's (C34H53NaO8) can't "
-                   "confirm the number. Nothing else confirms it, so the two stay apart.",
-        "next": "Kept apart until the name search runs. It should find 'lasalocid' under "
-                "PubChem's record of the compound itself.",
+        "rule": "pubchem_name_search", "decision": "merged",
+        "grounds": "PubChem's name search finds 'lasalocid' under CID 5360807 ('Lasalocid A'); "
+                   "the formulas agree (C34H54O8). Confirmed by name and formula.",
+        "next": "Settled: one node, pubchem.compound:5360807, named lasalocid: the compound "
+                "itself. The sodium salt's record, 2724110, stays out of the graph.",
     },
     {
         "id": "cbf", "kind": "Protein", "title": "CBF82293.1",

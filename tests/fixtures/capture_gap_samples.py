@@ -27,27 +27,33 @@ WHY THIS EXISTS
     capture_resolution_samples.py): look at real data first, then write code.
 
 WHAT IT DOES
-    Part 1 (network): downloads the GenBank file once (about 80 MB), sends one
-    name search to PubChem per sampled compound (541 requests, one a second,
-    so about ten minutes), asks PubChem for the formula and names
-    of every number those searches found, and sends one request to UniProt
-    and two to NCBI.
+    Part 1 (network): downloads the GenBank file once (about 80 MB), looks up
+    the name of each sampled compound (541 names, see below), asks PubChem for
+    the formula and names of every number those searches found, and sends one
+    request to UniProt and two to NCBI.
 
     PubChem limits how hard anyone may ask, and a name search costs its
     servers more than the number lookups Phase 2 makes. On the first run of
     this script, at four requests a second, PubChem answered "429 Too Many
     Requests" to everything after about 400 questions, and kept refusing for
-    hours. So the script now asks one a second, the same pace as the PubChem
-    adapter's name search, and when PubChem says it's busy (429) or has a
-    temporary fault (500 to 504) it waits 15, 30, 60 and then 120 seconds
-    before asking again. A run that stops halfway can be started again: the
+    hours. Asking one a second didn't help: the PubChem fetch was refused
+    after 372 names that same day. So the names are now looked up in
+    PubChem's file of every name, data/raw/pubchem/CID-Synonym-filtered.gz,
+    which the PubChem fetch downloads (src/microbegraph/sources/pubchem_names.py
+    explains the file). Searching it sends nothing to PubChem.
+
+    If that file isn't on your computer yet, the script stops and says so,
+    unless you add --web. Then it asks PubChem's web service one name a
+    second, and when PubChem says it's busy (429) or has a temporary fault
+    (500 to 504) it waits 15, 30, 60 and then 120 seconds before asking
+    again. A run that stops halfway can be started again: the
     downloaded file and every name PubChem has already answered are reused.
 
-    WHEN YOU REPEAT THE BUILD, this part is optional: its findings are in
-    docs/06b-closing-the-gaps.md, Step 2, and the PubChem fetch asks every
-    one of these names anyway. If you do run it, leave an hour or so before
-    `python -m microbegraph.fetch --source pubchem`, so the two don't add up
-    to more than PubChem is willing to answer at once.
+    WHEN YOU REPEAT THE BUILD, this script is optional: its findings are in
+    docs/06b-closing-the-gaps.md, Step 2, and the PubChem fetch looks up
+    every one of these names anyway. If you do run it, run it after
+    `python -m microbegraph.fetch --source pubchem`, so the names file is
+    there and the script never sends PubChem a name search.
 
     Part 2 (offline): reads the GenBank file, MIBiG's protein file and the
     Phase 2 PubChem snapshot already in your evidence locker, and counts
@@ -55,9 +61,11 @@ WHAT IT DOES
 
 USAGE (from the project folder, with .venv active, after Phase 4)
     python tests/fixtures/capture_gap_samples.py
+    python tests/fixtures/capture_gap_samples.py --web
     python tests/fixtures/capture_gap_samples.py --fixture
 
-    The second form makes no request at all. It cuts surfactin's record out
+    The second form asks PubChem's web service when the names file isn't on
+    your computer (see above). The third makes no request at all. It cuts surfactin's record out
     of the GenBank file (the one in your locker, or else the one this script
     downloaded) into tests/fixtures/mibig/genbank/BGC0000433.gbk, keeping
     only the lines the tests need: lines are removed, never edited.
@@ -89,6 +97,7 @@ from microbegraph.paths import DATA_DIR, PROCESSED_DIR, RAW_DIR, STAGING_DIR, re
 from microbegraph.resolution.names import compare_formulas, name_key, split_list
 from microbegraph.sources.base import TIMEOUT, USER_AGENT
 from microbegraph.sources.mibig_proteins import read_protein_file
+from microbegraph.sources.pubchem_names import BULK_FILE, search_synonym_file
 
 SERVER = "https://dl.secondarymetabolites.org/mibig/"
 GENBANK_FILE = "mibig_gbk_4.0.tar.gz"
@@ -243,6 +252,53 @@ def name_search(session: requests.Session, name: str, mode: str) -> tuple[Any, d
         return ask(session, "POST", f"{PUG}/compound/name/cids/JSON", data={"name": name})
     quoted = requests.utils.quote(name, safe="")
     return ask(session, "GET", f"{PUG}/compound/name/{quoted}/cids/JSON")
+
+
+def names_from_file(path: Path, chosen: list[dict[str, Any]]) -> dict[str, Any]:
+    """
+    The name search in PubChem's file of every name instead of on the web
+    (src/microbegraph/sources/pubchem_names.py), with each answer in the shape
+    the web search gives, so the rest of the survey reads both the same way.
+    """
+    found = search_synonym_file(path, [item["name"] for item in chosen], say=print)
+    not_found = {"Fault": {"Code": "PUGREST.NotFound",
+                           "Message": f"No CID lists this name in {BULK_FILE}"}}
+    return {item["compound"]: ({"IdentifierList": {"CID": [int(c) for c in found[item["name"]]]}}
+                               if found[item["name"]] else not_found)
+            for item in chosen}
+
+
+def web_name_search(session: requests.Session, chosen: list[dict[str, Any]], out_dir: Path,
+                    log: dict[str, Any]) -> tuple[dict[str, Any], Counter[str], str]:
+    """One name a second on PubChem's web service, reusing answers from an earlier run."""
+    earlier: dict[str, Any] = {}
+    names_file = out_dir / "pubchem_names.json"
+    if names_file.exists():
+        saved = json.loads(names_file.read_text(encoding="utf-8"))
+        earlier = {k: v for k, v in saved.get("answers", {}).items() if answered(v)}
+        print(f"    {len(earlier)} names were answered on an earlier run; asking only the rest")
+    _, first = name_search(session, chosen[0]["name"], "post")
+    mode = "post" if first.get("status") in (200, 404) else "get"
+    log["name_search_mode"] = mode
+    print(f"    asking by {mode.upper()} (the first POST answered {first.get('status', 'nothing')})")
+    answers: dict[str, Any] = {}
+    statuses: Counter[str] = Counter()
+    for number, item in enumerate(chosen, start=1):
+        if item["compound"] in earlier:
+            answers[item["compound"]] = earlier[item["compound"]]
+            statuses["answered earlier"] += 1
+            continue
+        answer, record = name_search(session, item["name"], mode)
+        record["name"] = item["name"]
+        log["requests"].append(record)
+        answers[item["compound"]] = answer
+        statuses[str(record.get("status", record.get("error", "?")))] += 1
+        light = record.get("throttling", "")
+        slow = 4.0 if any(c in light for c in ("Yellow", "Red", "Black")) else 1.0
+        print(f"\r    {number:4d} of {len(chosen)} asked", end="", flush=True)
+        time.sleep(PAUSE * slow)
+    print()
+    return answers, statuses, mode
 
 
 def answered(answer: Any) -> bool:
@@ -609,6 +665,15 @@ def main() -> int:
             data = json.loads((folder / answer["file"]).read_text(encoding="utf-8"))
             for entry in data.get("InformationList", {}).get("Information", []):
                 pubchem_names[str(entry.get("CID"))] = list(entry.get("Synonym") or [])
+    chosen = compounds_to_ask(processed, staging, pubchem_names)
+    names_on_disk = RAW_DIR / "pubchem" / BULK_FILE
+    if not names_on_disk.exists() and "--web" not in sys.argv[1:]:
+        print(f"{relative_to_repo(names_on_disk)} isn't on this computer yet, so this survey\n"
+              f"would send {len(chosen)} name searches to PubChem's web service. PubChem stops\n"
+              f"answering after about 400 and can then refuse your computer for hours, the\n"
+              f"PubChem fetch included. Run `python -m microbegraph.fetch --source pubchem`\n"
+              f"first (it downloads that file), or add --web to ask the web service anyway.")
+        return 1
 
     out_dir = DATA_DIR / "samples" / datetime.now(timezone.utc).strftime("%Y-%m-%d") / "gaps"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -630,38 +695,19 @@ def main() -> int:
     print(f"    {record['bytes']:,} bytes, SHA-256 {record['sha256']}")
 
     # 1b. PubChem name searches
-    chosen = compounds_to_ask(processed, staging, pubchem_names)
     groups = Counter(item["why"] for item in chosen)
     print(f"\nPart 1b: PubChem's name search for {len(chosen)} MIBiG compounds "
           f"({', '.join(f'{n} {w}' for w, n in groups.items())})")
-    earlier: dict[str, Any] = {}
-    names_file = out_dir / "pubchem_names.json"
-    if names_file.exists():
-        saved = json.loads(names_file.read_text(encoding="utf-8"))
-        earlier = {k: v for k, v in saved.get("answers", {}).items() if answered(v)}
-        print(f"    {len(earlier)} names were answered on an earlier run; asking only the rest")
-    _, first = name_search(session, chosen[0]["name"], "post")
-    mode = "post" if first.get("status") in (200, 404) else "get"
-    log["name_search_mode"] = mode
-    print(f"    asking by {mode.upper()} (the first POST answered {first.get('status', 'nothing')})")
-    answers: dict[str, Any] = {}
-    statuses: Counter[str] = Counter()
-    for number, item in enumerate(chosen, start=1):
-        if item["compound"] in earlier:
-            answers[item["compound"]] = earlier[item["compound"]]
-            statuses["answered earlier"] += 1
-            continue
-        answer, record = name_search(session, item["name"], mode)
-        record["name"] = item["name"]
-        log["requests"].append(record)
-        answers[item["compound"]] = answer
-        statuses[str(record.get("status", record.get("error", "?")))] += 1
-        light = record.get("throttling", "")
-        slow = 4.0 if any(c in light for c in ("Yellow", "Red", "Black")) else 1.0
-        print(f"\r    {number:4d} of {len(chosen)} asked", end="", flush=True)
-        time.sleep(PAUSE * slow)
-    print(f"\n    answers by HTTP status: {dict(statuses)}")
-    names_file.write_text(json.dumps(
+    if names_on_disk.exists():
+        print(f"    searching {relative_to_repo(names_on_disk)}, PubChem's file of every name, "
+              f"on this computer (nothing is sent)")
+        answers, statuses, mode = names_from_file(names_on_disk, chosen), Counter(), "names file"
+        statuses.update("200" if cids_in(a) else "404" for a in answers.values())
+        log["name_search_mode"] = mode
+    else:
+        answers, statuses, mode = web_name_search(session, chosen, out_dir, log)
+    print(f"    answers by HTTP status: {dict(statuses)}")
+    (out_dir / "pubchem_names.json").write_text(json.dumps(
         {"mode": mode, "asked": chosen, "answers": answers}, indent=1) + "\n", encoding="utf-8")
 
     found = sorted({c for a in answers.values() for c in cids_in(a)}

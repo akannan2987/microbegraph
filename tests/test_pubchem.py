@@ -11,6 +11,7 @@ search, and the numbers the name search found.
 from __future__ import annotations
 
 import csv
+import gzip
 import json
 from pathlib import Path
 
@@ -22,6 +23,8 @@ from microbegraph import provenance
 from microbegraph.sources.api import MANIFEST
 from microbegraph.sources.base import NODE_COLUMNS, SourceError, write_table
 from microbegraph.sources.pubchem import (
+    BULK_FILE,
+    BULK_URL,
     NAME_SEARCH_URL,
     PROPERTIES_URL,
     SYNONYMS_URL,
@@ -361,7 +364,7 @@ def test_a_refusal_in_round_three_keeps_the_name_search_for_the_next_run(make_so
     source.fetch()
     assert [b for m, u, b in session.sent if u == NAME_SEARCH_URL] == []    # all carried over
     cids_sent = [b["cid"] for m, u, b in session.sent if u == PROPERTIES_URL]
-    assert cids_sent == ["5281917", "811"]                                  # round 3 again
+    assert cids_sent == ["811"]               # round 1 carried over too; round 3 asked again
     assert source.tidy().counts["cids_found_by_name"] == 1
 
 
@@ -437,3 +440,123 @@ def test_a_refusal_in_round_one_says_so_in_plain_words(make_source, tmp_path):
     with pytest.raises(SourceError, match="refusing requests from this computer for now"):
         source.fetch()
     assert source.snapshots() == []              # nothing half-done for tidy to trip over
+
+
+# ---------------------------------------------- the name search in PubChem's file of every name
+def _names_file(lines: list[str]) -> bytes:
+    """A tiny made-up CID-Synonym-filtered.gz: CID, a tab, a name, one per line."""
+    return gzip.compress(("".join(f"{line}\n" for line in lines)).encode("utf-8"))
+
+
+SYNONYM_LINES = ["811\tItaconic acid", "811\tITACONATE", "811\t97-65-4",
+                 "5281917\tC-1027", "16132390\tSubtilosin A"]
+
+
+def test_with_pubchems_names_file_in_the_locker_no_name_is_asked_on_the_web(make_source, tmp_path):
+    _mibig_compounds(tmp_path / "staging", [
+        ("mg.compound:c-1027-x", "C-1027 X", {"pubchem_cid": 5281917}),
+        ("mg.compound:itaconate", "itaconate", {"formula": "C5H6O4"}),   # ITACONATE: any case
+    ])
+    (tmp_path / "raw" / "pubchem").mkdir(parents=True)
+    (tmp_path / "raw" / "pubchem" / BULK_FILE).write_bytes(_names_file(SYNONYM_LINES))
+    session = _server()
+    source = make_source(PubchemSource, session=session)
+    [result] = source.fetch()
+
+    assert [u for m, u, b in session.sent if u == NAME_SEARCH_URL] == []
+    cids_sent = [b["cid"] for m, u, b in session.sent if u == PROPERTIES_URL]
+    assert cids_sent == ["5281917", "811"]                 # round 1, then round 3
+    saved = json.loads((result.local_path / "names_from_file_001.json").read_text("utf-8"))
+    assert {a["name"]: a["cids"] for a in saved} == {"C-1027 X": [], "itaconate": ["811"]}
+    assert all(a["via"].startswith(BULK_FILE) for a in saved)
+    rows = provenance.read(tmp_path / "raw" / "provenance.csv")
+    assert {r["outcome"] for r in rows if "names_from_file" in r["local_path"]} == {"derived"}
+    tidied = source.tidy()
+    assert tidied.counts["names_found_one_number"] == 1 and tidied.counts["names_not_found"] == 1
+
+
+def test_a_long_name_list_downloads_pubchems_names_file_once(make_source, tmp_path, monkeypatch):
+    from microbegraph.sources import pubchem
+    monkeypatch.setattr(pubchem, "NAMES_FROM_FILE_ABOVE", 1)   # two names count as many here
+    _mibig_compounds(tmp_path / "staging", [
+        ("mg.compound:a-one", "a one", {"formula": "C1"}),
+        ("mg.compound:itaconate", "itaconate", {"formula": "C5H6O4"}),
+    ])
+    session = _server()
+    session.script[BULK_URL] = [FakeResponse(body=_names_file(SYNONYM_LINES))]
+    source = make_source(PubchemSource, session=session)
+    source.fetch()
+    assert (tmp_path / "raw" / "pubchem" / BULK_FILE).exists()
+    assert [u for m, u, b in session.sent if u == NAME_SEARCH_URL] == []
+    rows = provenance.read(tmp_path / "raw" / "provenance.csv")
+    [row] = [r for r in rows if r["url"] == BULK_URL and r["outcome"] == "downloaded"]
+    assert len(row["sha256"]) == 64
+
+
+def test_a_names_file_in_another_layout_is_refused_with_its_first_line(make_source, tmp_path):
+    from microbegraph.sources.pubchem_names import search_synonym_file
+    path = tmp_path / BULK_FILE
+    path.write_bytes(_names_file(["CID,Synonym", "811,Itaconic acid"]))
+    with pytest.raises(SourceError, match="isn't a number, a tab and a name"):
+        search_synonym_file(path, ["itaconic acid"])
+
+
+def test_a_fetch_stopped_in_round_three_after_the_file_search_is_not_searched_again(
+        make_source, tmp_path):
+    _mibig_compounds(tmp_path / "staging", [
+        ("mg.compound:c-1027-x", "C-1027 X", {"pubchem_cid": 5281917}),
+        ("mg.compound:itaconate", "itaconate", {"formula": "C5H6O4"}),
+    ])
+    (tmp_path / "raw" / "pubchem").mkdir(parents=True)
+    (tmp_path / "raw" / "pubchem" / BULK_FILE).write_bytes(_names_file(SYNONYM_LINES))
+    busy = FakeResponse(status=429, body=b"<html>429 Too Many Requests</html>")
+    session = FakeSession({
+        PROPERTIES_URL: [FakeResponse(body=fixture_bytes("pubchem", "properties_001.json")), busy],
+        SYNONYMS_URL: [FakeResponse(body=fixture_bytes("pubchem", "synonyms_001.json"))],
+    })
+    source = make_source(PubchemSource, session=session, max_attempts=2)
+    with pytest.raises(SourceError, match="in round 3"):
+        source.fetch()
+
+    session = _server()
+    source = make_source(PubchemSource, session=session)
+    [result] = source.fetch()
+    assert (result.local_path / "names_carried_over.json").exists()
+    assert [b["cid"] for m, u, b in session.sent if u == PROPERTIES_URL] == ["811"]
+    assert source.tidy().counts["cids_found_by_name"] == 1
+
+
+def test_probe_reports_pubchems_names_file_and_whether_the_locker_has_it(make_source, tmp_path):
+    write_mibig_staging(tmp_path / "staging", compounds=CIDS)
+    session = _server()
+    session.script[BULK_URL] = [FakeResponse(headers={
+        "Content-Length": str(1_300 * 1_048_576), "Last-Modified": "Sat, 10 Oct 2026 07:01:00 GMT"})]
+    source = make_source(PubchemSource, session=session)
+
+    report = source.probe()
+    assert any("1,300 MB" in f and "Sat, 10 Oct 2026" in f for f in report.facts)
+    assert any(f.startswith("downloaded     : not yet") for f in report.facts)
+
+    source.locker.mkdir(parents=True)
+    (source.locker / BULK_FILE).write_bytes(_names_file(SYNONYM_LINES))
+    report = source.probe()
+    assert any(f.startswith("downloaded     : yes") for f in report.facts)
+
+
+def test_the_gap_survey_looks_names_up_in_pubchems_names_file(tmp_path):
+    """tests/fixtures/capture_gap_samples.py sends no name search when the file is there."""
+    import importlib.util
+    script = Path(__file__).parent / "fixtures" / "capture_gap_samples.py"
+    spec = importlib.util.spec_from_file_location("capture_gap_samples", script)
+    survey = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(survey)
+
+    path = tmp_path / BULK_FILE
+    path.write_bytes(_names_file(SYNONYM_LINES))
+    answers = survey.names_from_file(path, [
+        {"compound": "mg.compound:itaconate", "name": "ITACONIC ACID"},
+        {"compound": "mg.compound:unknown", "name": "no such name"}])
+
+    assert survey.cids_in(answers["mg.compound:itaconate"]) == [811]
+    assert survey.answered(answers["mg.compound:unknown"])          # "not found" is an answer
+    assert survey.cids_in(answers["mg.compound:unknown"]) == []

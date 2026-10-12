@@ -683,7 +683,8 @@ first, all 325 once you remove its `LIMIT` line). Phase 4b took them up
 ([`06b-closing-the-gaps.md`](06b-closing-the-gaps.md)): PubChem's full list of
 names turned out to confirm none of them, but keeping every value MIBiG's
 entries give explained both cases above, a review file now keeps them apart with
-a source, and PubChem's name search reviews the rest.
+a source, and PubChem's name search reviewed the rest: 82 still rest on the
+formula alone.
 
 ✅ **Checkpoint.** Recipe R6 shows the two ledger rows that made
 `pubchem.compound:12560` one node; recipe R8 shows three refusals with their
@@ -1101,8 +1102,8 @@ refusal to join bacillomycin D to Bacillomycin Fc is what keeps that true.
 |---|---|---|
 | Gene records named only by a gene name UniProt can't confirm | 21 (listed in `resolve_summary.json`, `for_phase_4b`) | They stay `mg.protein:` nodes. **Closed in Phase 4b:** MIBiG's GenBank file gives each gene's name and protein number side by side |
 | Curators' removals no list names | 4 maize genes in BGC0002390 (`LOC100272490` and three more) | **Closed in Phase 4b:** MIBiG's GenBank file links NCBI gene numbers (`GeneID`) to protein numbers |
-| MIBiG compounds without any PubChem number | 2,656 of 3,842 | They stay `mg.compound:` nodes. Phase 4b built PubChem's name search for the 1,254 with a formula; it runs before Phase 5 |
-| PubChem numbers refused | 81 (64 + 12 + 5) | Some are missed joins (1233A is hymeglusin, but PubChem's short list of names doesn't say so); Phase 4b's name search revisits them |
+| MIBiG compounds without any PubChem number | 2,656 of 3,842 | They stay `mg.compound:` nodes. **Narrowed in Phase 4b:** PubChem's name search found a record for 865 of the 1,254 with a formula |
+| PubChem numbers refused | 81 (64 + 12 + 5) | Some are missed joins (1233A is hymeglusin, but PubChem's short list of names doesn't say so). **Revisited in Phase 4b:** the name search found 1233A under a record of hymeglusin's structure, so the two are joined |
 | Protein numbers with tied UniProt entries | 42 | Their candidates are listed on the node. Phase 4b added the review file, where a person can decide; one is decided (CBF82293.1), and one left with the maize removals, so 40 remain |
 | Property values two MIBiG entries disagree on | 275 (`property_conflicts`, Phase 1), for example two masses for one compound | **Closed in Phase 4b:** the MIBiG adapter keeps every value with its entry (`<property>_by_entry`) |
 | Activity names that mean the same thing | antitumor, anticancer, antineoplastic, among 74 activities | **Closed in Phase 4b:** `curation/activity_synonyms.csv`, each row with a reason and a source; 70 activities remain |

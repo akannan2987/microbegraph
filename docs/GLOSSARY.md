@@ -142,7 +142,9 @@ are one molecule.
 **Isotope**: a version of an atom with a different weight. Most iron is iron-56;
 iron-55 is a radioactive isotope. PubChem keeps a separate record for a
 molecule built with an unusual isotope, such as "[55Fe] Ferrichrome", which is
-why a matching formula can point at the wrong record (Phase 4b).
+why a matching formula can point at the wrong record (Phase 4b). A matching
+first InChIKey block can too, because that block leaves isotopes out: it's how
+ferrichrome ended up joined to the iron-55 record.
 
 **Jujube** (*Ziziphus jujuba*): a fruit tree grown widely in China, whose fruit
 rots easily after harvest. It's the crop in the running example, because Xiao
@@ -231,6 +233,12 @@ three molecular layers this project joins together.
 **Rank**: one rung on the taxonomy ladder: strain, species, genus, family,
 order, class, phylum, kingdom, domain. NCBI also uses in-between ranks such as
 "species group" and "clade"; MicrobeGraph makes nodes only for the main ones.
+
+**Ring form and open chain (of a sugar)**: in water, a sugar molecule keeps
+switching between a straight chain and a closed ring, two shapes of one sugar.
+PubChem can hold a record for each, and their InChIKeys differ in the first
+block, because the ring adds a bond. Desosamine's name is filed under the open
+chain (168997), while one MIBiG entry gives the ring's number (419813).
 
 **Salt (of a molecule)**: an acid with its hydrogen swapped for a metal, such as
 the sodium salt of lasalocid (C34H53NaO8, against C34H54O8 for the acid).
@@ -790,6 +798,13 @@ sending them one at a time would take thousands of requests. From Phase 3b the
 UniProt adapter sends 10,000 ids per job (UniProt allows up to 100,000), so about
 39,000 numbers take five jobs.
 
+**Bulk download**: a whole database, or a slice of it, published as one file
+to download instead of answered one question at a time. When the list of
+questions is long and the service limits how many it answers, one big file can
+be both kinder to the service and faster. From Phase 4b, MicrobeGraph takes
+PubChem's names this way (see *Names file (PubChem)*): one 931 MB download in
+place of 1,655 questions.
+
 **Checksum**: a short fingerprint calculated from every byte of a file; change
 one byte and the fingerprint changes completely. Publishers list it beside a
 download so you can prove you received exactly their file. **MD5** and
@@ -862,7 +877,10 @@ until the answer changes ("is my job finished yet?").
 
 **Provenance**: the recorded origin of a piece of information: where it came
 from, when, and under what terms. Written to `data/raw/provenance.csv` on every
-fetch.
+fetch. Each row also says what happened to the file: `downloaded`,
+`already_present` (it was in the locker already) or, from Phase 4b, `derived`
+(worked out on your computer from a downloaded file, such as the name search
+done in PubChem's names file).
 
 **PUG REST**: PubChem's API. You put what you want in the address (compounds by
 CID, their properties or synonyms) and the CIDs themselves in a POST body.
@@ -872,8 +890,9 @@ and you get blocked; respecting it is basic politeness to a free service.
 PubChem allows 5 a second and 400 a minute, NCBI 3 a second (10 with a key) and
 KEGG 3. A block can outlast the burst that caused it: in Phase 4b, a survey
 asking PubChem four names a second was answered **429 Too Many Requests** after
-about 400 names, and PubChem went on refusing for hours. So the name search
-asks one name a second.
+about 400 names, and PubChem went on refusing for hours. Asking one name a
+second was refused after 372 names too, so the name search now reads PubChem's
+names file instead (see *Names file (PubChem)*).
 
 **Redirect**: an answer that says "what you want is over there", with the new
 address in a header called `Location`. HTTP 303 is one kind. Programs usually
@@ -970,9 +989,10 @@ the results, so this project compares what it asked with what came back.
 every database, which makes it handy for matching compounds across sources. It
 has three blocks: the **first** encodes the atoms and how they connect, the
 second the 3D arrangement and isotopes, the third the charge. Two PubChem records
-with the same first block are the same molecule drawn in different ways (Phase
-4b uses this to tell "another record of the same molecule" from "another
-molecule").
+with the same first block are the same molecule drawn in different ways, or
+built with different isotopes (Phase 4b uses this to tell "another record of
+the same molecule" from "another molecule", and ferrichrome's iron-55 record
+shows its limit).
 
 **INSDC** (International Nucleotide Sequence Database Collaboration): GenBank
 (USA), the European Nucleotide Archive (Europe) and DDBJ (Japan), three public
@@ -1016,10 +1036,19 @@ every arrow from that entry (0.95, 0.85, 0.70, 0.50).
 
 **Name search (PubChem)**: asking PubChem which records a name is filed under
 (`POST .../compound/name/cids/JSON`). It answers with the numbers, or "No CID
-found". From Phase 4b the PubChem adapter asks it for MIBiG names their own
-numbers don't list, and for compounds with no number but a formula, one a
-second. A number only the search found joins a compound only when the formula
-agrees.
+found". From Phase 4b the PubChem adapter looks up the MIBiG names their own
+numbers don't list, and the names of compounds with no number but a formula.
+A long list (more than 300 names), or any list once the names file is on your
+computer, is searched in PubChem's names file; a short one goes to the web,
+one name a second. A number only the
+search found joins a compound only when the formula agrees.
+
+**Names file (PubChem)**: `CID-Synonym-filtered.gz`, PubChem's download of
+every name it files under every compound, one line per name: the compound's
+number, a tab, the name. It was 931 MB on 2026-10-12. The PubChem fetch
+downloads it once into the evidence locker and searches it for MIBiG's names
+on your computer, which asks PubChem nothing and takes a few minutes. On the
+673 names both had answered, it agreed with PubChem's web search every time.
 
 **NCBI**: the US National Center for Biotechnology Information. It runs Taxonomy
 (the classification of life) and Datasets (genome records), among much else.

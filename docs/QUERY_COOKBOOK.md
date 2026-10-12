@@ -22,11 +22,9 @@ runs every recipe in this file, SQL and Python, on a small real slice of the
 graph each time the tests run, locally and on GitHub. A recipe that stops
 working fails the build. The answers shown below come from the full build of
 2026-10-12 after Phase 4b (MIBiG 4.0 with its GenBank file, UniProt 2026_03,
-and the PubChem snapshot from Phase 2); yours match if you built from the same
-downloads. Once PubChem's name search has run
-([`06b-closing-the-gaps.md`, Step 10](06b-closing-the-gaps.md#14-step-10-run-it-for-real)),
-the compound answers (R2, R7, R8, R19) change, and this page will be updated
-with them.
+and the PubChem snapshot with the name search,
+[`06b-closing-the-gaps.md`, Step 10](06b-closing-the-gaps.md#14-step-10-run-it-for-real));
+yours match if you built from the same downloads.
 
 > Every term here is also in [`GLOSSARY.md`](GLOSSARY.md). How the database is
 > built is in [`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md).
@@ -251,11 +249,11 @@ You should see:
 node_type      nodes
 -------------  -----
 Protein        39354
-Compound       3837
+Compound       3826
 Organism       2451
 GeneCluster    2437
 Activity       70
-Pathway        39
+Pathway        53
 CompoundClass  37
 Pathogen       6
 Crop           5
@@ -283,20 +281,20 @@ You should see:
 ```
 edge_type        evidence_level        arrows
 ---------------  --------------------  ------
-BELONGS_TO       database_assertion    529
+BELONGS_TO       database_assertion    528
 CATALYZES        database_assertion    3010
 CATALYZES        curated_experimental  1482
 ENCODES          database_assertion    39930
 HARBORS          database_assertion    1629
 HARBORS          curated_experimental  808
-HAS_ACTIVITY     database_assertion    2040
+HAS_ACTIVITY     database_assertion    2034
 HAS_ACTIVITY     curated_experimental  731
 INFECTS          curated_literature    7
 INHIBITS         curated_literature    7
 MEMBER_OF        database_assertion    2449
-PARTICIPATES_IN  database_assertion    82
+PARTICIPATES_IN  database_assertion    117
 PRODUCES         database_assertion    2604
-PRODUCES         curated_experimental  1679
+PRODUCES         curated_experimental  1678
 (14 rows)
 ```
 
@@ -318,9 +316,9 @@ You should see:
 source         version                                  retrieved_at  nodes_read
 -------------  ---------------------------------------  ------------  ----------
 mibig          4.0                                      2026-10-10    47844
-pubchem        live                                     2026-10-12    1171
+pubchem        live                                     2026-10-12    2508
 ncbi_taxonomy  Build261011-2030.1                       2026-10-12    2457
-kegg           pathway 2026/10/09, compound 2026/10/09  2026-10-12    39
+kegg           pathway 2026/10/09, compound 2026/10/09  2026-10-12    53
 uniprot        2026_03                                  2026-10-12    20507
 curation       repository file                          2026-10-12    11
 (6 rows)
@@ -402,15 +400,17 @@ You should see:
 ```
 rule                      decision    rows
 ------------------------  ----------  ----
-not_used                  left_out    353
-pubchem_number_confirmed  kept_apart  65
+not_used                  left_out    827
+pubchem_name_search       kept_apart  385
+pubchem_number_confirmed  kept_apart  116
 uniprot_cross_reference   kept_apart  40
-pubchem_number_shared     kept_apart  12
+pubchem_numbers_differ    kept_apart  19
+pubchem_number_shared     kept_apart  13
 identical_sequence        kept_apart  9
 npatlas_and_formula       kept_apart  7
 pubchem_number_unknown    kept_apart  5
 reviewed_by_hand          kept_apart  5
-(8 rows)
+(10 rows)
 ```
 
 `IN (...)` keeps rows whose value is any of the listed ones, and the second
@@ -418,7 +418,11 @@ column in `ORDER BY` puts rows with the same count in alphabetical order, so the
 answer is the same every time. Since Phase 4b,
 `reviewed_by_hand` rows are decisions a person made, with a source (R20), and
 `gene_name_in_uniprot` has no refusals left: MIBiG's GenBank file gives every
-gene record its protein number before the resolver runs.
+gene record its protein number before the resolver runs. The
+`pubchem_name_search` refusals are numbers PubChem's name search found that the
+clues didn't accept, and about half of the `not_used` entries (411 of 827)
+are records the name search found: PubChem records no compound was joined to,
+so they describe nothing in the graph.
 
 ### R8. Why was a PubChem number refused?
 
@@ -435,18 +439,24 @@ You should see:
 ```
 identifier                   compared_with               grounds
 ---------------------------  --------------------------  ------------------------------------------------------------
-mg.compound:1233a            pubchem.compound:6440895    MIBiG gives CID 6440895; PubChem doesn't list the name '1...
 mg.compound:3-decalonectrin  pubchem.compound:54473389   MIBiG gives CID 54473389; PubChem doesn't list the name '...
-mg.compound:agnestin-b       pubchem.compound:146682814  MIBiG gives CID 146682814; PubChem doesn't list the name ...
+mg.compound:a-74528          pubchem.compound:16037488   MIBiG gives CID 16037488; PubChem doesn't list the name '...
+mg.compound:aborycin         pubchem.compound:136150874  MIBiG gives CID 136150874; PubChem doesn't list the name ...
 (3 rows)
 ```
 
-The first row is a good example of a missed join rather than a wrong number:
-1233A and hymeglusin are the same compound, but PubChem's short list of names
-that Phase 2 kept doesn't include "1233A". PubChem's name search, built in
-Phase 4b, finds "1233A" under another record, 54144091; once the search has
-run, the resolver compares that record's structure with hymeglusin's
+The first row is a number nothing can check: PubChem doesn't list the name
+under it, and MIBiG gives no formula to compare. The other two lost to a
+better record: PubChem's name search finds "A-74528" and "aborycin" under
+other numbers, with formulas that agree, so the compounds joined those
+(`pubchem_name_search`) and MIBiG's numbers stayed out
 ([`06b-closing-the-gaps.md`, Step 6](06b-closing-the-gaps.md#10-step-6-the-compound-rules-now-with-four-clues)).
+
+Until Phase 4b this list started with 1233A, a missed join rather than a wrong
+number: 1233A and hymeglusin are the same compound, but PubChem's short list of
+names doesn't include "1233A". The name search finds "1233A" under another
+record, 54144091, whose InChIKey starts like hymeglusin's, so 1233A is now
+part of hymeglusin's record, 6440895, through clue 2.
 
 ---
 
@@ -791,20 +801,23 @@ identifier                                                    node_id
 ------------------------------------------------------------  --------------------------
 mg.compound:10-11-dihydro-8-deoxy-12-13-deepoxy-12-13-dih...  pubchem.compound:102274629
 mg.compound:10-oxodepressin                                   pubchem.compound:46186115
-mg.compound:2-deoxystreptamine                                pubchem.compound:98959
-mg.compound:3-deoxyaphidicolin                                pubchem.compound:135046
-mg.compound:3-methylarginine                                  pubchem.compound:46173347
+mg.compound:5-isoprenylindole-3-carboxylate-beta-d-glycos...  pubchem.compound:123132247
+mg.compound:6-methylsalicyclic-acid                           pubchem.compound:11279
+mg.compound:67-121c                                           pubchem.compound:132512204
 (5 rows)
 ```
 
 These are joins where PubChem's names didn't include MIBiG's, and only the
-formula confirmed the number. Without the `LIMIT` line there are 322. Most are
-probably right, but not all: in Phase 4 this list had 325 rows, and
-2-methylisoborneol was fourth. One of its three MIBiG entries carries a bromine
-compound's number, formula and structure, so the formulas agreed for the wrong
-reason. Phase 4b keeps it apart by hand (R20), and PubChem's name search, once
-it has run, reviews the rest
-([`06b-closing-the-gaps.md`, Step 6](06b-closing-the-gaps.md#10-step-6-the-compound-rules-now-with-four-clues)).
+formula confirmed the number. Without the `LIMIT` line there are 82. In Phase 4
+this list had 325 rows, and 2-methylisoborneol was fourth: one of its three
+MIBiG entries carries a bromine compound's number, formula and structure, so
+the formulas agreed for the wrong reason. Phase 4b keeps it apart by hand
+(R20), and PubChem's name search reviewed the rest: 161 joins are now
+confirmed by name through a record of the same structure, 43 moved to the
+record PubChem files the name under, and 36 came apart. PubChem's names file
+doesn't have the names of the 82 left at all, so they wait for a second,
+independent witness
+([`06b-closing-the-gaps.md`, Step 10](06b-closing-the-gaps.md#14-step-10-run-it-for-real)).
 
 The new piece is `LIKE` with `%` at the start only: it finds text that **ends**
 with the words given. Since Phase 4b, the ledger names the clue that decided
@@ -930,7 +943,7 @@ print(G.number_of_nodes(), "nodes and", G.number_of_edges(), "arrows")
 You should see:
 
 ```
-48236 nodes and 56987 arrows
+48239 nodes and 57014 arrows
 ```
 
 The same numbers as R2 and R3 add up to: the build checks this every time.
@@ -1023,16 +1036,20 @@ from microbegraph.build_graph import load_graph
 
 G = load_graph()
 reached = nx.descendants(G, "ncbitaxon:326423")
-print(Counter(G.nodes[n]["node_type"] for n in reached).most_common())
+counts = Counter(G.nodes[n]["node_type"] for n in reached)
+print(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
 ```
 
 You should see:
 
 ```
-[('Protein', 174), ('Compound', 30), ('Organism', 21), ('GeneCluster', 15), ('Activity', 6), ('Crop', 4), ('Pathogen', 3), ('CompoundClass', 1)]
+[('Protein', 174), ('Compound', 30), ('Organism', 21), ('GeneCluster', 15), ('Activity', 6), ('Crop', 4), ('Pathogen', 3), ('CompoundClass', 1), ('Pathway', 1)]
 ```
 
 `descendants` collects every node you can reach by following arrows forwards.
+The `sorted` line puts the biggest counts first and breaks ties
+alphabetically, so the answer is the same on every run (the SQL recipes do the
+same with a second `ORDER BY` column).
 From *Bacillus velezensis* FZB42 that is:
 
 * its eleven clusters, with their proteins, compounds and activities;
@@ -1040,12 +1057,16 @@ From *Bacillus velezensis* FZB42 that is:
   crops they infect;
 * the four clusters of *Fusarium graminearum*, because that pathogen is also a
   producer;
+* through bacilysin, one KEGG map, "Biosynthesis of various antibiotics"
+  (map00998);
 * through `MEMBER_OF`, the family trees above the strain and above the pathogens.
 
 Before Phase 4b this said 175 proteins. One of them was MIBiG's gene record
 `baeI`, from the bacillaene cluster, which no list linked to its protein number;
 MIBiG's GenBank file does (CAG23956.1), so the record and UniProt's Q1RS74 are
-one node now, named `baeI`.
+one node now, named `baeI`. The map arrived with PubChem's name search: it
+moved bacilysin to the record PubChem files its name under, 86583338, and KEGG
+places that record on map00998.
 
 ---
 

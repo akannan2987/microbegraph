@@ -632,9 +632,11 @@ and from joining them to MIBiG's compounds (Phase 4), which is what
 > a name search for MIBiG names their numbers don't list (and for compounds
 > with no number but a formula), then the numbers that
 > search found. The nodes gain `found_by_name`, `names_matching_mibig` and
-> `synonym_count`. The name search is slow on purpose, one name a second;
+> `synonym_count`. PubChem refuses a computer after about 400 name searches,
+> so a long list is searched in PubChem's downloadable file of every name, on
+> your computer;
 > [`06b-closing-the-gaps.md`, Step 5](06b-closing-the-gaps.md#9-step-5-pubchem-in-three-rounds)
-> explains why.
+> explains how.
 
 A CID PubChem doesn't know comes back holding nothing but its own number. It's
 counted (`cids_not_in_pubchem`) and listed in `pubchem_summary.json`, and never

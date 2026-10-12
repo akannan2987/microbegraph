@@ -1785,7 +1785,7 @@ def gaps_closed() -> str:
     """Phase 4b: each gap Phase 4 left, what closed it, and the real counts (2026-10-12)."""
     blue, aqua, orange = LAYER["genomics"], LAYER["metabolomics"], LAYER["proteomics"]
     kinds = {"evidence": ("more evidence", blue), "kept": ("nothing thrown away", aqua),
-             "person": ("a person's decision", orange), "waiting": ("built, waiting for PubChem", MUTED)}
+             "person": ("a person's decision", orange)}
     parts = [t(32, 46, "Closing the gaps Phase 4 left", size=22, weight=700),
              t(32, 70, "Phase 4's rules refused every join they couldn't confirm and listed what "
                "was left. Phase 4b works through that list.", size=14, fill=INK2)]
@@ -1813,8 +1813,8 @@ def gaps_closed() -> str:
          "activity_synonyms.csv", "4 rows, each with a source", "person",
          "74 activities became 70", "the old words kept as names", "done"),
         ("325 joins on the formula alone", "and 2,656 compounds with no number",
-         "PubChem's name search", "one name a second, resumable", "waiting",
-         "322 to review, 1,660 names", "first step before Phase 5", "waiting"),
+         "PubChem's name search", "in PubChem's names file, on your computer", "evidence",
+         "322 became 82", "865 compounds found by name", "partial"),
         ("42 protein numbers with tied entries", "UniProt couldn't choose one",
          "the review file", "one number at a time", "person",
          "1 decided, 1 removed", "40 still open", "partial"),
@@ -1843,8 +1843,8 @@ def gaps_closed() -> str:
     parts.append(t(32, y + 18, "Also fixed: a circular import (two files that each needed the other "
                    "to load). The shared table helpers moved to src/microbegraph/tables.py.",
                    size=12.5, fill=INK2))
-    parts.append(t(32, y + 40, "Counts from the run of 2026-10-12, with PubChem's snapshot from "
-                   "Phase 2: PubChem refused requests that day, so its name search runs next.",
+    parts.append(t(32, y + 40, "Counts from the build of 2026-10-12, after PubChem's name search "
+                   "in its names file.",
                    size=12.5, fill=MUTED))
     return svg(1200, int(y + 64), "".join(parts), "Closing the gaps Phase 4 left",
                "Seven gaps Phase 4 left and what closed each one. MIBiG's GenBank file placed all "
@@ -1852,8 +1852,8 @@ def gaps_closed() -> str:
                "Every value MIBiG's entries disagree on is now kept with its entry: 278 on 120 "
                "nodes. The review file keeps two wrong joins apart with five decisions, each with "
                "a source. Four activity words are folded, so 74 activities became 70. PubChem's "
-               "name search is built and waits for PubChem to accept requests: 322 formula-only "
-               "joins to review and 1,660 names to ask. Of 42 protein numbers with tied UniProt "
+               "name search, done in PubChem's names file, cut the joins on the formula alone "
+               "from 322 to 82 and found 865 compounds with no number by name. Of 42 protein numbers with tied UniProt "
                "entries, one is decided by hand, one left with a removed protein, and 40 are "
                "still open. The circular import is fixed.")
 
@@ -1941,16 +1941,16 @@ def clue_ladder() -> str:
     rungs = [
         ("1", "name", "MIBiG gives the number, and PubChem lists MIBiG's name under it",
          "(its title or any of its names), or the name search returns that very number",
-         "780 joins on 2026-10-12", "erythromycin A and CID 12560"),
+         "785 joins on 2026-10-12", "erythromycin A and CID 12560"),
         ("2", "same structure", "MIBiG gives the number; PubChem files the name under another",
          "record with the same first InChIKey block: the same molecule, drawn another way",
-         "needs the name search", "with or without its 3D shape"),
+         "182 joins on 2026-10-12", "with or without its 3D shape"),
         ("3", "name search", "MIBiG gives no number that passes 1 or 2, but the name search finds",
          "the name under exactly one number whose formula agrees with MIBiG's",
-         "needs the name search", "for the 1,254 with a formula, no number"),
+         "928 joins on 2026-10-12", "for the 1,254 with a formula, no number"),
         ("4", "formula alone", "MIBiG gives one number and the formulas agree; nothing above",
          "points elsewhere. The weakest clue, so two things switch it off:",
-         "322 joins on 2026-10-12", "R19 lists them"),
+         "82 joins on 2026-10-12", "R19 lists them"),
     ]
     y = 98
     for k, (num, name, l1, l2, count, example) in enumerate(rungs):
@@ -1986,9 +1986,9 @@ def clue_ladder() -> str:
         parts.append(t(52, y + k * 22, note, size=12.5, fill=INK2))
     return svg(1060, int(y + 4 * 22 + 12), "".join(parts), "Four clues for a compound's PubChem number",
                "Four clues, strongest first. 1, name: PubChem lists MIBiG's name under the number, "
-               "780 joins. 2, same structure: the name is filed under another record with the same "
-               "first InChIKey block. 3, name search: the name is found under exactly one number "
-               "with an agreeing formula. 4, formula alone: 322 joins, switched off when the name "
+               "785 joins. 2, same structure: the name is filed under another record with the same "
+               "first InChIKey block, 182 joins. 3, name search: the name is found under exactly one "
+               "number with an agreeing formula, 928 joins. 4, formula alone: 82 joins, switched off when the name "
                "search points at a different molecule or MIBiG's entries disagree about the "
                "formula, as for 2-methylisoborneol, ferrichrome and lasalocid. A person's "
                "decision comes first; ties stay apart; shared numbers need clue 1.")

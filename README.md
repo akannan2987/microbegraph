@@ -276,9 +276,9 @@ every time, and they move a little as the live sources update.
 
 | Fact | Value |
 |---|---|
-| The graph today | **48,236 nodes and 56,987 arrows**, merged from 70,550 identifiers in six sources, with every merge and refusal in a ledger of 23,937 decisions, five of them made by hand with a source (Phases 4 and 4b) |
+| The graph today | **48,239 nodes and 57,014 arrows**, merged from 71,901 identifiers in six sources, with every merge and refusal in a ledger of 25,741 decisions, five of them made by hand with a source (Phases 4 and 4b) |
 | Primary real source | **MIBiG 4.0**: thousands of manually curated biosynthetic gene clusters, each linking an organism to the compound it produces, and for some, the cluster's genes with each one's protein and job ([Zenodo, CC-BY](https://doi.org/10.5281/zenodo.14169073)); plus MIBiG's protein file, every protein of every cluster ([download server](https://dl.secondarymetabolites.org/mibig/)) |
-| Chemistry source | **PubChem** (NIH): formula, weights, structure, synonyms, and KEGG and ChEBI numbers for each compound MIBiG gives a PubChem number |
+| Chemistry source | **PubChem** (NIH): formula, weights, structure, synonyms, and KEGG and ChEBI numbers for each compound MIBiG gives a PubChem number, or whose name PubChem's names file finds |
 | Taxonomy source | **NCBI Taxonomy** (E-utilities): the lineage of every organism and pathogen, so "all *Bacillus*" is one query |
 | Protein source | **UniProt**: what each of the clusters' proteins is, found through its protein number; with the enzymes, the graph has three molecular layers |
 | Pathway source | **KEGG**: compound → pathway membership (academic use only, so kept out of anything published) |
@@ -397,12 +397,15 @@ means, matching the build log below. Nothing is shown before it exists.*
   desosamine's carries methymycin's. A review file holds decisions a person
   made, each with a reason and a source, and the resolver applies them before
   its rules; a short list folds activity words that mean the same thing (74
-  activities became 70). PubChem is now asked in three rounds, ending with a
-  name search that stops cleanly when PubChem is busy and carries on the next
-  day; a compound is judged on four clues, and the formula alone no longer
-  counts when the name points at another molecule. The graph: 48,236 nodes and
-  56,987 arrows, 350 offline tests. PubChem refused requests on the day (HTTP
-  429), so its name search is the first thing to run before Phase 5
+  activities became 70). PubChem is now asked in three rounds, with a name
+  search for 1,655 compounds in the middle. PubChem refuses a computer after
+  about 400 web name searches, so the search reads PubChem's names file
+  instead (931 MB, downloaded once), and a busy PubChem stops a run cleanly
+  for the next one to carry on. A compound is judged on four clues, and the
+  formula alone no longer counts when the name points at another molecule.
+  1,978 of MIBiG's 3,842 compounds now have a PubChem record (1,102 before),
+  and the joins that rest on the formula alone fell from 322 to 82. The graph:
+  48,239 nodes and 57,014 arrows, 356 offline tests
   ([`06b-closing-the-gaps.md`](docs/06b-closing-the-gaps.md)).
 
   ![The gaps Phase 4 left and what closed each one](docs/img/gaps_closed.svg)
@@ -828,6 +831,7 @@ microbegraph/
 │   │   ├── mibig_proteins.py        ← Phase 3b: reads MIBiG's protein file        ✅
 │   │   ├── mibig_genbank.py         ← Phase 4b: reads MIBiG's GenBank file        ✅
 │   │   ├── pubchem.py               ← Phase 2: compound identity (name search: 4b) ✅
+│   │   ├── pubchem_names.py         ← Phase 4b: searches PubChem's names file     ✅
 │   │   ├── ncbi_taxonomy.py         ← Phase 2: the family tree                    ✅
 │   │   ├── kegg.py                  ← Phase 2: pathway maps (academic use)        ✅
 │   │   ├── curation.py              ← Phase 2: the cited bridge, checked 13 ways  ✅

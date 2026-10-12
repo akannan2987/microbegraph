@@ -253,8 +253,9 @@ number (a **CID**) and it returns the molecular formula, the weight, the
 structure and a list of synonyms; give it a name and it can look the number up.
 Phase 2 asks about the CIDs MIBiG already records; Phase 4 joins each one to
 MIBiG's compound where the name or the formula confirms it; and Phase 4b adds the
-name search, asking PubChem which records a MIBiG name is filed under, one name a
-second, because PubChem limits how hard anyone may ask.
+name search, finding which records a MIBiG name is filed under. PubChem limits
+how many names one computer may ask about, so for a long list the search runs
+on your own computer, in PubChem's downloadable file of every name.
 
 We need it for two reasons. First, it makes compounds *comparable*: every
 compound in the graph gets one canonical PubChem identity. Second, its synonym

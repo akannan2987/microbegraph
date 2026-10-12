@@ -26,7 +26,12 @@ WHAT GETS WRITTEN
     | sha256         | d02a387c...  (64 hex characters)              |
     | n_records      | 3013  (blank if the file could not be opened) |
     | licence        | CC-BY-4.0                                     |
-    | outcome        | downloaded / already_present                  |
+    | outcome        | downloaded / already_present / derived        |
+
+    "derived" (from Phase 4b) marks a file worked out on this computer from
+    one that was downloaded, rather than received from a server: PubChem's
+    name search done in its names file is the first example. Its url column
+    says where the downloaded file came from.
 
 WHY "ONLY ADDED TO"
     If a log can be rewritten, nobody can fully trust it. The functions below

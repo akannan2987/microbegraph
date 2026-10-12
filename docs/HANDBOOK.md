@@ -4,15 +4,15 @@
 
 ![MicrobeGraph: from a microbe's genes to a crop's disease, with the evidence for every arrow](img/cover_microbegraph.svg)
 
-**Handbook version:** 1.7 · **Last updated:** 2026-10-12 · **Repository state it
+**Handbook version:** 1.8 · **Last updated:** 2026-10-12 · **Repository state it
 describes:** Phase 0 (design and setup), Phase 1 (MIBiG ingestion), Phase 2
 (PubChem, NCBI Taxonomy, KEGG and the cited bridge), Phase 3 (the proteomics
 layer: MIBiG's gene records and UniProt), Phase 3b (every cluster's proteins,
 from MIBiG's protein file), Phase 4 (entity resolution with its ledger, the
 graph in DuckDB and NetworkX, and the query cookbook) and Phase 4b (closing the
-gaps: MIBiG's GenBank file, PubChem's name search and a review file) built and
-tested; PubChem's name search waiting for its first full run, then Phase 5
-(graph analytics) next.
+gaps: MIBiG's GenBank file, PubChem's name search in PubChem's names file, and
+a review file) built, run and tested; a few small follow-ups from Phase 4b,
+then Phase 5 (graph analytics) next.
 
 **Read this document first, and come back to it whenever you lose your place.**
 It follows the whole journey in order: understanding the project, setting up a
@@ -630,8 +630,10 @@ file) lists every name a gene goes by next to its protein's number, which places
 the last gene records and the curators' removals no list named. When two MIBiG
 entries describe one compound differently, the node now keeps **every value with
 the entry that gave it**, which showed why two of Stage 7's joins were wrong.
-PubChem is asked in **three rounds**, ending with a **name search**, and a
-compound is judged on four clues instead of two. A **review file**
+PubChem is asked in **three rounds**, with a **name search** in the middle,
+done in **PubChem's names file** (931 MB, downloaded once) because PubChem
+refuses a computer after about 400 name searches on the web. A compound is
+then judged on four clues instead of two. A **review file**
 (`curation/resolution_decisions.csv`) holds decisions a person made, each with a
 reason and a source, and a short list folds **activity words** that mean the
 same thing. A small structural fault, a circular import, is fixed on the way.
@@ -639,12 +641,12 @@ same thing. A small structural fault, a circular import, is fixed on the way.
 ```bash
 python tests/fixtures/capture_gap_samples.py     # look first (optional on a rebuild, Step 2)
 python -m microbegraph.fetch --source mibig      # downloads only the GenBank file
-python -m microbegraph.fetch --source pubchem    # three rounds, about 40 minutes
+python -m microbegraph.fetch --source pubchem    # three rounds and a 931 MB download
 python -m microbegraph.fetch --tidy-only --source kegg --source curation
 python -m microbegraph.resolve                   # now with the two curated files
 python -m microbegraph.build_graph               # every count must match
 python -m microbegraph.query --recipe 20         # the decisions a person made
-pytest                                           # 350 promises
+pytest                                           # 356 promises
 ```
 
 ![One CDS feature from MIBiG's GenBank file, part by part: where the gene sits, its NCBI gene number, its names, what the protein is called and its protein number](img/genbank_record.svg)
@@ -660,7 +662,8 @@ wins over a rule, and the ledger says which is which, so anyone can check it.
 **New ideas in this stage:** GenBank records, CDS features and qualifiers; gene
 names, locus tags and NCBI gene numbers; stereochemistry and the first block of
 an InChIKey; keeping every value with its source; rate limits, HTTP 429 and a
-resumable download; human-in-the-loop review and overrides; circular imports.
+resumable download; searching a bulk download instead of asking a web service;
+human-in-the-loop review and overrides; circular imports.
 
 **Open:** [`06b-closing-the-gaps.md`](06b-closing-the-gaps.md); recipes R19 to
 R22 in [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md#7-decisions-by-hand-and-disagreements-r20-to-r22);
@@ -671,23 +674,21 @@ for six real cases, clue by clue, in your browser.
 without a protein number and no removal not found; recipe R20 lists the five
 decisions by hand; `build_graph` ends with `every count matches`; the
 **Actions** tab is green.
-**What you should get:** on 2026-10-12, with the PubChem snapshot from Stage 5,
-70,550 identifiers became 48,236 nodes (3,837 compounds, 39,354 proteins, 70
-activities) and 57,048 arrows became 56,987. The GenBank file placed 59 gene
-records and 4 removals; 120 nodes keep the values MIBiG's entries disagree on;
-the review file keeps 2-methylisoborneol and desosamine apart from the records
-they were wrongly joined to; 322 joins still rest on the formula alone; the
-ledger has 23,937 rows. The sanity checks against Stage 7 are in
+**What you should get:** on 2026-10-12, PubChem knew 2,508 compounds: 1,188 of
+the 1,193 numbers asked about, and 1,320 more its name search found (1,250 of
+1,655 names found). 71,901 identifiers became 48,239 nodes (3,826 compounds,
+39,354 proteins, 70 activities, 53 KEGG maps) and 57,105 arrows became 57,014.
+1,978 of MIBiG's 3,842 compounds now share a node with a PubChem record (1,102
+before the name search), and only 82 joins still rest on the formula alone
+(322 before). The GenBank file placed 59 gene records and 4 removals; 120 nodes
+keep the values MIBiG's entries disagree on; the review file keeps
+2-methylisoborneol and desosamine apart from the records they were wrongly
+joined to; the ledger has 25,741 rows. The sanity checks against Stage 7 are in
 [`06b-closing-the-gaps.md`, Step 10](06b-closing-the-gaps.md#14-step-10-run-it-for-real).
-**Still to run: PubChem's name search.** PubChem refused this computer on
-2026-10-12 (HTTP 429, too many requests, after an early survey asked too fast),
-so the numbers above use the PubChem snapshot from Stage 5. Run
-`python -m microbegraph.fetch --source pubchem` first thing before Stage 8, then
-the tidy, resolve and build lines above, and update the guide, the cookbook and
-the changelog with what changes. If PubChem still refuses, wait a day: the
-adapter says so in plain words and nothing breaks.
+If PubChem refuses your computer, wait a few hours and run the same command:
+the adapter says so in plain words, keeps what arrived, and nothing breaks.
 **Commit message:** `feat: close resolution gaps with GenBank, PubChem names and a review file`.
-**Estimated time:** 6-8 hours, plus about 40 unattended minutes for the name search.
+**Estimated time:** 6-8 hours, plus one unattended PubChem run, mostly the 931 MB download.
 
 ---
 
@@ -701,10 +702,13 @@ communities, then draw the first interactive network views.
 *answering*. Every path comes with its evidence chain, and a path is only as strong
 as its weakest arrow.
 
-**Before you start:** if PubChem's name search from Stage 7b hasn't run yet, run
-it first (`python -m microbegraph.fetch --source pubchem`, then the tidy,
-resolve and build lines in Stage 7b), so the analytics see every compound the
-name search can confirm.
+**Before you start:** a few small follow-ups from Stage 7b come first
+([`ROADMAP.md`, Phase 4b, "Handed on"](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file-)):
+ferrichrome moves from PubChem's radioactive-iron record to its own, every
+PubChem number a MIBiG entry lists becomes a candidate, and two small fixes
+(a ledger sentence, and KEGG maps left without an arrow). The second asks
+PubChem rounds 1 and 3 again (about 52 requests in all), so run it on another
+day than a full PubChem fetch.
 
 **Open:** `07-graph-analytics.md`. If the weakest-link idea is new to you, try
 [`interactive/evidence_chain.html`](interactive/evidence_chain.html) first.
@@ -982,6 +986,7 @@ ritual from [Stage 2](#stage-2-version-control-and-the-end-of-phase-ritual).
 | The resolver or the build refuses ("break the rulebook", "open in another program", "DuckDB refused", "disagree") | [`06-entity-resolution-graph-build.md`, section 18](06-entity-resolution-graph-build.md#18-what-could-go-wrong) |
 | MIBiG's GenBank file is "not in the evidence locker yet", or its SHA-256 or size differs from the pinned one | [`06b-closing-the-gaps.md`, section 18](06b-closing-the-gaps.md#18-what-could-go-wrong) |
 | PubChem "is refusing requests from this computer for now (HTTP 429 ...)", "stopped answering after N of M names" or "stopped answering in round 3" | Wait a few hours, then run the same command; what arrived is kept. [`06b-closing-the-gaps.md`, section 18](06b-closing-the-gaps.md#18-what-could-go-wrong) |
+| PubChem's names file: no space left while it downloads, "isn't a number, a tab and a name", or an "unfinished fetch folder" warning after a fetch you stopped by hand | [`06b-closing-the-gaps.md`, section 18](06b-closing-the-gaps.md#18-what-could-go-wrong) |
 | The review file or the activity synonyms are refused ("has N problem(s)", "names records the graph doesn't have", "can't be joined") | [`curation/README.md`](../curation/README.md); [`06b-closing-the-gaps.md`, section 18](06b-closing-the-gaps.md#18-what-could-go-wrong) |
 | A query fails, finds nothing, or says the database doesn't exist | [`QUERY_COOKBOOK.md`, section 10](QUERY_COOKBOOK.md#10-what-could-go-wrong) |
 | Why two records were (or weren't) joined | The ledger: [`QUERY_COOKBOOK.md`, recipes R5 to R8](QUERY_COOKBOOK.md#4-following-the-resolvers-decisions-r5-to-r8), and R20 for decisions made by hand |
@@ -1063,6 +1068,7 @@ mentions it in that same commit, and add a change-log line.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.8 | 2026-10-12 | PubChem's name search ran, in PubChem's names file: the web name search was refused after 372 of 1,655 names, so the fetch now downloads `CID-Synonym-filtered.gz` (931 MB) once and searches it on your computer, and round 3 was answered in full on the fourth run that day. Stage 7b's numbers are the real ones now (48,239 nodes, 57,014 arrows, 1,978 MIBiG compounds with a PubChem record, 82 joins on the formula alone, 356 tests); the "still to run" step is gone; Stage 8 starts with the small follow-ups (ferrichrome's record, every PubChem number an entry lists, two small fixes); a troubleshooting row for the names file; the gaps picture, the four-clues picture and the resolution cases page show the real outcomes |
 | 1.7 | 2026-10-12 | Phase 4b built and run: Stage 7b rewritten around the new guide, with three of the four new pictures (the gaps and what closed them, a GenBank feature part by part, and the four clues for a compound; the fourth, a decision by hand, is in the guide and `curation/README.md`) and a new interactive page of real resolution cases; Stage 8 is next, after one waiting step, PubChem's name search, which PubChem refused on the day (HTTP 429) and which is now the first thing to run before Stage 8; the survey before the code is marked optional on a rebuild and asks PubChem one name a second; new troubleshooting rows for the GenBank file, PubChem's refusals and the two curated files; the document map lists the Phase 4b guide and describes `curation/README.md` as covering all three hand-written files; the cookbook has 22 SQL recipes |
 | 1.6 | 2026-10-12 | Phase 4 built and run: Stage 7 rewritten around the new guide and the query cookbook, with three new pictures (six sources to one graph, the PubChem number check, and DuckDB beside NetworkX); a survey of the real tables showed that MIBiG's PubChem numbers need a second clue (34 give another formula, and isomers share numbers), which shaped the compound rules; the rulebook gains "a Pathogen is a kind of Organism"; Stage 7b (closing the gaps, Phase 4b) is added to the plan and is next; Stage 8 points at the first version of the jujube question; new troubleshooting rows for the resolver, the build and queries; the document map lists the Phase 4 guide and the cookbook. A check of the guide against the code before release tightened four things: the resolver now refuses to write if an identifier disappears without a ledger row (36 did, through the identical-sequence rule, now fixed); the build compares DuckDB with NetworkX before swapping the database in; what an open database does to a build is described per operating system; and the 325 PubChem joins the formula alone confirmed are listed (cookbook R19) and added to Stage 7b |
 | 1.5 | 2026-10-12 | Phase 3b built and run: Stage 6b rewritten around the new guide, with three new pictures (one protein record part by part, the three steps for each cluster, and the protein layer before and after); a survey of the real file showed it already includes the genes curators added but not their removals, and that its headers carry the locus tags and products that give 452 gene records a protein number; Stage 7 is next and lists what Stage 6b hands it; Stage 4 notes that the MIBiG fetch now brings two files; new troubleshooting rows for the protein file and for a newer MIBiG release; the document map lists the Phase 3b guide; Stage 23 points at the roadmap's watch list |
