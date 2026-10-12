@@ -309,7 +309,8 @@ class Source(ABC):
         return response
 
     def download_to_locker(
-        self, url: str, filename: str, expected_md5: str | None
+        self, url: str, filename: str, expected_md5: str | None,
+        expected_sha256: str | None = None,
     ) -> tuple[Path, str, int, str, str]:
         """
         Download one file into the evidence locker, safely.
@@ -332,6 +333,14 @@ class Source(ABC):
           the fingerprint next to the download; if ours matches theirs, we have
           exactly the file they published. (Rather like counting the items in
           a parcel against the packing slip before you sign for it.)
+
+        TWO KINDS OF EXPECTED FINGERPRINT (from Phase 3b)
+          expected_md5 is the one a publisher lists (Zenodo lists an MD5 for
+          MIBiG's archive). expected_sha256 is one this project recorded
+          itself, for a file whose publisher lists none (MIBiG's protein
+          file): the first download was looked at, its SHA-256 written into
+          the code, and every later download must match it. Either, both or
+          neither can be given.
         """
         self.locker.mkdir(parents=True, exist_ok=True)
         target = self.locker / filename
@@ -339,12 +348,13 @@ class Source(ABC):
         # Rules 1 and 2: something is already on the shelf.
         if target.exists():
             n_bytes, md5, sha256 = file_digests(target)
-            if expected_md5 is None or md5 == expected_md5:
+            mismatch = _fingerprint_mismatch(md5, sha256, expected_md5, expected_sha256)
+            if not mismatch:
                 self.say(f"  [{self.name}] {filename} is already in the locker and verified, "
                          f"nothing to download")
                 return target, "already_present", n_bytes, md5, sha256
             raise LockerConflict(
-                f"{target} exists but its MD5 is {md5}, not the expected {expected_md5}.\n"
+                f"{target} exists but its {mismatch}.\n"
                 f"  The locker never overwrites a file. If you are sure this copy is damaged,\n"
                 f"  move it somewhere else yourself and run the fetch again."
             )
@@ -353,10 +363,12 @@ class Source(ABC):
         # halfway is discarded and started again, like a dropped phone call.
         for attempt in self._retrying():
             with attempt:
-                n_bytes, md5, sha256 = self._download_once(url, target, expected_md5)
+                n_bytes, md5, sha256 = self._download_once(url, target, expected_md5,
+                                                           expected_sha256)
         return target, "downloaded", n_bytes, md5, sha256
 
-    def _download_once(self, url: str, target: Path, expected_md5: str | None) -> tuple[int, str, str]:
+    def _download_once(self, url: str, target: Path, expected_md5: str | None,
+                       expected_sha256: str | None = None) -> tuple[int, str, str]:
         """One attempt: stream into '<name>.part', verify, then rename. Cleans up after itself."""
         part = target.with_name(target.name + ".part")
         md5_hash, sha_hash, n_bytes = hashlib.md5(), hashlib.sha256(), 0
@@ -377,7 +389,7 @@ class Source(ABC):
                 print(flush=True)              # end the progress line
 
             # Rule 4: verify before filing.
-            md5 = md5_hash.hexdigest()
+            md5, sha256 = md5_hash.hexdigest(), sha_hash.hexdigest()
             if expected_md5 is not None and md5 != expected_md5:
                 raise ChecksumMismatch(
                     f"{target.name} arrived with MD5 {md5}, but the publisher lists "
@@ -386,13 +398,21 @@ class Source(ABC):
                     f"  the network is altering the file (some corporate proxies do) or the\n"
                     f"  publisher changed the file, which `--probe` will show."
                 )
+            if expected_sha256 is not None and sha256 != expected_sha256:
+                raise ChecksumMismatch(
+                    f"{target.name} arrived with SHA-256 {sha256}, but this project pinned "
+                    f"{expected_sha256}.\n"
+                    f"  The download was discarded. Run the fetch again; if it keeps happening,\n"
+                    f"  the network is altering the file or the publisher replaced it, which\n"
+                    f"  `--probe` will show (the size it reports will differ from the pinned one)."
+                )
             part.replace(target)               # the rename: instant and all-or-nothing
         except BaseException:
             part.unlink(missing_ok=True)       # never leave a half-file behind
             raise
         finally:
             response.close()
-        return n_bytes, md5, sha_hash.hexdigest()
+        return n_bytes, md5, sha256
 
     def _show_progress(self, done: int, total: int | None) -> None:
         if self.quiet:
@@ -407,6 +427,16 @@ class Source(ABC):
 
 
 # --- Small tools every adapter uses --------------------------------------------------
+def _fingerprint_mismatch(md5: str, sha256: str, expected_md5: str | None,
+                          expected_sha256: str | None) -> str:
+    """'' when the file matches every fingerprint expected, else what didn't match."""
+    if expected_md5 is not None and md5 != expected_md5:
+        return f"MD5 is {md5}, not the expected {expected_md5}"
+    if expected_sha256 is not None and sha256 != expected_sha256:
+        return f"SHA-256 is {sha256}, not the pinned {expected_sha256}"
+    return ""
+
+
 def file_digests(path: Path) -> tuple[int, str, str]:
     """Size in bytes, MD5 and SHA-256 of a file, read in 1 MB pieces."""
     md5, sha256, n_bytes = hashlib.md5(), hashlib.sha256(), 0

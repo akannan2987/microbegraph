@@ -155,7 +155,7 @@ Streamlit app for a website later without rewriting any of the science.
 ```mermaid
 flowchart TD
     subgraph SOURCES["Layer 1. Public reference databases"]
-        S1["MIBiG<br/>organism → gene cluster → compound"]
+        S1["MIBiG<br/>organism → gene cluster → compound<br/>+ every cluster's proteins"]
         S2["PubChem<br/>compound chemistry"]
         S3["NCBI Taxonomy<br/>who is related to whom"]
         S4["KEGG<br/>compound → pathway"]
@@ -285,8 +285,10 @@ it's free and comprehensive (CC BY 4.0).
 
 MIBiG tells you that a gene cluster produces a compound. For some clusters it
 also lists the genes, each with the number of the protein it makes and the job
-it does, which gives the enzymes in between. UniProt then says what each of those
-enzymes is: its names, length, the reaction it carries out and its function.
+it does, which gives the enzymes in between. For every cluster it publishes a
+second file, its protein file, listing every protein the cluster's DNA codes for,
+without jobs. UniProt then says what each of those proteins is: its names,
+length, the reaction it carries out and its function.
 UniProt doesn't refer to MIBiG, so the two are joined through the protein's
 sequence number, using UniProt's ID mapping service. Adding the enzymes makes the
 chain
@@ -299,7 +301,10 @@ Organism → GeneCluster → Protein → Compound → Pathogen → Crop
 three different kinds of biological measurement joined into one structure that
 a single query can walk. That is what **multi-omics integration** means in
 practice; three tables sitting next to each other wouldn't qualify. The protein
-layer arrived in Phase 3 ([`05-proteomics-uniprot.md`](05-proteomics-uniprot.md)).
+layer arrived in Phase 3 for the clusters with gene records
+([`05-proteomics-uniprot.md`](05-proteomics-uniprot.md)) and in Phase 3b for
+every cluster, from MIBiG's protein file
+([`05b-all-cluster-proteins.md`](05b-all-cluster-proteins.md)).
 
 **Access:** free, no account, no key. ID mapping runs as a background job: you
 hand in the numbers, get a job number, and collect the results when it's done.
@@ -394,7 +399,9 @@ The payoff came in Phase 2: four sources were added (three web APIs and the
 curated bridge) and *nothing written for Phase 1 had to change*. The only
 addition to the socket itself was the ability to send POST requests. Phase 3
 added a sixth plug, UniProt, and the socket only learned one more small thing: to
-ask a question without following a redirect. The contract is what made that
+ask a question without following a redirect. Phase 3b gave the MIBiG plug a
+second file to fetch, and the socket learned to check a download against a
+fingerprint the project recorded itself. The contract is what made that
 possible.
 
 ### Idea 2: the evidence locker

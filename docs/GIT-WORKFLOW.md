@@ -289,7 +289,7 @@ top to bottom.
 | 1 | Ingestion: MIBiG | `feat: add MIBiG source adapter with evidence locker and provenance log` (with a second `-m` for the description; see [`03-ingestion-mibig.md`, section 19](03-ingestion-mibig.md#19-committing-this-phase)) |
 | 2 | PubChem · NCBI · KEGG · the cited bridge | `feat: add PubChem, NCBI Taxonomy and KEGG adapters and the cited bridge` (with a second `-m`; see [`04-more-sources-secrets.md`, section 19](04-more-sources-secrets.md#19-committing-this-phase)) |
 | 3 | MIBiG gene records · UniProt proteins | `feat: add UniProt adapter and the protein layer` (with a second `-m`; see [`05-proteomics-uniprot.md`, section 17](05-proteomics-uniprot.md#17-committing-this-phase)) |
-| 3b | Every cluster's proteins | `feat: add every cluster's proteins from MIBiG's protein file` |
+| 3b | Every cluster's proteins | `feat: add every cluster's proteins from MIBiG's protein file` (with a second `-m`; see [`05b-all-cluster-proteins.md`, section 18](05b-all-cluster-proteins.md#18-committing-this-phase)) |
 | 4 | Entity resolution & build | `feat: add entity resolution, resolution ledger, and graph build` |
 | 5 | Graph analytics | `feat: add path finding, centrality, and community detection` |
 | 6 | Statistical validation (R) | `feat: add R null-model validation and igraph cross-check` |

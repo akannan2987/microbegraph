@@ -334,6 +334,9 @@ So a locus tag or gene name gets an identifier scoped to its entry:
 `mg.` prefix says the identifier was made up by this project, and the entry
 number in it keeps two genomes' badge numbers apart. If two of them really are
 one protein, Phase 4's ledger is where that merge is decided and written down.
+(From Phase 3b, MIBiG's protein file gives this locus tag its protein number, so
+the node is `ncbiprotein:EED18001.1`: see
+[`05b-all-cluster-proteins.md`](05b-all-cluster-proteins.md#one-protein-one-node).)
 
 ### Saying what didn't match
 
@@ -475,7 +478,8 @@ gene works on which. That spread is counted
 with no id at all (`genes_without_id`); the domain-by-domain detail some records
 give for large enzymes, which no phase uses; and MIBiG's corrections to the gene
 list of the underlying sequence record (`to_add`, `to_delete`), which matter
-once Phase 3b reads the full gene lists.
+once Phase 3b reads the full gene lists (it applies the removals; the additions
+turned out to be in MIBiG's protein file already).
 
 **Run it, offline:**
 
@@ -617,7 +621,10 @@ If UniProt ever renames one, the probe says so before any fetch is tried. The
 probe also counts the protein ids in MIBiG's tables and how many jobs they need.
 
 **fetch()** reads the `ncbiprotein:` nodes from `mibig_nodes.csv`, sorts the
-INSDC and RefSeq ids, and sends them 1,000 per job. For each job:
+INSDC and RefSeq ids, and sends them 1,000 per job (10,000 from Phase 3b, when
+there are about 39,000 of them:
+[`05b-all-cluster-proteins.md`, Step 6](05b-all-cluster-proteins.md#10-step-6-id-mapping-at-scale)).
+For each job:
 
 ```
 POST https://rest.uniprot.org/idmapping/run
@@ -974,7 +981,7 @@ Here is everything the protein layer leaves out so far, in one place.
 
 | Gap | How big | What happens to it |
 |---|---|---|
-| Entries without gene records | 1,985 of the 2,437 active entries have no gene records in the pinned JSON release | **Phase 3b** reads every cluster's proteins from MIBiG's protein file |
+| Entries without gene records | 1,985 of the 2,437 active entries have no gene records in the pinned JSON release | **Phase 3b** reads every cluster's proteins from MIBiG's protein file (done: all 2,437 now have proteins) |
 | Protein ids UniProt can't map | 1,640 of the 4,089 numbers asked about (1,574 INSDC, 66 RefSeq) | Listed in `uniprot_summary.json`; Phase 4 keeps their `ncbiprotein:` nodes, with MIBiG's gene name and product |
 | Locus tags and gene names | 648 gene records (`genes_other_id`) | Never sent to UniProt (it can't map them); kept as `mg.protein:` nodes |
 | Arrows spread over several compounds | 3,324 of the 4,492 `CATALYZES` arrows (`catalyzes_in_multi_compound_entries`) | Counted; narrowing them needs a source that says which gene works on which compound |
@@ -983,14 +990,14 @@ Here is everything the protein layer leaves out so far, in one place.
 
 **Phase 3b, in one paragraph.** MIBiG's own download server
 (<https://dl.secondarymetabolites.org/mibig/>) also publishes every protein of
-every cluster as one file, `mibig_prot_seqs_4.0.fasta` (about 30 MB), and the
-GenBank records as `mibig_gbk_4.0.tar.gz`. Neither is in the Zenodo record this
-project pins, so neither comes with a published checksum. Phase 3b will look at
-the file first, the same way this phase looked at the JSON, then pin it by its
-own fingerprint, read each protein's cluster and id from the file, add the
-missing `Protein` nodes and `ENCODES` arrows, and map the new ids through the
-same UniProt adapter. The plan is in
-[`ROADMAP.md`, Phase 3b](ROADMAP.md#phase-3b-every-clusters-proteins-mibigs-protein-file).
+every cluster as one file, `mibig_prot_seqs_4.0.fasta` (30.4 MB), and the GenBank
+records as `mibig_gbk_4.0.tar.gz`. Neither is in the Zenodo record this project
+pins, so neither comes with a published checksum. Phase 3b looked at the protein
+file first, the same way this phase looked at the JSON, pinned it by its own
+fingerprint, and read each protein's cluster and number from it: every active
+entry now has its proteins (40,037 `Protein` nodes), and about 39,000 protein
+numbers went through the same UniProt adapter. The whole story is in
+[`05b-all-cluster-proteins.md`](05b-all-cluster-proteins.md).
 
 ---
 
@@ -1093,7 +1100,7 @@ minutes).
 
 ---
 
-**Next:** Phase 3b, `05b-all-cluster-proteins.md`: every cluster's proteins from
-MIBiG's protein file, so the protein layer covers every cluster that has proteins
-in that file instead of only the 452 entries with gene records. The plan is in the
-[Handbook, Stage 6b](HANDBOOK.md#stage-6b-every-clusters-proteins-phase-3b).
+**Next:** Phase 3b, [`05b-all-cluster-proteins.md`](05b-all-cluster-proteins.md):
+every cluster's proteins from MIBiG's protein file, so the protein layer covers all
+2,437 active entries instead of only the 452 with gene records. The overview is in
+the [Handbook, Stage 6b](HANDBOOK.md#stage-6b-every-clusters-proteins-phase-3b).

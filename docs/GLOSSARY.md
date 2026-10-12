@@ -110,6 +110,12 @@ worked out from the names in its NCBI lineage. It's used for colouring and
 filtering and isn't an official rank (see **Kingdom** for why it isn't called
 that).
 
+**Isoform**: one of several slightly different proteins made from the same gene,
+because the gene can be read in more than one way (common in plants and
+animals). One recipe card with optional steps gives several versions of the same
+cake. In MIBiG's protein file each isoform has its own protein number, so
+removing a gene (`to_delete`) removes all of them (Phase 3b).
+
 **Jujube** (*Ziziphus jujuba*): a fruit tree grown widely in China, whose fruit
 rots easily after harvest. It's the crop in the running example, because Xiao
 and colleagues (2023) showed that purified surfactin reduced grey mould on
@@ -137,6 +143,9 @@ Surfactin is one.
 **Locus tag**: a label a genome project gives each gene, such as `TSTA_117750`.
 It's unique inside that one genome only, rather like a staff badge number, so
 this project scopes it to its MIBiG entry (`mg.protein:bgc0000154-tsta-117750`).
+From Phase 3b, when MIBiG's protein file pairs a locus tag with a protein number
+(`TSTA_117750` with `EED18001.1`), the protein is named by the number instead and
+the locus tag is kept as a property, `locus_tags`.
 
 **Metabolite**: a small chemical an organism makes and often releases. Picture
 the microbe as a factory and its metabolites as the products. Some of those
@@ -194,10 +203,21 @@ basic survival but gives it an advantage, such as a weapon, a signal or a
 defence. Most antibiotics are secondary metabolites. Also called a *specialised
 metabolite* or *natural product*.
 
+**Sequence (protein)**: a protein written as text, one capital letter per amino
+acid in the order they're joined: srfAA starts `MEITFYPLTNAQ...` and runs to 3,584
+letters. `X` stands for "some amino acid, but the sequencing couldn't tell
+which". MicrobeGraph keeps each protein's sequence length and an MD5 fingerprint
+of its letters (`sequence_length`, `sequence_md5`), and leaves the letters
+themselves in MIBiG's protein file in the evidence locker.
+
 **Siderophore**: a molecule a microbe releases to grab iron from its
 surroundings. Iron is scarce and everyone needs it, so a good siderophore is a
 way of starving your competitors. Siderophores are a common biocontrol
 mechanism.
+
+**Strand (DNA)**: DNA is two long strands wound together, and a gene can be
+written on either one. MIBiG's protein file marks which with `+` or `-`, and
+MicrobeGraph keeps it in a protein's `locations` (Phase 3b).
 
 **Species / genus / family**: rungs on the ladder that classifies life, from
 specific to general. *Bacillus subtilis* is a species; *Bacillus* is its genus.
@@ -330,6 +350,11 @@ in a text editor, you can debug it.
 **Executable bit**: a file permission on macOS/Linux marking a file as "allowed
 to run as a program". Set with `chmod +x`. Windows doesn't use it.
 
+**FASTA**: a plain text format for sequences, read by almost every biology tool.
+Each record is a header line starting with `>`, then the sequence. MIBiG's
+protein file is a FASTA file with a seven-part header (`BGC0000433.5|c1|...`);
+[`img/fasta_header.svg`](img/fasta_header.svg) shows it part by part.
+
 **JSON** ("JavaScript Object Notation"): a text format for structured data,
 using `{ }` for records and `[ ]` for lists. Most web services reply in it.
 Think of it as a nested bullet list that a computer can read reliably.
@@ -364,6 +389,11 @@ must have `probe`, `fetch` and `tidy`.
 
 **Argument**: a value you hand to a function. In `round(3.7)`, `3.7` is the
 argument.
+
+**Dataclass**: a Python class whose only job is to hold a few named values
+together, like a printed form with labelled boxes. `ProteinRecord` in
+`mibig_proteins.py` is one: a protein's entry, position, label, product, number,
+length and fingerprint (Phase 3b).
 
 **Editable install** (`pip install -e .`): installing your own project into the
 virtual environment as a *pointer* to its source folder rather than a copy, so
@@ -621,12 +651,19 @@ inside intact. The name is only a label, though: MIBiG 4.0's `.tar.gz` turned ou
 not to be gzip-compressed at all, so the code works out the compression from the
 file's first bytes instead of trusting the name.
 
+**Batch (of ids)**: a group of identifiers sent in one request or job, because
+sending them one at a time would take thousands of requests. From Phase 3b the
+UniProt adapter sends 10,000 ids per job (UniProt allows up to 100,000), so about
+39,000 numbers take five jobs.
+
 **Checksum**: a short fingerprint calculated from every byte of a file; change
 one byte and the fingerprint changes completely. Publishers list it beside a
 download so you can prove you received exactly their file. **MD5** and
 **SHA-256** are two common kinds; SHA-256 is longer and stronger. Checking one
 is like counting a parcel's contents against its packing slip. See
-[`img/checksum_fingerprint.svg`](img/checksum_fingerprint.svg).
+[`img/checksum_fingerprint.svg`](img/checksum_fingerprint.svg). When a publisher
+lists none, this project records its own from the first download and pins it
+(see *Pin*).
 
 **DOI** (Digital Object Identifier): a permanent link to a published thing (a
 paper or a dataset), written like `10.1093/nar/gkae1115`. It keeps working even
@@ -656,6 +693,11 @@ the web address, like a postcard anyone handling it can read; a POST carries its
 details in the request **body**, like a sealed envelope. MicrobeGraph sends long
 lists and any key by POST.
 
+**Headers (HTTP)**: the short lines at the start of every web answer that
+describe what follows, such as its size (`Content-Length`), its type and when it
+last changed (`Last-Modified`). Reading only the headers and then hanging up is
+how the MIBiG probe checks the protein file without downloading it (Phase 3b).
+
 **HTTP**: the protocol web browsers and programs use to request things from
 servers.
 
@@ -675,6 +717,12 @@ finished.
 renamed only once it is complete and verified, so a dropped connection never
 leaves a half-file that looks finished.
 
+**Pin**: to fix exactly which version of something the project uses, by writing
+its name and fingerprint into the code, so a newer or altered file can't slip in
+unnoticed. MIBiG's archive is pinned by the MD5 Zenodo publishes; MIBiG's protein
+file, whose server publishes no checksum, by the SHA-256 and size of its first
+download (Phase 3b). Changing a pin is an upgrade made on purpose.
+
 **Polling**: asking the same question again and again, a few seconds apart,
 until the answer changes ("is my job finished yet?").
 
@@ -693,6 +741,11 @@ PubChem allows 5 a second, NCBI 3 (10 with a key) and KEGG 3.
 address in a header called `Location`. HTTP 303 is one kind. Programs usually
 follow redirects automatically; the UniProt adapter turns that off when it asks
 whether a job is finished, because the redirect itself is the answer it needs.
+
+**Release candidate (rc)**: a version published for testing just before the
+final release, such as `mibig_json_5.0rc1.tar.bz2`. Things can still change
+before the final version, so this project waits for the final one before
+upgrading ([`ROADMAP.md`, *Watching the sources*](ROADMAP.md#watching-the-sources)).
 
 **Request body**: the part of a request that carries its details separately from
 the web address. Error messages, logs and browser histories show addresses, not
@@ -747,6 +800,14 @@ molecules, run by EMBL-EBI. Phase 2 reads ChEBI numbers from PubChem's synonyms
 **CID** (compound identifier): PubChem's number for one chemical structure, for
 example `811` for itaconic acid, written `pubchem.compound:811` here.
 
+**Curators' corrections (`to_add`, `to_delete`)**: changes MIBiG's curators make
+to the gene list of the sequence record an entry points at, like an errata slip
+for a printed book. `to_add` lists genes the record misses (661 in active
+entries, all already in MIBiG's protein file); `to_delete` lists genes that
+aren't part of the cluster, each with a reason (14 names, 18 proteins). From
+Phase 3b the removals are applied and each one is listed in
+`mibig_summary.json`.
+
 **ID mapping**: UniProt's service for translating identifiers from another
 database (an INSDC or RefSeq protein number, for example) into UniProt
 accessions. It runs as a job. An id it can't translate doesn't appear in
@@ -777,7 +838,13 @@ supplies the organism → cluster → compound arrows.
 for each one, the id of the protein it makes, its name, a short product
 description, and often its job and the experiment that showed it. In MIBiG 4.0,
 452 of the 2,437 active entries have them. The MIBiG adapter reads them from
-Phase 3.
+Phase 3, and from Phase 3b matches each one to its protein in MIBiG's protein
+file.
+
+**MIBiG protein file**: `mibig_prot_seqs_4.0.fasta`, a FASTA file on MIBiG's
+download server listing every protein of every cluster in the release: 46,987
+proteins, 40,009 of them in active entries. It gives every cluster its `Protein`
+nodes and `ENCODES` arrows from Phase 3b, but no jobs, so no `CATALYZES`.
 
 **MIBiG quality grade**: MIBiG's own rating of each entry: `high`, `medium`,
 `low` or `questionable`. MicrobeGraph carries it through as the `confidence` of
@@ -791,6 +858,11 @@ data to it claim rights in what they submitted.
 **Negative result**: a test that looked for something and did not find it. MIBiG
 records some bioactivities as `"observed": false`. MicrobeGraph counts them but
 never turns them into a `HAS_ACTIVITY` arrow, which would say the opposite.
+
+**Pending (MIBiG entry)**: an entry submitted to MIBiG but not yet reviewed and
+released, like a manuscript that has been sent in but not yet published. Its
+status isn't `active`, so MicrobeGraph leaves it out. MIBiG's protein file holds
+proteins for 199 pending entries (6,978 proteins), which are counted and skipped.
 
 **Protein existence**: UniProt's note of how directly a protein is known to
 exist, from "evidence at protein level" (someone detected the protein itself)
@@ -854,6 +926,11 @@ edge. The project uses it to rank edges, never to hide them.
 
 **Hypothesis**: a proposed explanation worth testing, not yet a finding. Every
 predicted link in this project is a hypothesis, and is labelled as one.
+
+**Median**: the middle value once everything is sorted, so half are smaller and
+half larger. Unlike an average, a few giant values can't drag it up: the median
+protein in MIBiG's protein file is 344 amino acids long, although the longest is
+18,447.
 
 **Normalise (text)**: put text into a consistent form before comparing:
 lowercase, trimmed, punctuation stripped. It stops `Surfactin ` and `surfactin`

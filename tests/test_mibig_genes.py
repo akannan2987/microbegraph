@@ -39,11 +39,15 @@ def test_every_surfactin_gene_becomes_a_protein_the_cluster_encodes(make_adapter
     _, nodes, edges = tidy_tables(make_adapter())
 
     encoded = sorted(t for (s, kind, t) in edges if s == "mibig:BGC0000433" and kind == "ENCODES")
-    assert encoded == [f"ncbiprotein:{p}" for p in SURFACTIN_PROTEINS]
+    # From Phase 3b the protein file adds the cluster's other 14 proteins, so
+    # the nine gene records are among 23 (tests/test_mibig_protein_file.py).
+    assert set(f"ncbiprotein:{p}" for p in SURFACTIN_PROTEINS) <= set(encoded)
     srfaa = nodes["ncbiprotein:CAE02630.1"]
     assert srfaa["node_type"] == "Protein"
     assert srfaa["name"] == "srfAA"
-    assert json.loads(srfaa["properties"]) == {
+    props = json.loads(srfaa["properties"])
+    assert {k: props[k] for k in ("protein_id", "id_type", "gene_name", "product", "functions",
+                                  "function_evidence")} == {
         "protein_id": "CAE02630.1", "id_type": "insdc", "gene_name": "srfAA",
         "product": "surfactin synthetase A", "functions": "Scaffold biosynthesis",
         "function_evidence": "Knock-out"}
@@ -120,15 +124,17 @@ def test_gene_counts_add_up(make_adapter, archive_in_locker):
     result, _, _ = tidy_tables(make_adapter())
     counts = result.counts
 
+    # BGC9999901 gained three gene records in Phase 3b (TESTI_00060, tstQ, tstY),
+    # none with a job, for the protein file's matching rules.
     assert counts["entries_with_gene_records"] == 3
-    assert counts["genes_read"] == 16
+    assert counts["genes_read"] == 19
     assert counts["genes_without_id"] == 1
     assert (counts["genes_insdc_id"], counts["genes_refseq_id"], counts["genes_other_id"]) == (
-        9, 1, 5)
+        9, 1, 8)
     # Every gene with an id lands in exactly one of these three.
     assert (counts["genes_in_biosynthesis"], counts["genes_other_roles"],
-            counts["genes_role_not_stated"]) == (8, 4, 3)
-    assert counts["genes_read"] - counts["genes_without_id"] == 8 + 4 + 3
+            counts["genes_role_not_stated"]) == (8, 4, 6)
+    assert counts["genes_read"] - counts["genes_without_id"] == 8 + 4 + 6
 
 
 @pytest.mark.parametrize(("identifier", "kind"), [

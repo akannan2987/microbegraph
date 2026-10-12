@@ -13,7 +13,8 @@ WHAT A PYTEST FIXTURE IS
 WHY THE TESTS NEVER TOUCH THE INTERNET
     A test that downloads things is slow and fails whenever the Wi-Fi does,
     and it bothers a public server every time anyone runs it. So these helpers build
-    a small archive from the four records in tests/fixtures/mibig/ and stand
+    a small archive from the four records in tests/fixtures/mibig/ (with,
+    from Phase 3b, a small sample of MIBiG's protein file beside it) and stand
     in a fake server that answers from memory. The real download is checked
     by hand, once, on your machine (docs/03-ingestion-mibig.md, Step 8).
 
@@ -36,9 +37,18 @@ from typing import Any
 import pytest
 import requests
 
-from microbegraph.sources.mibig import FILENAME, MibigSource
+from microbegraph.sources.mibig import FILENAME, PROTEIN_FILE, MibigSource
 
 FIXTURES = Path(__file__).parent / "fixtures" / "mibig"
+
+# Phase 3b: surfactin's 23 real proteins, copied unchanged from MIBiG's protein
+# file, followed by made-up ones for the made-up entries (tests/fixtures/README.md).
+PROTEIN_SAMPLE = FIXTURES / "mibig_prot_seqs_sample.fasta"
+
+
+def protein_file_bytes() -> bytes:
+    """The sample of MIBiG's protein file, exactly as stored."""
+    return PROTEIN_SAMPLE.read_bytes()
 
 
 @pytest.fixture(autouse=True)
@@ -55,7 +65,8 @@ def never_read_your_real_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def build_archive(target: Path, extra: dict[str, bytes] | None = None,
-                  reverse: bool = False, compression: str = "gz") -> bytes:
+                  reverse: bool = False, compression: str = "gz",
+                  proteins: bool = True) -> bytes:
     """
     Pack the fixture records into a tar archive shaped like a MIBiG release
     (one JSON file per entry inside one folder) and return its bytes.
@@ -65,6 +76,8 @@ def build_archive(target: Path, extra: dict[str, bytes] | None = None,
     `compression` is "gz", "bz2", "xz", or "" for none at all. The real
     MIBiG 4.0 file is named .tar.gz but is not gzip-compressed, so the tests
     try every kind under that same name.
+    `proteins` also puts the protein file sample next to the archive, under
+    the name the adapter expects (Phase 3b): the tidy reads both.
     """
     members = {f"mibig_json_4.0/{p.name}": p.read_bytes() for p in sorted(FIXTURES.glob("*.json"))}
     members.update(extra or {})
@@ -78,6 +91,8 @@ def build_archive(target: Path, extra: dict[str, bytes] | None = None,
     payload = buffer.getvalue()
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(payload)
+    if proteins:
+        (target.parent / PROTEIN_FILE).write_bytes(protein_file_bytes())
     return payload
 
 
@@ -157,12 +172,15 @@ class FakeSession:
         self.calls: list[str] = []
         self.sent: list[tuple[str, str, dict[str, str]]] = []
         self.not_followed: list[str] = []      # GETs asked NOT to follow a redirect
+        self.streamed: list[str] = []          # GETs asked to stream (read the headers first)
 
     def get(self, url: str, params: dict[str, str] | None = None, stream: bool = False,
             allow_redirects: bool = True, timeout: Any = None) -> FakeResponse:
         self.sent.append(("GET", url, dict(params or {})))
         if not allow_redirects:
             self.not_followed.append(url)
+        if stream:
+            self.streamed.append(url)
         return self._answer(url)
 
     def post(self, url: str, data: dict[str, str] | None = None,

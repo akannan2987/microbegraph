@@ -1,7 +1,7 @@
 {
   "accession": "BGC9999903",
   "version": 1,
-  "comment": "TEST FIXTURE. A synthetic record invented for tests; it describes no real organism, cluster or compound. Its only evidence is a homology-based prediction, so MicrobeGraph must label its HARBORS and PRODUCES arrows database_assertion, not curated_experimental. Its one gene record (added in Phase 3) uses the same made-up locus tag as a gene in BGC9999901, which must still give two separate proteins, because a locus tag only means something inside its own genome. The 10.0000 DOI prefix belongs to no publisher.",
+  "comment": "TEST FIXTURE. A synthetic record invented for tests; it describes no real organism, cluster or compound. Its only evidence is a homology-based prediction, so MicrobeGraph must label its HARBORS and PRODUCES arrows database_assertion, not curated_experimental. Its one gene record (added in Phase 3) uses the same made-up locus tag as a gene in BGC9999901, which must still give two separate proteins, because a locus tag only means something inside its own genome. From Phase 3b its proteins in the protein file sample include one it shares with BGC9999901 (XYZ99970.1), which must be one protein encoded by both clusters. The 10.0000 DOI prefix belongs to no publisher.",
   "changelog": {
     "releases": [
       {

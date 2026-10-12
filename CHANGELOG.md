@@ -18,6 +18,67 @@ and start a new, empty *Unreleased* above it. The
 
 ## Unreleased (toward 1.0.0)
 
+### Phase 3b: every cluster's proteins, MIBiG's protein file
+
+- **Added** MIBiG's protein file to the MIBiG adapter
+  (`src/microbegraph/sources/mibig.py`): `mibig_prot_seqs_4.0.fasta`, from MIBiG's
+  download server, fetched beside the archive and pinned by its SHA-256
+  (`4b196343...0717e8b`) and size (31,833,799 bytes), measured on its first
+  download because the server lists no checksum. The probe checks the size from
+  the server's headers without downloading, and names newer MIBiG files on the
+  server. A fetch now writes two provenance rows.
+- **Added** `src/microbegraph/sources/mibig_proteins.py`, which reads the file
+  (seven-part FASTA headers, refused in any other shape) and matches curators'
+  names to proteins: by number or label, by one matching product, and for
+  removals by a word inside the product.
+- **Changed** the MIBiG tidy: every protein of every active entry becomes a
+  `Protein` node with an `ENCODES` arrow; the curators' removals (`to_delete`)
+  are left out and listed with their reasons in `mibig_summary.json`; each gene
+  record is matched to its protein in the file, so a gene record named only by a
+  locus tag or gene name is named after the file's protein number when there is
+  one. Proteins gain `locations`, `locus_tags`, `sequence_length`,
+  `sequence_md5`, `gene_record_id` and `found_in`. `CATALYZES` is unchanged.
+  Fifteen new counts.
+- **Changed** the UniProt adapter to 10,000 ids per job (UniProt allows 100,000),
+  so about 39,000 protein numbers still take five jobs.
+- **Added** to the socket (`sources/base.py`): a download can be checked against a
+  SHA-256 this project pinned, with the same four safety rules as the MD5.
+- **Added** 30 tests (213 in all), built from a sample of the protein file:
+  surfactin's 23 real proteins copied line for line, and made-up proteins for
+  each special case (`tests/fixtures/mibig/mibig_prot_seqs_sample.fasta`). The
+  capture script `tests/fixtures/capture_mibig_protein_samples.py` downloads and
+  surveys the real file.
+- **Added** the Phase 3b guide (`docs/05b-all-cluster-proteins.md`), three
+  pictures (`fasta_header.svg`, `protein_file_matching.svg`,
+  `protein_file_coverage.svg`), the new terms in the glossary, and a
+  *Watching the sources* section in the roadmap (MIBiG 4.0.1 on Zenodo, a MIBiG
+  5.0 release candidate on the download server, the CI image change). The sources
+  map, the ID mapping picture, the protein layer picture and the interactive
+  explorers mention the protein file.
+- **Measured on the first run** (2026-10-12, from `mibig_summary.json` and
+  `uniprot_summary.json`):
+  - *The file:* 46,987 proteins in 2,636 entries; 6,978 belong to 199 pending
+    entries and are left out. The 40,009 in active entries are numbered 36,784 by
+    INSDC, 2,300 by RefSeq and 925 otherwise. All 661 genes added by curators are
+    in the file; 18 proteins removed by curators were left out (4 by number, 2 by
+    gene name, 12 by NCBI gene number inside a product), and 4 removal names match
+    nothing in the file (listed). 2 proteins appear twice in one cluster.
+  - *Gene records:* 4,661 matched by number or label, 17 by product, 59 not in the
+    file (listed, in 9 entries); 452 gene records named only by a locus tag or
+    gene name gained a protein number.
+  - *MIBiG's tables:* 40,037 `Protein` nodes (39,053 `ncbiprotein:`, 984
+    `mg.protein:`) and 40,048 `ENCODES` arrows, up from 4,737 each; all 2,437
+    active entries have proteins; 11 proteins sit in two clusters. MIBiG's arrows
+    grow from 19,252 to 54,563. The Phase 1 and Phase 3 counts are unchanged.
+  - *UniProt* (release `2026_03` of 02-September-2026, 10 answers, 6.6 MB,
+    about 4 minutes): 39,053 protein ids asked about in 5 jobs (36,769 INSDC,
+    2,284 RefSeq). 20,671 mapped and 18,382 didn't (16,965 INSDC, 1,417 RefSeq;
+    all listed). That gives 20,507 UniProt entries, 2,692 of them reviewed, 5,081
+    with an EC number and 3,848 with a description of function. 82 ids map to
+    more than one entry, and 349 entries are reached from more than one id. All
+    23 of surfactin's proteins map; the 1,640 ids Phase 3 couldn't map still
+    don't.
+
 ### Phase 3: the proteomics layer, MIBiG's gene records and UniProt
 
 - **Added** gene records to the MIBiG adapter (`src/microbegraph/sources/mibig.py`):

@@ -806,7 +806,8 @@ def _envelope(cx: float, cy: float, c: str) -> str:
 def sources_map() -> str:
     """Phases 1-3: six sources, what each one needs first, and what each adds to the graph."""
     rows = [
-        ("1", "MIBiG", "Phase 1 (gene records: Phase 3)", "CC BY 4.0", GOOD, "needs: nothing",
+        ("1", "MIBiG", "Phase 1 (gene records: Phase 3; protein file: Phase 3b)", "CC BY 4.0", GOOD,
+         "needs: nothing",
          ["Organism", "GeneCluster", "Protein", "Compound", "CompoundClass", "Activity"],
          "HARBORS · PRODUCES · HAS_ACTIVITY · BELONGS_TO · ENCODES · CATALYZES"),
         ("2", "PubChem", "Phase 2", "no NCBI restrictions", GOOD, "needs: MIBiG's compound numbers",
@@ -817,7 +818,7 @@ def sources_map() -> str:
         ("4", "KEGG", "Phase 2", "academic use only", CRITICAL, "needs: PubChem's KEGG numbers",
          ["Pathway"], "PARTICIPATES_IN: compound > pathway map"),
         ("5", "UniProt", "Phase 3", "CC BY 4.0", GOOD,
-         "needs: the protein ids in MIBiG's gene records",
+         "needs: the protein numbers in MIBiG's tables",
          ["Protein"], "what each enzyme is: names, organism, length, EC number, function"),
         ("6", "curated bridge", "Phase 2", "MIT, this repository", GOOD,
          "checked against: MIBiG and NCBI", ["Pathogen", "Crop"],
@@ -861,7 +862,8 @@ def sources_map() -> str:
                "MIBiG, PubChem, NCBI Taxonomy, KEGG, UniProt and the curated bridge, in the order "
                "they run, with what each needs first, its licence, and the node and edge types "
                "it adds. MIBiG's gene records (read from Phase 3) supply the ENCODES and "
-               "CATALYZES arrows; UniProt describes each enzyme.")
+               "CATALYZES arrows, its protein file (from Phase 3b) ENCODES arrows for every "
+               "cluster; UniProt describes each enzyme.")
 
 
 def secrets_env() -> str:
@@ -1076,13 +1078,17 @@ def protein_layer() -> str:
     parts.append(t(60, y_legend + 5, "builds the molecule: ENCODES and CATALYZES", size=12.5))
     parts.append(f'<circle cx="430" cy="{y_legend}" r="8" fill="none" stroke="{BASE}" stroke-width="2"/>')
     parts.append(t(446, y_legend + 5, "another job, or none stated: ENCODES only", size=12.5))
-    return svg(1200, int(y_legend + 28), "".join(parts), "The protein layer",
+    parts.append(t(32, y_legend + 34, "From Phase 3b, MIBiG's protein file adds the cluster's other "
+                   "14 proteins (CAE02619.1 to CAE02641.1), each with ENCODES only.", size=12.5,
+                   fill=INK2, style="italic"))
+    return svg(1200, int(y_legend + 56), "".join(parts), "The protein layer",
                "Bacillus velezensis FZB42 harbors cluster BGC0000433, which encodes the enzyme "
                "srfAA (CAE02630.1), which catalyzes a step in making surfactin; the direct "
                "PRODUCES arrow from Phase 1 stays as a shortcut. UniProt's ID mapping says "
                "CAE02630.1 is entry Q70KJ7, Surfactin synthetase A. Of the nine gene records in "
                "the surfactin entry, the three scaffold genes get a CATALYZES arrow and the other "
-               "six get ENCODES only.")
+               "six get ENCODES only. From Phase 3b the protein file adds the cluster's other 14 "
+               "proteins, with ENCODES only.")
 
 
 def gene_jobs() -> str:
@@ -1137,7 +1143,7 @@ def idmapping_flow() -> str:
     # 1: the order
     lines1 = [("POST /idmapping/run", True, 700), ("from = EMBL-GenBank-DDBJ_CDS", True, 400),
               ("to   = UniProtKB", True, 400), ("ids  = AAA16191.1,...,CAE02630.1,...", True, 400),
-              ("(up to 1,000 ids per job)", False, 400)]
+              ("(up to 10,000 ids per job from Phase 3b)", False, 400)]
     for k, (s, mono, w) in enumerate(lines1):
         parts.append(t(52, 160 + k * 22, s, size=12 if mono else 12.5, weight=w,
                        fill=INK if mono else MUTED, family=MONO if mono else FONT))
@@ -1199,7 +1205,7 @@ def protein_coverage() -> str:
     orange = LAYER["proteomics"]
     rows = [
         ("Active MIBiG entries", [(452, "452 with gene records (19%)", orange),
-                                  (1985, "1,985 without: Phase 3b", MUTED)]),
+                                  (1985, "1,985 without: Phase 3b covers them", MUTED)]),
         ("Their gene records", [(4089, "4,089 named by an INSDC or RefSeq number", orange),
                                 (648, "648 by a locus tag or name: not looked up", MUTED)]),
         ("Numbers sent to UniProt", [(2449, "2,449 found: 2,442 UniProt entries", orange),
@@ -1234,11 +1240,220 @@ def protein_coverage() -> str:
                    "whichever way it is named and whether or not UniProt knows it.", size=12.5,
                    fill=MUTED, style="italic"))
     return svg(1200, int(y + 52), "".join(parts), "How far the protein layer reaches",
-               "Of 2,437 active MIBiG entries, 452 have gene records and 1,985 don't (Phase 3b). "
+               "Of 2,437 active MIBiG entries, 452 have gene records and 1,985 don't (Phase 3b "
+               "covers them with MIBiG's protein file). "
                "Their 4,737 gene records: 4,089 named by an INSDC or RefSeq number, 648 by a "
                "locus tag or gene name. Of the 4,089 numbers sent to UniProt, 2,449 were found "
                "(2,442 entries) and 1,640 weren't. By job: 1,991 build the molecule and get "
                "CATALYZES arrows, 522 have other jobs, 2,224 have no job recorded.")
+
+
+def fasta_header() -> str:
+    """Phase 3b: one record of MIBiG's protein file, part by part, and what each part becomes."""
+    orange, blue = LAYER["proteomics"], LAYER["genomics"]
+    parts = [t(32, 46, "Reading one protein from MIBiG's protein file", size=22, weight=700),
+             t(32, 70, "Each protein is two lines in a FASTA file: a header with seven parts, then "
+               "its sequence, one letter per amino acid.", size=14, fill=INK2)]
+    fields = [("0", "BGC0000433.5", "entry and version", blue),
+              ("1", "c1", "record", MUTED),
+              ("2", "8558-19312", "position", INK2),
+              ("3", "+", "strand", INK2),
+              ("4", "CAE02630.1", "label", INK2),
+              ("5", "surfactin_synthetase_A", "product", INK2),
+              ("6", "CAE02630.1", "protein number", orange)]
+    size, char = 14, 8.45
+    x, y = 46, 120
+    parts.append(t(32, y + 26, ">", size=size + 2, weight=700, family=MONO))
+    for k, (num, text, label, colour) in enumerate(fields):
+        w = len(text) * char + 20
+        parts.append(rect(x, y, w, 40, fill=SURFACE, stroke=colour, rx=8, sw=2))
+        parts.append(t(x + w / 2, y + 26, text, size=size, family=MONO, anchor="middle"))
+        parts.append(f'<circle cx="{x + w / 2:.1f}" cy="{y - 16}" r="11" fill="{colour}"/>')
+        parts.append(t(x + w / 2, y - 11.5, num, size=12, weight=700, fill=SURFACE, anchor="middle"))
+        parts.append(t(x + w / 2, y + 60, label, size=12, fill=INK2, anchor="middle"))
+        x += w
+        if k < len(fields) - 1:
+            parts.append(t(x + 6, y + 27, "|", size=size + 2, weight=700, fill=MUTED, family=MONO,
+                           anchor="middle"))
+            x += 12
+    parts.append(rect(46, y + 80, 1122, 36, fill=PLANE, rx=8))
+    parts.append(t(60, y + 104, "MEITFYPLTNAQKRIWYTEKFYPNTSISNLAGFGKLISEDGVQAHYVEKAIQEFVRRYES...",
+                   size=size, family=MONO))
+    parts.append(t(1154, y + 104, "3,584 letters", size=12.5, fill=INK2, anchor="end"))
+    # what each part becomes
+    top = y + 152
+    parts.append(t(32, top, "WHAT MICROBEGRAPH KEEPS", size=12, weight=700, fill=MUTED))
+    keeps = [
+        ("part 6", "names the node", "ncbiprotein:CAE02630.1", "or mg.protein:<entry>-<name> when "
+         "it isn't a number", orange),
+        ("part 0", "the cluster that ENCODES it", "mibig:BGC0000433", "version 5, the same as the "
+         "JSON entry", blue),
+        ("part 4", "locus_tags, when it isn't part 6", "TSTA_117750 (for EED18001.1)", "a genome's own "
+         "label for the gene", INK2),
+        ("part 5", "product, with _ back to spaces", "surfactin synthetase A", "a gene record's own "
+         "product wins", INK2),
+        ("parts 2, 3", "locations", "BGC0000433:8558-19312:+", "one per place the file lists it", INK2),
+        ("sequence", "sequence_length and sequence_md5", "3584, f8ecefd278c1a5e6...", "the letters "
+         "stay in the file in the locker", INK2),
+    ]
+    for k, (which, becomes, example, note, colour) in enumerate(keeps):
+        yy = top + 16 + k * 50
+        parts.append(rect(32, yy, 1136, 42, fill=SURFACE, stroke=HAIR, rx=10))
+        parts.append(f'<circle cx="52" cy="{yy + 21}" r="6" fill="{colour}"/>')
+        parts.append(t(68, yy + 26, which, size=13, weight=700))
+        parts.append(t(170, yy + 26, becomes, size=13))
+        parts.append(t(440, yy + 26, example, size=12.5, family=MONO))
+        parts.append(t(740, yy + 26, note, size=12, fill=MUTED))
+    y_end = top + 16 + len(keeps) * 50 + 14
+    parts.append(t(32, y_end, "Part 1 is always c1 in MIBiG 4.0 (each entry has one sequence record), "
+                   "so it isn't kept.", size=12.5, fill=INK2))
+    return svg(1200, int(y_end + 26), "".join(parts), "Reading one protein from MIBiG's protein file",
+               "The header BGC0000433.5|c1|8558-19312|+|CAE02630.1|surfactin_synthetase_A|"
+               "CAE02630.1 has seven parts: entry and version, record, position, strand, label, "
+               "product and protein number, followed by the 3,584-letter sequence. Part 6 names "
+               "the node ncbiprotein:CAE02630.1, part 0 is the cluster that encodes it, part 4 is "
+               "kept as a locus tag when it differs, part 5 as the product, parts 2 and 3 as the "
+               "location, and the sequence as its length and MD5 fingerprint.")
+
+
+def protein_file_matching() -> str:
+    """Phase 3b: what happens to one cluster's proteins, in three steps, with the real counts."""
+    orange = LAYER["proteomics"]
+    parts = [t(32, 46, "Every cluster's proteins, in three steps", size=22, weight=700),
+             t(32, 70, "For each active entry, the curators' notes in the JSON are lined up with "
+               "the proteins the file lists.", size=14, fill=INK2)]
+    boxes = [(32, "1", "Leave out the curators' removals"),
+             (422, "2", "Match each gene record"),
+             (812, "3", "Add every other protein")]
+    for x, num, head in boxes:
+        parts.append(rect(x, 96, 356, 320, fill=SURFACE, stroke=HAIR, rx=14))
+        parts.append(f'<circle cx="{x + 26}" cy="124" r="14" fill="{orange}"/>')
+        parts.append(t(x + 26, 129, num, size=14, weight=700, fill=SURFACE, anchor="middle"))
+        parts.append(t(x + 50, 130, head, size=15, weight=700))
+    for k in range(2):
+        x = 392 + k * 390
+        parts.append(line(x, 256, x + 26, 256, color=INK2, sw=2.5))
+
+    def row(x: float, yy: float, mark: str, rule: str, example: str, n: str) -> None:
+        parts.append(rect(x, yy, 316, 42, fill=PLANE, rx=8))
+        parts.append(mark)
+        parts.append(t(x + 32, yy + 18, rule, size=12.5, weight=600))
+        parts.append(t(x + 32, yy + 35, example, size=11, fill=INK2, family=MONO))
+        if n:
+            parts.append(t(x + 306, yy + 27, n, size=13, weight=700, anchor="end"))
+
+    def open_mark(x: float, y: float) -> str:
+        return f'<circle cx="{x}" cy="{y}" r="7" fill="none" stroke="{BASE}" stroke-width="2"/>'
+
+    # 1: removals
+    parts.append(t(52, 162, "\"to_delete\" in the JSON, looked up among", size=12.5, fill=INK2))
+    parts.append(t(52, 180, "the same entry's proteins:", size=12.5, fill=INK2))
+    for k, (rule, example, n) in enumerate([("by number", "AFD30968.1", "4"),
+                                            ("by product", "CrmK = CrmK", "2"),
+                                            ("by word in product", "LOC100273419 (8 isoforms)", "12")]):
+        yy = 196 + k * 48
+        row(52, yy, cross_mark(68, yy + 21, 8), rule, example, n)
+    for k, s1 in enumerate(["18 proteins left out, each listed with", "the curators' reason. 4 removals name",
+                            "genes the file doesn't show: listed."]):
+        parts.append(t(52, 358 + k * 18, s1, size=12.5))
+    # 2: gene records
+    parts.append(t(442, 162, "Each of the 4,737 gene records is looked", size=12.5, fill=INK2))
+    parts.append(t(442, 180, "up the same way (a product only if unique):", size=12.5, fill=INK2))
+    for k, (rule, example, n, ok) in enumerate([
+            ("by number or label", "TSTA_117750 > EED18001.1", "4,661", True),
+            ("by one product", "nisA = NisA > ADJ56352.1", "17", True),
+            ("not in the file", "baeB, mscA, ...", "59", False)]):
+        yy = 196 + k * 48
+        row(442, yy, check_mark(458, yy + 21, 8) if ok else open_mark(458, yy + 21),
+            rule, example, n)
+    for k, s1 in enumerate(["Found: the node takes the file's number,", "so 452 locus tags and names gain one.",
+                            "Not found: kept as in Phase 3, listed."]):
+        parts.append(t(442, 358 + k * 18, s1, size=12.5))
+    # 3: everything else
+    parts.append(t(832, 162, "Each remaining protein becomes a", size=12.5, fill=INK2))
+    parts.append(t(832, 180, "Protein node with an ENCODES arrow.", size=12.5, fill=INK2))
+    for k, (rule, result) in enumerate([("same protein as a gene record", "one node, one arrow"),
+                                        ("same protein twice in a cluster", "one node, both positions"),
+                                        ("same protein in two clusters", "one node, two arrows")]):
+        yy = 196 + k * 48
+        row(832, yy, check_mark(848, yy + 21, 8, color=orange), rule, result, "")
+    for k, s1 in enumerate(["The 661 genes the curators added", "(\"to_add\") are already in the file, with",
+                            "sequences, and arrive here."]):
+        parts.append(t(832, 358 + k * 18, s1, size=12.5))
+    # the arithmetic
+    top = 448
+    parts.append(t(32, top, "THE REAL NUMBERS, MIBiG 4.0", size=12, weight=700, fill=MUTED))
+    flow = [("46,987", "proteins in the file", INK), ("- 6,978", "in 199 pending entries", MUTED),
+            ("- 18", "removed by curators", CRITICAL), ("- 2", "repeats in one cluster", MUTED),
+            ("+ 59", "gene records not in the file", MUTED),
+            ("= 40,048", "ENCODES arrows", orange), ("40,037", "Protein nodes", orange)]
+    x = 32
+    for k, (n, label, colour) in enumerate(flow):
+        w = 154 if k < len(flow) - 1 else 180
+        parts.append(rect(x, top + 14, w, 66, fill=SURFACE, stroke=colour if colour not in (INK, MUTED)
+                          else HAIR, rx=10, sw=2 if colour == orange else 1.5))
+        parts.append(t(x + w / 2, top + 44, n, size=17, weight=700, fill=colour if colour != MUTED
+                       else INK2, anchor="middle"))
+        parts.append(t(x + w / 2, top + 66, label, size=10.5, fill=INK2, anchor="middle"))
+        x += w + 8
+    parts.append(t(32, top + 108, "40,048 arrows but 40,037 nodes: 11 proteins are encoded by two "
+                   "clusters each. CATALYZES still comes only from gene records.", size=12.5,
+                   fill=INK2))
+    return svg(1200, top + 130, "".join(parts), "Every cluster's proteins, in three steps",
+               "Step 1 leaves out the proteins MIBiG's curators removed: 18 found by number, gene "
+               "name in the product, or NCBI gene number inside the product; 4 removals name genes "
+               "the file doesn't show. Step 2 matches each gene record: 4,661 by number or label, "
+               "17 by a single matching product, 59 not in the file. Step 3 adds every other "
+               "protein. From 46,987 proteins in the file: minus 6,978 in pending entries, minus "
+               "18 removed, minus 2 repeats, plus 59 gene records not in the file, gives 40,048 "
+               "ENCODES arrows to 40,037 Protein nodes.")
+
+
+# The UniProt numbers in protein_file_coverage() come from the real Phase 3b run.
+UNIPROT_3B = {"asked": 39_053, "mapped": 20_671, "entries": 20_507, "release": "2026_03"}
+
+
+def protein_file_coverage() -> str:
+    """Phase 3b: the protein layer before and after MIBiG's protein file, from the real runs."""
+    orange = LAYER["proteomics"]
+    mapped = UNIPROT_3B["mapped"]
+    rows = [
+        ("Active entries with proteins", 452, 2437, "all 2,437 active entries"),
+        ("Protein nodes", 4737, 40037, "39,053 with an INSDC or RefSeq number"),
+        ("ENCODES arrows", 4737, 40048, "11 proteins sit in two clusters"),
+        ("Numbers sent to UniProt", 4089, 39053, "10,000 per job: still 5 jobs"),
+        ("Numbers UniProt found", 2449, mapped, "the rest are listed, not dropped"),
+        ("CATALYZES arrows", 4492, 4492, "unchanged: only gene records give jobs"),
+    ]
+    parts = [t(32, 46, "How far the protein layer reaches now", size=22, weight=700),
+             t(32, 70, "Phase 3 read MIBiG's gene records; Phase 3b adds MIBiG's protein file. "
+               "Each row has its own scale.", size=14, fill=INK2)]
+    x0, width, step = 330, 600, 74
+    parts.append(chip(330, 88, "Phase 3: gene records only", BASE, w=220, size=11.5))
+    parts.append(chip(564, 88, "Phase 3b: with the protein file", orange, w=250, size=11.5))
+    for i, (label, before, after, note) in enumerate(rows):
+        y = 132 + i * step
+        top_value = max(before, after or 0) or 1
+        parts.append(t(32, y + 18, label, size=14, weight=700))
+        parts.append(t(32, y + 38, note, size=11.5, fill=MUTED))
+        parts.append(rect(x0, y + 4, max(width * before / top_value, 2), 18, fill=BASE, rx=4))
+        parts.append(t(x0 + width * before / top_value + 8, y + 18, f"{before:,}", size=12.5,
+                       fill=INK2))
+        if after is None:
+            parts.append(t(x0, y + 44, "after the real run", size=12.5, fill=MUTED, style="italic"))
+        else:
+            parts.append(rect(x0, y + 28, max(width * after / top_value, 2), 18, fill=orange, rx=4))
+            parts.append(t(x0 + width * after / top_value + 8, y + 42, f"{after:,}", size=12.5,
+                           weight=700))
+    y = 132 + len(rows) * step + 8
+    release = UNIPROT_3B["release"] or "the release of the run"
+    parts.append(t(32, y, f"MIBiG 4.0 (fixed by the pins); UniProt {release}. UniProt's numbers "
+                   "can move a little with each release.", size=12.5, fill=INK2))
+    return svg(1200, int(y + 26), "".join(parts), "How far the protein layer reaches now",
+               "Phase 3 against Phase 3b: active entries with proteins 452 against 2,437; Protein "
+               "nodes 4,737 against 40,037; ENCODES arrows 4,737 against 40,048; numbers sent to "
+               f"UniProt 4,089 against 39,053; numbers UniProt found 2,449 against "
+               f"{mapped if mapped is not None else 'the real run'}; CATALYZES arrows 4,492 in both.")
 
 
 FIGURES = {
@@ -1261,6 +1476,9 @@ FIGURES = {
     "gene_jobs.svg": gene_jobs,
     "idmapping_flow.svg": idmapping_flow,
     "protein_coverage.svg": protein_coverage,
+    "fasta_header.svg": fasta_header,
+    "protein_file_matching.svg": protein_file_matching,
+    "protein_file_coverage.svg": protein_file_coverage,
 }
 
 

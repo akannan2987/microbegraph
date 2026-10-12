@@ -822,7 +822,10 @@ archive lands on your machine.
 
    You will see a progress line while the 9.5 MB downloads, then the counts.
    This is the real output from the run on 2026-10-10. MIBiG 4.0 is pinned, so
-   your numbers should be exactly the same:
+   your numbers should be exactly the same. (From Phase 3 the tidy prints more
+   counts, and from Phase 3b the same command also downloads MIBiG's protein file
+   and the tidy reads it; [`05b-all-cluster-proteins.md`, Step 8](05b-all-cluster-proteins.md#12-step-8-run-it-for-real)
+   shows that output.)
 
    ```
    [mibig] fetch
@@ -1148,13 +1151,25 @@ When you decide to upgrade:
 2. On that Zenodo page, find the JSON archive's file name and its MD5 checksum.
 3. In `src/microbegraph/sources/mibig.py`, change the four pinned constants
    (`ZENODO_RECORD`, `MIBIG_VERSION`, `FILENAME`, `EXPECTED_MD5`) together.
-4. If the new release changes the record layout, update the fixtures and `tidy()`
-   until `pytest` passes again.
-5. Run `python -m microbegraph.fetch --source mibig`. The old archive stays in the
-   locker beside the new one: nothing is overwritten.
-6. Compare the new `mibig_summary.json` with the old counts, and record both in
+4. From Phase 3b the adapter also reads MIBiG's protein file, which belongs to
+   the same release. Find the new release's protein file on MIBiG's download
+   server, run the capture
+   ([`05b-all-cluster-proteins.md`, Step 2](05b-all-cluster-proteins.md#6-step-2-look-at-the-real-file-first))
+   against it, and change its constants too (`PROTEIN_FILE`,
+   `PROTEIN_FILE_SHA256`, `PROTEIN_FILE_BYTES`), using the SHA-256 and size the
+   capture prints.
+5. If the new release changes the record layout or the protein file's headers,
+   update the fixtures, `tidy()` and `mibig_proteins.py` until `pytest` passes
+   again.
+6. Run `python -m microbegraph.fetch --source mibig`. The old files stay in the
+   locker beside the new ones: nothing is overwritten.
+7. Compare the new `mibig_summary.json` with the old counts, and record both in
    `CHANGELOG.md`.
-7. Commit with `feat(mibig): upgrade to MIBiG <version>`.
+8. Commit with `feat(mibig): upgrade to MIBiG <version>`.
+
+The releases noticed so far (MIBiG 4.0.1 on Zenodo, a 5.0 release candidate on
+the download server) and the plan for each are in
+[`ROADMAP.md`, *Watching the sources*](ROADMAP.md#watching-the-sources).
 
 In Phase 12, Airflow runs the probe on a schedule, so a new release is noticed
 automatically. The upgrade itself stays a reviewed change that someone makes on

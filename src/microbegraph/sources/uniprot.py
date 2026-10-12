@@ -30,9 +30,11 @@ HOW MIBiG AND UNIPROT MEET
         MIBiG gene record          ID mapping            UniProt entry
         CAE02630.1 (srfAA)  ---------------------->  Q70KJ7 (Surfactin synthetase A)
 
-    The MIBiG adapter turns each gene record into a Protein node called
-    ncbiprotein:<id> (src/microbegraph/sources/mibig.py). This adapter reads
-    those nodes from MIBiG's staging table, so MIBiG must be tidied first.
+    The MIBiG adapter turns each protein into a Protein node called
+    ncbiprotein:<id> (src/microbegraph/sources/mibig.py): from its gene
+    records since Phase 3, and from its protein file, which covers every
+    cluster, since Phase 3b. This adapter reads those nodes from MIBiG's
+    staging table, so MIBiG must be tidied first.
 
 HOW IT ASKS: A JOB WITH A TICKET NUMBER
     ID mapping works like ordering at a busy cafe counter. You place the
@@ -48,7 +50,8 @@ HOW IT ASKS: A JOB WITH A TICKET NUMBER
                                          every result, as one table
 
     INSDC ids are asked with the "from" type EMBL-GenBank-DDBJ_CDS and RefSeq
-    ids with RefSeq_Protein, 1,000 ids per job. The job answer (step 1) and
+    ids with RefSeq_Protein, 10,000 ids per job (see BATCH_SIZE below for
+    why). The job answer (step 1) and
     the results (step 3) are kept in the snapshot. The "is it ready?"
     answers in between say nothing about proteins, so they aren't kept;
     the manifest records how many were needed. UniProt keeps a finished job
@@ -75,7 +78,10 @@ WHAT tidy() TURNS THE ANSWERS INTO
 PACING
     UniProt asks programs to be reasonable rather than publishing a fixed
     limit. This adapter makes one request a second and asks about a job
-    every three seconds. The whole fetch is about twenty requests.
+    every three seconds. Phase 3's fetch was five jobs and about twenty
+    requests. Since Phase 3b it's still five jobs, for about 39,000 ids, but a
+    job of 10,000 ids takes UniProt a minute or so, so there are more status
+    questions: about ninety requests in all, and four minutes.
 
 LICENCE AND CITATION
     UniProt is free to use under CC BY 4.0: credit UniProt when you use it.
@@ -120,9 +126,14 @@ SHOWN_AS = {"insdc": "INSDC", "refseq": "RefSeq"}     # how each kind is named o
 RETURN_FIELDS = ("accession,id,reviewed,protein_name,gene_names,organism_name,organism_id,"
                  "length,ec,cc_function,protein_existence,annotation_score")
 
-BATCH_SIZE = 1000           # ids per job
+# Ids per job. UniProt accepts up to 100,000 ids in one job
+# (https://www.uniprot.org/help/id_mapping). Phase 3 used 1,000 for its 4,089
+# ids. From Phase 3b MIBiG's protein file gives about 39,000, which at 1,000 a
+# job would be 40 jobs and well over a hundred requests. 10,000 a job keeps it to five
+# jobs, well inside UniProt's limit, and each results table stays a few MB.
+BATCH_SIZE = 10_000
 POLL_FACTOR = 3             # ask about a job every 3 x pause_seconds
-MAX_POLLS = 100             # about five minutes, far longer than a job of 1,000 ids takes
+MAX_POLLS = 100             # about five minutes, far longer than a job of 10,000 ids takes
 
 # How UniProt says "finished, look over there" when redirects aren't followed.
 REDIRECTS = {301, 302, 303, 307, 308}

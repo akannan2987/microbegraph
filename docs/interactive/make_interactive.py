@@ -57,7 +57,8 @@ NODE_TEXT = {
     "GeneCluster": ("A run of neighbouring genes that together build one specialised molecule.",
                     "Phase 1 (MIBiG)"),
     "Protein": ("An enzyme encoded by the cluster: the machine that performs one chemical step.",
-                "Phase 3 (MIBiG's gene records; UniProt describes each enzyme)"),
+                "Phase 3 (MIBiG's gene records), every cluster's from Phase 3b (MIBiG's "
+                "protein file); UniProt describes each one"),
     "Compound": ("The molecule the cluster makes.",
                  "Phase 1 (MIBiG); PubChem identities in Phase 2, joined to MIBiG's in Phase 4"),
     "CompoundClass": ("A family of chemically related molecules.",
@@ -74,7 +75,7 @@ NODE_TEXT = {
 EDGE_TEXT = {
     "HARBORS": ("The organism carries the gene cluster in its DNA.", "MIBiG, Phase 1"),
     "ENCODES": ("The cluster's genes are the instructions for the protein.",
-                "MIBiG's gene records, Phase 3"),
+                "MIBiG's gene records (Phase 3) and protein file (Phase 3b)"),
     "CATALYZES": ("The protein performs a step in making the molecule.",
                   "MIBiG's gene records, Phase 3 (only genes whose job builds the molecule)"),
     "PRODUCES": ("The cluster is known to make the molecule: the direct shortcut.", "MIBiG, Phase 1"),
@@ -390,7 +391,8 @@ its own, which MIBiG grades "questionable" (hence confidence 0.50). Other surfac
 full release can add their record numbers and citations to the same arrows. ENCODES and CATALYZES
 come from the entry's gene record for srfAA (Phase 3): a knock-out showed that srfAA builds the
 molecule's backbone, so its CATALYZES arrow is curated_experimental, while ENCODES only states that
-the gene is in the cluster. UniProt's ID mapping says CAE02630.1 is the entry Q70KJ7, Surfactin
+the gene is in the cluster (from Phase 3b, MIBiG's protein file lists it too, with the cluster's 22
+other proteins). UniProt's ID mapping says CAE02630.1 is the entry Q70KJ7, Surfactin
 synthetase A. The protein route sits beside the PRODUCES shortcut, so hiding it never breaks the
 chain. The two curation rows come
 from one row of the cited bridge (Phase 2): Xiao et al. (2023) found that purified surfactin inhibited

@@ -10,8 +10,9 @@ WHAT PROVENANCE MEANS
 
 WHAT GETS WRITTEN
     data/raw/provenance.csv, never edited, only added to. One row for every
-    file a fetch saves: one per fetch for MIBiG (one archive), one per answer
-    for the web APIs from Phase 2 (PubChem, NCBI Taxonomy, KEGG).
+    file a fetch saves: one per fetch for MIBiG's archive (and, from Phase
+    3b, one for its protein file), and one per answer for the web APIs from
+    Phase 2 on (PubChem, NCBI Taxonomy, KEGG, UniProt).
 
     | column         | example (the first real MIBiG fetch)          |
     |----------------|-----------------------------------------------|

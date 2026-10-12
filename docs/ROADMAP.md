@@ -26,6 +26,7 @@ attached tells a reader more than a list of promises does.
 - [Release 3.0, the product](#release-30-the-product-phases-14-19)
 - [What "finished" means: the product checklist](#what-finished-means-the-product-checklist)
 - [The architecture, in three stages](#the-architecture-in-three-stages)
+- [Watching the sources](#watching-the-sources)
 - [Effort and scheduling](#effort-and-scheduling)
 - [Deliberately not in the plan](#deliberately-not-in-the-plan)
 
@@ -217,8 +218,8 @@ passing the twelve rules; a finished UniProt snapshot in `data/raw/uniprot/`;
 encodes nine proteins, three of which catalyze surfactin.
 
 **Known limit, handed to Phase 3b:** only 452 of MIBiG 4.0's 2,437 active
-entries have gene records in the pinned JSON release, so most clusters have no
-proteins yet.
+entries have gene records in the pinned JSON release, so most clusters had no
+proteins yet. Phase 3b closed that gap.
 
 **Handed on to Phase 4:** each UniProt entry lists the MIBiG protein number(s) it
 was found through (`mibig_protein_ids`), so joining `ncbiprotein:` nodes to
@@ -230,32 +231,51 @@ entry, until the ledger decides otherwise.
 
 ---
 
-## Phase 3b. Every cluster's proteins: MIBiG's protein file
+## Phase 3b. Every cluster's proteins: MIBiG's protein file ✅
+
+**Status:** built and tested. Guide: [`05b-all-cluster-proteins.md`](05b-all-cluster-proteins.md).
 
 **What gets built:** the protein layer for every cluster, not only the 452
 entries with gene records. MIBiG's own download server
 (<https://dl.secondarymetabolites.org/mibig/>) publishes every protein of every
-cluster in one file, `mibig_prot_seqs_4.0.fasta` (about 30 MB), and the full
-GenBank records as `mibig_gbk_4.0.tar.gz`. This phase reads the protein file:
-each protein's cluster and identifier become a `Protein` node and an `ENCODES`
-arrow, and the new protein numbers go through the same UniProt adapter.
-`CATALYZES` still comes only from MIBiG's gene records, because only they say
-which job a gene does.
+cluster in one FASTA file, `mibig_prot_seqs_4.0.fasta` (30.4 MB). The MIBiG
+adapter now fetches it beside the archive, pinned by a SHA-256 this project
+recorded from its first download (the server lists no checksum), and a new
+module, `mibig_proteins.py`, reads it. Each protein of an active entry becomes a
+`Protein` node with an `ENCODES` arrow; MIBiG's curators' removals (`to_delete`)
+are left out and listed with their reasons; each gene record is matched to its
+protein in the file, so 452 gene records named only by a locus tag or gene name
+gain a worldwide protein number. The protein numbers, about 39,000 of them, go
+through the same UniProt adapter, now 10,000 per job. `CATALYZES` still comes only
+from gene records, because only they say which job a gene does.
 
-**Why it's a phase of its own:** the file isn't in the Zenodo record this project
-pins, so it has no published checksum. Following the habit from Phases 2 and 3,
-the phase starts by looking at the real file (how its headers name each protein
-and cluster), then pins it by its own SHA-256 fingerprint, recorded in the code
-the way MIBiG's MD5 is. MIBiG's corrections to a sequence record's gene list
-(`to_add` and `to_delete` in the JSON) are applied here.
+**What looking first changed:** the survey of the real file, run before any code,
+showed that the file already contains the genes curators added (`to_add`) but
+still lists the ones they removed, that removals name genes in three ways
+(protein number, gene name, NCBI gene number inside a product name), that 199
+pending entries are in the file, and that part 4 of each header carries the
+locus tag that matches 435 gene records to a protein number. Each finding is a
+rule in the code and a row in the guide.
 
-**New concepts:** the FASTA format; pinning a file that has no published
-checksum; working with a file of tens of thousands of records; ID mapping at
-scale.
+**New concepts:** the FASTA format; protein sequences, isoforms and unknown
+residues; pinning a file that has no published checksum; checking a remote file
+by its headers without downloading it; applying curators' corrections and
+listing each one; matching names across two lists without guessing; keeping a
+fingerprint instead of the data; ID mapping at scale.
 
-**Checkpoint:** every active entry that has a protein in the file has `ENCODES`
-arrows; the protein counts per entry agree between the file and the gene records
-wherever both exist; the UniProt summary lists what didn't map.
+**Checkpoint (met on 2026-10-12):** all 2,437 active entries have `ENCODES`
+arrows (40,048 arrows to 40,037 `Protein` nodes, from 4,737); the gene records
+and the file agree wherever both exist (4,678 of 4,737 matched, the other 59
+listed); 18 proteins removed by curators, each listed; UniProt (release
+`2026_03`) found 20,671 of the 39,053 numbers asked about, giving 20,507 entries,
+and the 18,382 it didn't find are listed.
+
+**Handed on to Phase 4:** the 59 gene records the file doesn't name (in 9
+entries) and the 4 removals it doesn't name (maize genes in BGC0002390), both
+listed in `mibig_summary.json`; a `sequence_md5` on every protein from the file,
+so identical sequences can be recognised; 11 proteins encoded by two clusters
+each; 82 protein numbers with more than one UniProt entry and 349 entries reached
+from more than one number, both listed in `uniprot_summary.json`.
 
 **Effort:** ~4-5 hours.
 
@@ -292,10 +312,25 @@ number, with the move written in the ledger.
 
 **What Phases 3 and 3b hand over:** each UniProt protein lists the MIBiG protein
 numbers it was found through (`mibig_protein_ids`), so an `ncbiprotein:` node and
-its `uniprot:` entry become one node, by an exact join. A number with several
-UniProt entries, and a locus tag that appears in two entries, are decisions for
-the ledger. UniProt's organism names stay properties; organisms come from MIBiG
-and NCBI only.
+its `uniprot:` entry become one node, by an exact join (20,507 entries for 20,671
+numbers on the 2026-10-12 run). A number with several UniProt entries (82), an
+entry reached from several numbers (349), and a locus tag that appears in two
+entries are decisions for the ledger. UniProt's organism names stay properties;
+organisms come from MIBiG and NCBI only. Three lists from Phase 3b need their own
+rules, each written in the ledger:
+
+* **59 gene records the protein file doesn't name** (9 entries, such as `baeB` in
+  BGC0001089): in those entries a protein can exist twice, once as
+  `mg.protein:<entry>-<gene name>` and once by its number. The ledger matches the
+  gene name against the UniProt gene names of the same cluster's proteins, and
+  checks what's left against MIBiG's GenBank file (`mibig_gbk_4.0.tar.gz`), which
+  gives each gene's name and protein number side by side.
+* **4 curators' removals the file doesn't name** (maize genes such as
+  `LOC100272490` in BGC0002390): resolved through NCBI's gene records, which link
+  an NCBI gene number to its proteins, then removed with the curators' reason.
+* **Identical sequences:** two protein nodes with the same `sequence_md5` have the
+  same sequence, which is grounds (written in the ledger) for treating two locus
+  tags in two entries as one protein.
 
 **New concepts:** entity resolution, normalisation before comparison, why a wrong
 merge is worse than a missed one, validation that *refuses* rather than warns,
@@ -1083,8 +1118,10 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | | Data sources and licences listed, attribution in the app | ✅ Phase 2, Phase 8 |
 | | Secrets kept out of the repository: `.env`, a safety gate that catches key-shaped text | ✅ Phase 0, first key in Phase 2 |
 | | Answers from live services kept as dated snapshots, one provenance row per answer | ✅ Phase 2 |
-| | What each join didn't match counted and listed, never dropped quietly | ✅ Phases 2-3 |
-| **Science** | Three molecular layers joined: genes, proteins (enzymes), molecules | ✅ Phase 3 (entries with gene records), every cluster in Phase 3b |
+| | What each join didn't match counted and listed, never dropped quietly | ✅ Phases 2-3b |
+| | Files with no published checksum pinned by a fingerprint of our own | ✅ Phase 3b |
+| | Curators' corrections applied, each one listed with its reason | ✅ Phase 3b (removals); the rest in Phase 4 |
+| **Science** | Three molecular layers joined: genes, proteins (enzymes), molecules | ✅ Phase 3 (entries with gene records), ✅ every cluster in Phase 3b |
 | **Engineering** | Installable package, bounded dependencies, lockfile | ✅ Phase 0-1 |
 | | Automated tests on Windows, macOS, Linux and RHEL 8 at every push | ✅ Phase 1 |
 | | One-command setup scripts per operating system | Phase 9 |
@@ -1101,7 +1138,7 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | | A citable data release (DOI) of the graph itself | Phase 9, refreshed per release |
 | | `SECURITY.md`: how to report a problem | Phase 14 |
 | | Database backup and restore | Phase 18 |
-| | Controlled upgrades of pinned source releases | ✅ procedure in Phase 1, checked monthly from Phase 12 |
+| | Controlled upgrades of pinned source releases | ✅ procedure in Phase 1, newer files on MIBiG's server noticed by the probe from Phase 3b, checked monthly from Phase 12; MIBiG 5.0 [planned](#watching-the-sources) |
 
 ---
 
@@ -1153,6 +1190,23 @@ Streamlit stays as the analyst tool, and NetworkX stays for in-memory algorithms
 Each release *adds a production tier* alongside what exists. That's how real
 systems evolve, and it's also what keeps the project runnable on a laptop, with
 no accounts, at every stage.
+
+---
+
+## Watching the sources
+
+Sources move on while the project is being built. These are the changes noticed
+so far, and what the plan does about each:
+
+| What | Noticed | Plan |
+|---|---|---|
+| **MIBiG 4.0.1** on Zenodo (record 14835872) | Phase 1, by the probe | Stay on 4.0, which every count in the guides comes from. Not worth an upgrade on its own, given 5.0 below |
+| **MIBiG 5.0 release candidate** (`mibig_json_5.0rc1.tar.bz2`, 21 September 2026) on MIBiG's download server | Phase 3b, by the probe | When 5.0 is final and on Zenodo, upgrade as a change of its own (`feat(mibig): upgrade to MIBiG 5.0`), archive and protein file together, following [`03-ingestion-mibig.md`, section 16](03-ingestion-mibig.md#16-upgrading-mibig-later): capture and survey first, new pins, fixtures, a comparison of old and new counts in the changelog. If it's final before Phase 9, the upgrade happens before Phase 9, so release 1.0 ships the current MIBiG |
+| **UniProt releases** (`2026_03` used in Phases 3 and 3b) | Every fetch records the release | A new release only needs a new fetch; the snapshot keeps the old one for comparison. From Phase 12 Airflow refetches monthly |
+| **GitHub's `ubuntu-latest`** moves to Ubuntu 26 from 19 October 2026 | GitHub's notice, after Phase 3 | Nothing unless an Ubuntu job fails; then pin `ubuntu-24.04` in `.github/workflows/ci.yml` and say so in the docs that describe CI |
+
+Running `python -m microbegraph.fetch --probe` at the start of each phase is the
+habit that keeps this table current.
 
 ---
 

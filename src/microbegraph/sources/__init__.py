@@ -6,12 +6,15 @@ Every adapter is registered here by its short name. The fetch command
 as soon as it's added below, without touching any other file.
 
     Phase 1   mibig           gene clusters, organisms, compounds, activities
-                              (and, from Phase 3, each gene's protein)
+                              (from Phase 3, the proteins in its gene records;
+                              from Phase 3b, every cluster's proteins, read
+                              from MIBiG's protein file)
     Phase 2   pubchem         compound identity, structure and other names
               ncbi_taxonomy   the family tree above organisms and pathogens
               kegg            which pathway maps compounds appear on
               curation        the cited bridge: compound -> pathogen -> crop
     Phase 3   uniprot         what each MIBiG protein is, through ID mapping
+                              (about 39,000 protein numbers from Phase 3b)
 
 THE ORDER MATTERS
     Later sources build on earlier ones: PubChem asks about MIBiG's compound

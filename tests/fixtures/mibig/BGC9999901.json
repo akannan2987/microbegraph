@@ -1,7 +1,7 @@
 {
   "accession": "BGC9999901",
   "version": 1,
-  "comment": "TEST FIXTURE. A synthetic record invented for tests; it describes no real organism, cluster or compound. It covers the cases the real surfactin record does not: medium quality, a hybrid cluster, two compounds, a compound shared with another cluster, a recorded negative bioactivity, cited bioactivities, activity names written as plain text (MIBiG 4.0 uses this style as well as the object style in the surfactin record), one activity object carrying a curator's comment, a compound class, synonyms, a PubChem identifier and a Greek letter in a name. Its gene records (added in Phase 3) cover a RefSeq protein id, locus tags, a gene with no name, a job shown by an activity assay with a reference, a gene with two jobs, a job that does not build the molecule, and a gene record with no identifier. WP_999999901.1 and the TESTI_ locus tags are made up. The 10.0000 DOI prefix belongs to no publisher.",
+  "comment": "TEST FIXTURE. A synthetic record invented for tests; it describes no real organism, cluster or compound. It covers the cases the real surfactin record does not: medium quality, a hybrid cluster, two compounds, a compound shared with another cluster, a recorded negative bioactivity, cited bioactivities, activity names written as plain text (MIBiG 4.0 uses this style as well as the object style in the surfactin record), one activity object carrying a curator's comment, a compound class, synonyms, a PubChem identifier and a Greek letter in a name. Its gene records (added in Phase 3) cover a RefSeq protein id, locus tags, a gene with no name, a job shown by an activity assay with a reference, a gene with two jobs, a job that does not build the molecule, and a gene record with no identifier. From Phase 3b it also has a gene record named only by a locus tag that the protein file gives a protein number (TESTI_00060), one named by a gene name that matches one product in the file (tstQ), one whose gene name matches two products and so stays unmatched (tstY), a gene the curators added (ctg1_orf7), and four removals: one by protein number, one by gene name, one by an NCBI gene number inside two products, and one the file doesn't name. Its proteins in the protein file sample are made up too. WP_999999901.1, WP_999999970.1, the XYZ999.. numbers and the TESTI_ locus tags are made up. The 10.0000 DOI prefix belongs to no publisher.",
   "changelog": {
     "releases": [
       {
@@ -64,7 +64,19 @@
       {"id": "TESTI_00030", "product": "aminotransferase ", "functions": [{"function": {"name": "Precursor biosynthesis"}, "evidence": []}]},
       {"id": "TESTI_00040", "name": "tstR", "product": "regulator with a methyltransferase domain", "functions": [{"function": {"name": "Regulation"}, "evidence": []}, {"function": {"name": "Tailoring"}, "evidence": []}]},
       {"id": "TESTI_00050", "name": "tstP", "product": "phosphopantetheinyl transferase", "functions": [{"function": {"name": "Activation / processing"}, "evidence": [{"method": "Knock-out"}]}]},
-      {"name": "tstX", "product": "hypothetical protein"}
+      {"name": "tstX", "product": "hypothetical protein"},
+      {"id": "TESTI_00060", "name": "tstU", "product": "ABC transporter permease"},
+      {"id": "tstQ"},
+      {"id": "tstY", "product": "hypothetical protein Y"}
+    ],
+    "to_add": [
+      {"id": "ctg1_orf7", "location": {"exons": [{"from": 15001, "to": 15300}], "strand": 1}, "translation": null}
+    ],
+    "to_delete": [
+      {"id": "XYZ99990.1", "reason": "Test removal by protein number"},
+      {"id": "tstD", "reason": "Test removal by gene name"},
+      {"id": "LOC999001", "reason": "Test removal by an NCBI gene number inside the product"},
+      {"id": "tstZ", "reason": "Test removal of a gene the protein file doesn't name"}
     ]
   }
 }

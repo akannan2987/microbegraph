@@ -159,14 +159,14 @@ runs through biological and linked-data systems.
 | `mibig` | MIBiG | `mibig:BGC0000433` | Gene clusters |
 | `pubchem.compound` | PubChem | `pubchem.compound:<CID>` | Compounds, once resolved |
 | `kegg.pathway` | KEGG | `kegg.pathway:map00660` | Pathways |
-| `ncbiprotein` | NCBI Protein (INSDC and RefSeq protein ids) | `ncbiprotein:CAE02630.1` | Proteins named in MIBiG's gene records (from Phase 3) |
+| `ncbiprotein` | NCBI Protein (INSDC and RefSeq protein ids) | `ncbiprotein:CAE02630.1` | Proteins MIBiG numbers, in its gene records (from Phase 3) and its protein file (from Phase 3b) |
 | `uniprot` | UniProt | `uniprot:Q70KJ7` | Proteins (enzymes), as UniProt describes them |
 | `mg.class` | *this project* | `mg.class:lipopeptide` | Compound classes |
 | `mg.activity` | *this project* | `mg.activity:antifungal` | Biological activities |
 | `mg.crop` | *this project* | `mg.crop:jujube` | Crops |
 | `mg.compound` | *this project* | `mg.compound:surfactin` | Compounds not (yet) matched to PubChem |
 | `mg.organism` | *this project* | `mg.organism:<name>` | Strains with no NCBI number |
-| `mg.protein` | *this project* | `mg.protein:bgc0000154-tsta-117750` | Proteins MIBiG names only by a locus tag or gene name, scoped to their entry |
+| `mg.protein` | *this project* | `mg.protein:bgc0000001-abyu` | Proteins MIBiG gives no INSDC or RefSeq number, named by a locus tag or gene name and scoped to their entry |
 
 > **A measured fact that shapes the whole pipeline.** MIBiG does not supply
 > PubChem identifiers for most of its compounds. Counting across the current
@@ -254,15 +254,17 @@ production line inside the factory*.
 An enzyme encoded by the gene cluster. It's the actual molecular machine that
 performs one chemical step, like *a machine standing on the production line*.
 
-**Identifier:** three kinds, depending on where the protein was met (Phase 3):
+**Identifier:** three kinds, depending on where the protein was met (Phases 3
+and 3b):
 
-* `ncbiprotein:<protein id>` when MIBiG's gene record gives an INSDC or RefSeq
-  protein number, e.g. `ncbiprotein:CAE02630.1`. These numbers are worldwide, so
-  the same number in two entries is one node.
-* `mg.protein:<entry>-<locus tag or gene name>` when the gene record gives only a
-  name that is unique inside its own genome, e.g.
-  `mg.protein:bgc0000154-tsta-117750`. The entry number keeps two genomes' names
-  apart.
+* `ncbiprotein:<protein id>` when MIBiG gives an INSDC or RefSeq protein number,
+  in a gene record or in its protein file, e.g. `ncbiprotein:CAE02630.1`. These
+  numbers are worldwide, so the same number in two entries is one node.
+* `mg.protein:<entry>-<locus tag or gene name>` when MIBiG gives only a name that
+  is unique inside its own genome, e.g. `mg.protein:bgc0000001-abyu`. The entry
+  number keeps two genomes' names apart. (In Phase 3 the protein of locus tag
+  `TSTA_117750` was `mg.protein:bgc0000154-tsta-117750`; from Phase 3b the
+  protein file gives its number, so it's `ncbiprotein:EED18001.1`.)
 * `uniprot:<accession>` for UniProt's description of a protein, e.g.
   `uniprot:Q70KJ7`. Phase 4 joins it to the `ncbiprotein:` node it was found
   through, so the finished graph has one node per protein.
@@ -274,16 +276,22 @@ biological measurement, joined into one structure that a single query can walk.
 That's what "multi-omics integration" means in practice, as opposed to three
 tables sitting next to each other.
 
-Properties from MIBiG's gene record (on `ncbiprotein:` and `mg.protein:` nodes):
+Properties from MIBiG (on `ncbiprotein:` and `mg.protein:` nodes), from its gene
+records (Phase 3) and its protein file (Phase 3b):
 
 | Property | Type | Meaning |
 |---|---|---|
 | `name` | text | The gene name, e.g. `srfAA` (or the product, or the id, when there's no gene name) |
-| `protein_id`, `id_type` | text | The id exactly as MIBiG gives it, and its kind: `insdc`, `refseq` or `other` |
-| `gene_name`, `product` | text | The gene's name and MIBiG's short product description, e.g. `surfactin synthetase A` |
-| `functions` | text | The gene's jobs, joined with `\|`, e.g. `Scaffold biosynthesis` |
-| `function_evidence` | text | How the jobs were shown, e.g. `Knock-out` |
+| `protein_id`, `id_type` | text | The number that names the node, and its kind: `insdc`, `refseq` or `other` |
+| `gene_name`, `product` | text | The gene's name and MIBiG's short product description, e.g. `surfactin synthetase A` (a gene record's product wins over the file's) |
+| `functions` | text | The gene's jobs, joined with `\|`, e.g. `Scaffold biosynthesis` (gene records only) |
+| `function_evidence` | text | How the jobs were shown, e.g. `Knock-out` (gene records only) |
 | `comment`, `mutation_phenotype` | text | A curator's note, and what happened when the gene was switched off, when MIBiG gives them |
+| `gene_record_id` | text | The id the gene record used, when it isn't the protein number (a locus tag or gene name) |
+| `locus_tags` | text | The genome's label(s) for the gene, from the protein file, joined with `\|` |
+| `locations` | text | Where the gene sits, one per place the protein file lists it, e.g. `BGC0000433:8558-19312:+` |
+| `sequence_length`, `sequence_md5` | number, text | The sequence's length in amino acids and its MD5 fingerprint; the letters stay in the protein file |
+| `found_in` | text | Where the node came from: `gene_records`, `protein_file`, or both |
 
 Properties from UniProt (on `uniprot:` nodes):
 
@@ -434,7 +442,7 @@ There are ten edge types, and **every edge has a direction**:
 | Edge type | From → To | Reads as | Where it comes from |
 |---|---|---|---|
 | `HARBORS` | Organism → GeneCluster | *this microbe carries this production line* | MIBiG |
-| `ENCODES` | GeneCluster → Protein | *this production line specifies this enzyme* | MIBiG's gene records (Phase 3) |
+| `ENCODES` | GeneCluster → Protein | *this production line specifies this enzyme* | MIBiG's gene records (Phase 3) and protein file (Phase 3b) |
 | `CATALYZES` | Protein → Compound | *this enzyme performs a step making this molecule* | MIBiG's gene records, for genes whose job builds the molecule (Phase 3) |
 | `PRODUCES` | GeneCluster → Compound | *this production line makes this molecule* (the direct shortcut) | MIBiG |
 | `BELONGS_TO` | Compound → CompoundClass | *this molecule is one of these* | MIBiG / curated |
@@ -456,8 +464,8 @@ Organism --HARBORS--> GeneCluster --PRODUCES--> Compound --INHIBITS--> Pathogen 
 
 The top row is the fast path: MIBiG states directly that a cluster produces a
 compound, so traversal is short. The lower branch is the mechanistic path
-through the enzymes, added in Phase 3 from MIBiG's gene records, with UniProt
-describing each enzyme.
+through the enzymes, added in Phase 3 from MIBiG's gene records and completed in
+Phase 3b from MIBiG's protein file, with UniProt describing each enzyme.
 
 I kept both because they answer different questions. The shortcut answers
 "which microbe makes this?", and the protein path answers "*how*?". A redundant

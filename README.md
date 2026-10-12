@@ -276,10 +276,10 @@ before they exist.
 
 | Fact | Value |
 |---|---|
-| Primary real source | **MIBiG 4.0**: thousands of manually curated biosynthetic gene clusters, each linking an organism to the compound it produces, and for some, the cluster's genes with each one's protein and job ([Zenodo, CC-BY](https://doi.org/10.5281/zenodo.14169073)) |
+| Primary real source | **MIBiG 4.0**: thousands of manually curated biosynthetic gene clusters, each linking an organism to the compound it produces, and for some, the cluster's genes with each one's protein and job ([Zenodo, CC-BY](https://doi.org/10.5281/zenodo.14169073)); plus MIBiG's protein file, every protein of every cluster ([download server](https://dl.secondarymetabolites.org/mibig/)) |
 | Chemistry source | **PubChem** (NIH): formula, weights, structure, synonyms, and KEGG and ChEBI numbers for each compound MIBiG gives a PubChem number |
 | Taxonomy source | **NCBI Taxonomy** (E-utilities): the lineage of every organism and pathogen, so "all *Bacillus*" is one query |
-| Protein source | **UniProt**: what each enzyme in MIBiG's gene records is, found through its protein number; with the enzymes, the graph has three molecular layers |
+| Protein source | **UniProt**: what each of the clusters' proteins is, found through its protein number; with the enzymes, the graph has three molecular layers |
 | Pathway source | **KEGG**: compound → pathway membership (academic use only, so kept out of anything published) |
 | Bridge layer (curated, disclosed) | compound → *inhibits* → pathogen → *infects* → crop, hand-assembled from published literature with a citation on every edge ([`curation/`](curation/README.md)) |
 | Node types | 9. Organism, GeneCluster, **Protein**, Compound, CompoundClass, Activity, Pathogen, Crop, Pathway ([full spec](docs/02-ontology-and-data-model.md)) |
@@ -347,14 +347,28 @@ means, matching the build log below. Nothing is shown before it exists.*
   using UniProt's ID mapping service: 2,449 of the 4,089 numbers asked about came
   back with an entry, giving 2,442 UniProt proteins (360 reviewed by a curator).
   The 1,640 that didn't map are listed, not dropped. Only 452 of the 2,437 active
-  entries have gene records in the pinned release, which is why Phase 3b is next.
+  entries have gene records in the pinned release, which is why Phase 3b followed.
   183 offline tests, with UniProt's answers captured for real
   ([`05-proteomics-uniprot.md`](docs/05-proteomics-uniprot.md)).
 
   ![How far the protein layer reaches](docs/img/protein_coverage.svg)
-- **Phases 3b-9 (Release 1.0, the science):** *(pending)* every cluster's
-  proteins, entity resolution, graph analytics, statistical validation in R, graph
-  machine learning, the app, GraphRAG.
+- **Phase 3b. Every cluster's proteins, MIBiG's protein file:** ✅ MIBiG's
+  download server publishes every protein of every cluster in one FASTA file
+  (46,987 proteins, 30.4 MB). It lists no checksum, so the project pinned it by
+  the SHA-256 of its first download. Now all 2,437 active entries have their
+  proteins: 40,037 `Protein` nodes and 40,048 `ENCODES` arrows, up from 4,737. MIBiG's
+  curators' removals are applied (18 proteins, each listed with its reason), and
+  452 gene records named only by a locus tag or gene name gained a worldwide
+  protein number. UniProt, asked about 39,053 numbers in five jobs of up to
+  10,000, found 20,671 of them, giving 20,507 entries (2,692 reviewed); the
+  18,382 it didn't find are listed. 213 offline tests, built from surfactin's 23
+  real proteins and made-up ones for each special case
+  ([`05b-all-cluster-proteins.md`](docs/05b-all-cluster-proteins.md)).
+
+  ![How far the protein layer reaches now](docs/img/protein_file_coverage.svg)
+- **Phases 4-9 (Release 1.0, the science):** *(pending)* entity resolution, graph
+  analytics, statistical validation in R, graph machine learning, the app,
+  GraphRAG.
 - **Phases 10-13 (Release 2.0, the platform):** *(pending)* dbt, PostgreSQL +
   Apache AGE + pgvector, Airflow, Snowflake portability.
 - **Phases 14-19 (Release 3.0, the product):** *(pending)* FastAPI, React +
@@ -375,7 +389,7 @@ tool is there, and says openly which one is the weakest fit.
 | # | Document | Status |
 |---|---|---|
 |  | [**Handbook, day 0 to the finished product**](docs/HANDBOOK.md) | 🔨 living document |
-|  | [Glossary: every term, explained simply](docs/GLOSSARY.md) | 🔨 living document |
+|  | [Glossary: every term, explained for a beginner](docs/GLOSSARY.md) | 🔨 living document |
 |  | [Changelog, what changed in each version](CHANGELOG.md) | 🔨 living document |
 |  | [Git workflow, commit messages and the branch flow](docs/GIT-WORKFLOW.md) | ✅ |
 |  | [Prior art, related work, and what this does not claim](docs/PRIOR-ART.md) | ✅ |
@@ -392,7 +406,7 @@ tool is there, and says openly which one is the weakest fit.
 | 1 | [Ingestion: the MIBiG backbone](docs/03-ingestion-mibig.md) | `requests`, `tenacity`, checksums, evidence locker, provenance, tests, CI | ✅ |
 | 2 | [More sources: PubChem · NCBI · KEGG · the cited bridge](docs/04-more-sources-secrets.md) | web APIs, snapshots, `.env` and API keys, licence terms, the curated bridge | ✅ |
 | 3 | [The proteomics layer: MIBiG's gene records and UniProt](docs/05-proteomics-uniprot.md) | `Protein` nodes, three molecular layers, ID mapping jobs | ✅ |
-| 3b | Every cluster's proteins: MIBiG's protein file | FASTA, a file pinned by its own fingerprint, ID mapping at scale | ⬜ |
+| 3b | [Every cluster's proteins: MIBiG's protein file](docs/05b-all-cluster-proteins.md) | FASTA, a file pinned by its own fingerprint, curators' corrections, ID mapping at scale | ✅ |
 | 4 | Entity resolution & building the graph | DuckDB, NetworkX, the resolution ledger | ⬜ |
 | 5 | Graph analytics: paths, hubs, communities | `plotly`, `pyvis` | ⬜ |
 | 6 | Statistical validation in R | R, `igraph`, `renv`, permutation tests | ⬜ |
@@ -444,6 +458,7 @@ Read them in this order:
 | 03 | [Ingestion: the MIBiG backbone](docs/03-ingestion-mibig.md) | APIs, checksums, retries, the evidence locker, provenance, the twelve rules as code, tests, CI |
 | 04 | [More sources and secrets](docs/04-more-sources-secrets.md) | GET and POST, speed limits, API keys and `.env`, snapshots, licences, the cited bridge, tests from real answers |
 | 05 | [The proteomics layer](docs/05-proteomics-uniprot.md) | Genes, proteins and enzymes; joining two databases through a shared number; jobs, polling and redirects; saying what didn't match |
+| 05b | [Every cluster's proteins](docs/05b-all-cluster-proteins.md) | Protein sequences and the FASTA format; pinning a file by your own fingerprint; curators' corrections; matching names without guessing; ID mapping at scale |
 |  | [Roadmap](docs/ROADMAP.md) | The nineteen phases and three releases, the reason for each tool, and what "finished" means |
 |  | [Prior art](docs/PRIOR-ART.md) | What already exists, how this differs, and what it does not claim |
 |  | [Git workflow](docs/GIT-WORKFLOW.md) | The commit message convention, the branch flow, and what to do when something goes wrong |
@@ -452,7 +467,7 @@ Read them in this order:
 |  | [Containerization](docs/CONTAINERIZATION.md) | Packaging the whole application in a box: images, layers, volumes, networks, compose |
 |  | [Glossary](docs/GLOSSARY.md) | Every term in everyday language, grouped by section |
 
-Phase guides 05b-21 arrive with their phases and are listed in the
+Phase guides 06-21 arrive with their phases and are listed in the
 [build log](#build-log) above.
 
 ---
@@ -477,13 +492,16 @@ without an internet connection, and they're made by
 | [The branch model](docs/img/git_branch_model.svg) | develop, beta and master, and the one push | setup, git workflow |
 | [The journey](docs/img/journey_map.svg) | every phase, its hours and its status | Handbook, roadmap |
 | [What a test run does](docs/img/ci_checks.svg) | the seven machines GitHub tests on, and the five steps on each | Phase 1, Handbook |
-| [Six sources, one graph](docs/img/sources_map.svg) | what each source needs first, its licence, and what it adds | Phases 2-3, Handbook |
+| [Six sources, one graph](docs/img/sources_map.svg) | what each source needs first, its licence, and what it adds | Phases 2-3b, Handbook |
 | [Where a key lives](docs/img/secrets_env.svg) | `.env`, the sealed trip to NCBI, and the gate in front of GitHub | Phase 2, Handbook |
 | [An API answer, kept](docs/img/api_snapshot.svg) | dated snapshots, the manifest written last, a provenance row per answer | Phase 2 |
 | [The protein layer](docs/img/protein_layer.svg) | how a cluster's genes become enzymes and arrows, with surfactin's nine genes | Phase 3, Handbook |
 | [Seven gene jobs](docs/img/gene_jobs.svg) | which jobs build the molecule (and get a `CATALYZES` arrow), with their counts in MIBiG | Phase 3 |
 | [Asking UniProt](docs/img/idmapping_flow.svg) | an ID mapping job: hand in the ids, take a number, ask until it's ready, collect | Phase 3, Handbook |
 | [How far the protein layer reaches](docs/img/protein_coverage.svg) | the first run's numbers: entries with gene records, numbers looked up, numbers found, genes that build the molecule | Phase 3, results |
+| [One protein, part by part](docs/img/fasta_header.svg) | a record of MIBiG's protein file: the seven parts of its header, its sequence, and what each becomes | Phase 3b, Handbook |
+| [Every cluster's proteins, in three steps](docs/img/protein_file_matching.svg) | the curators' removals, matching gene records, adding the rest, with the real counts | Phase 3b, Handbook |
+| [How far the protein layer reaches now](docs/img/protein_file_coverage.svg) | Phase 3 against Phase 3b: entries, proteins, arrows, numbers sent to UniProt and found | Phase 3b, results, Handbook |
 
 | Interactive page (download, then open) | What you can do |
 |---|---|
@@ -658,12 +676,12 @@ license.
 
 | Source | What it supplies | Terms | Please cite |
 |---|---|---|---|
-| [MIBiG 4.0](https://mibig.secondarymetabolites.org) | Gene clusters, their organisms, compounds and activities (Phase 1); each cluster's genes, with their proteins and jobs, where the entry lists them (Phase 3) | [CC BY 4.0](https://doi.org/10.5281/zenodo.14169073): reuse allowed, with credit | Zdouc MM et al. (2025) *Nucleic Acids Research* 53(D1):D678-D690, [doi:10.1093/nar/gkae1115](https://doi.org/10.1093/nar/gkae1115) |
+| [MIBiG 4.0](https://mibig.secondarymetabolites.org) | Gene clusters, their organisms, compounds and activities (Phase 1); each cluster's genes, with their proteins and jobs, where the entry lists them (Phase 3); every protein of every cluster, from MIBiG's protein file on its [download server](https://dl.secondarymetabolites.org/mibig/) (Phase 3b) | [CC BY 4.0](https://doi.org/10.5281/zenodo.14169073): reuse allowed, with credit | Zdouc MM et al. (2025) *Nucleic Acids Research* 53(D1):D678-D690, [doi:10.1093/nar/gkae1115](https://doi.org/10.1093/nar/gkae1115) |
 | [PubChem](https://pubchem.ncbi.nlm.nih.gov) | Compound identity: formula, weights, structure, synonyms, KEGG and ChEBI numbers (Phase 2) | NCBI places no restrictions on use; some depositors claim rights in what they contributed ([policy](https://www.ncbi.nlm.nih.gov/home/about/policies/)) | Kim S et al. (2025) *Nucleic Acids Research* 53(D1):D1516-D1525, [doi:10.1093/nar/gkae1059](https://doi.org/10.1093/nar/gkae1059) |
 | [NCBI Taxonomy](https://www.ncbi.nlm.nih.gov/taxonomy) | The family tree of organisms and pathogens (Phase 2) | NCBI places no restrictions on use. It is not an authority on scientific names | Schoch CL et al. (2020) *Database* baaa062, [doi:10.1093/database/baaa062](https://doi.org/10.1093/database/baaa062) |
 | [KEGG](https://www.kegg.jp) | Which pathway maps a compound appears on (Phase 2) | **Academic use by academic users only**; other use needs a commercial licence, and serving KEGG data to others needs a licence too ([terms](https://www.kegg.jp/kegg/legal.html)). Fetched locally, never published by this project | Kanehisa M et al. (2025) *Nucleic Acids Research* 53(D1):D672-D677, [doi:10.1093/nar/gkae909](https://doi.org/10.1093/nar/gkae909) |
 | [The curated bridge](curation/README.md) | Cited compound → pathogen → crop findings (Phase 2) | MIT, as part of this repository | The paper cited on each row |
-| [UniProt](https://www.uniprot.org) | What each enzyme in MIBiG's gene records is: names, organism, length, EC number, function (Phase 3) | [CC BY 4.0](https://www.uniprot.org/help/license): reuse allowed, with credit | The UniProt Consortium (2025) *Nucleic Acids Research* 53(D1):D609-D617, [doi:10.1093/nar/gkae1010](https://doi.org/10.1093/nar/gkae1010) |
+| [UniProt](https://www.uniprot.org) | What each protein MIBiG gives a number is: names, organism, length, EC number, function (gene records from Phase 3, every cluster from Phase 3b) | [CC BY 4.0](https://www.uniprot.org/help/license): reuse allowed, with credit | The UniProt Consortium (2025) *Nucleic Acids Research* 53(D1):D609-D617, [doi:10.1093/nar/gkae1010](https://doi.org/10.1093/nar/gkae1010) |
 
 The public app and the data release planned for Phase 9 publish only openly
 licensed data, so they will leave KEGG rows out.
@@ -712,9 +730,9 @@ microbegraph/
 │   ├── 03-ingestion-mibig.md    ← Phase 1: evidence locker, provenance, tests ✅
 │   ├── 04-more-sources-secrets.md ← Phase 2: APIs, snapshots, keys, licences ✅
 │   ├── 05-proteomics-uniprot.md ← Phase 3: gene records, UniProt ID mapping   ✅
-│   ├── 05b..11                  ← Release 1.0: every cluster's proteins,
-│   │                              resolve, analytics, R validation, graph ML,
-│   │                              app, GraphRAG                               ⬜
+│   ├── 05b-all-cluster-proteins.md ← Phase 3b: MIBiG's protein file, FASTA    ✅
+│   ├── 06..11                   ← Release 1.0: resolve, analytics,
+│   │                              R validation, graph ML, app, GraphRAG       ⬜
 │   ├── 12..15                   ← Release 2.0: dbt, Postgres+AGE+pgvector,
 │   │                              Airflow, Snowflake                          ⬜
 │   ├── 16..21                   ← Release 3.0: FastAPI, React, MCP,
@@ -739,7 +757,8 @@ microbegraph/
 │   │   ├── __init__.py              ← the list of plugged-in sources, in run order ✅
 │   │   ├── base.py                  ← the socket: probe · fetch · tidy, politely  ✅
 │   │   ├── api.py                   ← shared by web APIs: snapshots, pacing       ✅
-│   │   ├── mibig.py                 ← Phase 1: MIBiG 4.0 (gene records: Phase 3)  ✅
+│   │   ├── mibig.py                 ← Phase 1: MIBiG 4.0 (gene records: Phase 3; protein file: Phase 3b) ✅
+│   │   ├── mibig_proteins.py        ← Phase 3b: reads MIBiG's protein file        ✅
 │   │   ├── pubchem.py               ← Phase 2: compound identity                  ✅
 │   │   ├── ncbi_taxonomy.py         ← Phase 2: the family tree                    ✅
 │   │   ├── kegg.py                  ← Phase 2: pathway maps (academic use)        ✅
@@ -795,7 +814,9 @@ microbegraph/
 │   ├── fixtures/README.md           ← where every test record came from          ✅
 │   ├── fixtures/capture_samples.py  ← captures real answers for the tests        ✅
 │   ├── fixtures/capture_uniprot_samples.py ← surveys gene records, captures UniProt ✅
-│   ├── fixtures/mibig/              ← four test records in the MIBiG 4.0 layout   ✅
+│   ├── fixtures/capture_mibig_protein_samples.py ← downloads and surveys the protein file ✅
+│   ├── fixtures/mibig/              ← four test records in the MIBiG 4.0 layout, and
+│   │                                  a sample of the protein file (Phase 3b)       ✅
 │   ├── fixtures/pubchem/, ncbi_taxonomy/, kegg/, uniprot/ ← real answers, byte for byte ✅
 │   └── test_*.py                    ← the promises the code makes, one test each  ✅
 ├── notebooks/                       ← optional exploratory notebooks              ⬜

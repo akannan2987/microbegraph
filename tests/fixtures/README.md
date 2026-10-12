@@ -16,14 +16,16 @@ real ones.
 | File | What it is |
 |---|---|
 | `BGC0000433.json` | A real MIBiG 4.0 entry (surfactin), trimmed: its biosynthesis modules are removed because the adapter never reads them. Every field the adapter reads is unchanged, including (from Phase 3) its nine gene records. Its own `comment` field says so. |
-| `BGC9999901.json` | Made up, describing nothing real. It covers what the surfactin entry doesn't: two compounds, a negative result, activity names in both of MIBiG's styles, a curator's comment, a PubChem number, a Greek letter in a name; and, from Phase 3, gene records with a RefSeq id, locus tags, a gene with no name, a cited assay, a gene with two jobs, an activation gene and a record with no id. |
+| `BGC9999901.json` | Made up, describing nothing real. It covers what the surfactin entry doesn't: two compounds, a negative result, activity names in both of MIBiG's styles, a curator's comment, a PubChem number, a Greek letter in a name; from Phase 3, gene records with a RefSeq id, locus tags, a gene with no name, a cited assay, a gene with two jobs, an activation gene and a record with no id; and, from Phase 3b, three more gene records (a locus tag the protein file gives a number, a gene name matching one product, a gene name matching two), a gene the curators added (`to_add`) and four removals (`to_delete`). |
 | `BGC9999902.json` | Made up: a retired entry, which the adapter must skip. |
-| `BGC9999903.json` | Made up: an entry whose only evidence is a prediction, so its arrows must be `database_assertion`. Its one gene record shares a locus tag with BGC9999901, to prove the two stay separate proteins. |
+| `BGC9999903.json` | Made up: an entry whose only evidence is a prediction, so its arrows must be `database_assertion`. Its one gene record shares a locus tag with BGC9999901, to prove the two stay separate proteins. From Phase 3b it shares one protein number with BGC9999901 in the protein file sample, to prove that is one protein in two clusters. |
+| `mibig_prot_seqs_sample.fasta` | Phase 3b: a sample of MIBiG's protein file. Surfactin's 23 real records first, then made-up ones (see below). |
 
 The made-up entries use numbers from 9999901 up, which MIBiG doesn't use, and
 a DOI prefix (10.0000) that belongs to no publisher. Each one says so in its
-own `comment` field. The made-up protein ids (`WP_999999901.1`, `TESTI_...`)
-belong to no real protein.
+own `comment` field. The made-up protein ids (`WP_999999901.1`,
+`WP_999999970.1`, the `XYZ999..` numbers, `TESTI_...`, `ctg1_orf7`) belong to no
+real protein.
 
 ## `pubchem/`, `ncbi_taxonomy/`, `kegg/` (Phase 2)
 
@@ -109,14 +111,59 @@ Both real jobs had finished by the first check, so the capture never saw them.
 The first follows the example in UniProt's documentation; the second has the
 same shape with a different state. The tests that use them say so.
 
+## `mibig/mibig_prot_seqs_sample.fasta` (Phase 3b)
+
+The real file, `mibig_prot_seqs_4.0.fasta`, was downloaded on **2026-10-12** from
+<https://dl.secondarymetabolites.org/mibig/> by
+[`capture_mibig_protein_samples.py`](capture_mibig_protein_samples.py), which also
+surveyed it against the MIBiG archive. Its SHA-256 is
+`4b196343ed82d49f2b8f3babe89d512b92f0e026040fa50b15eeb97950717e8b` (31,833,799
+bytes), the value pinned in `src/microbegraph/sources/mibig.py`.
+
+The sample has 43 records:
+
+| Records | Real or made up | Why it's there |
+|---|---|---|
+| 23 for `BGC0000433` (`CAE02619.1` to `CAE02641.1`) | **Real**, copied line for line from the file | Surfactin's whole cluster: 9 proteins with gene records and 14 without |
+| `WP_999999901.1`, `TESTI_00020` to `TESTI_00050` in `BGC9999901` | Made up | The proteins of BGC9999901's Phase 3 gene records, by number and by locus tag |
+| `TESTI_00060` > `XYZ99960.1` | Made up | A gene record named only by a locus tag gains a protein number |
+| `XYZ99980.1` (`TstQ`); `XYZ99981.1` and `XYZ99982.1` (both `TstY`) | Made up | A gene name matching one product, and one matching two |
+| `XYZ99990.1`; `XYZ99991.1` (`TstD`); `XYZ99992.1`, `XYZ99993.1` (`LOC999001` isoforms) | Made up | The curators' removals, by number, by product, by word in the product |
+| `WP_999999970.1`, twice (`TESTI_00070`, `TESTI_00071`) | Made up | One protein at two positions in a cluster |
+| `XYZ99970.1`, in `BGC9999901` and `BGC9999903` | Made up | One protein in two clusters |
+| `ctg1_orf7` | Made up | A gene the curators added |
+| `TESTI_00020` in `BGC9999903` | Made up | The same locus tag in another genome, with no number: a separate protein |
+| `XYZ99902.1` in `BGC9999902` | Made up | A protein of an entry that isn't active, which the adapter leaves out |
+
+The made-up sequences are strings of amino-acid letters made up for the tests;
+they describe no real protein. The whole sample's SHA-256 is
+`164bc6167da030215af65002935688b26b4989a64b50a06916529f10ab1d89f6`.
+
+**Checking the real records.** With the real file in your locker (after
+`python -m microbegraph.fetch --source mibig`), this compares surfactin's records
+in the sample with the file:
+
+```bash
+python -c "real = open('data/raw/mibig/mibig_prot_seqs_4.0.fasta').read().split('\n'); i = [n for n, l in enumerate(real) if l.startswith('>BGC0000433.')]; sample = open('tests/fixtures/mibig/mibig_prot_seqs_sample.fasta').read().split('\n'); print(len(i), 'surfactin records, identical in the sample:', all(sample[2 * k: 2 * k + 2] == real[n: n + 2] for k, n in enumerate(i)))"
+```
+
+Expected: `23 surfactin records, identical in the sample: True`.
+
+**What the real file showed** (the full survey is in
+[`docs/05b-all-cluster-proteins.md`, Step 2](../../docs/05b-all-cluster-proteins.md#6-step-2-look-at-the-real-file-first)):
+46,987 proteins in 2,636 entries (2,437 active, 199 pending), every header in one
+seven-part shape, every gene added with `to_add` already present, and some genes
+removed with `to_delete` still present.
+
 ## Refreshing the samples
 
 If a source changes its format, run the capture again (after Phase 1, with
 `.venv` active):
 
 ```bash
-python tests/fixtures/capture_samples.py            # PubChem, NCBI Taxonomy, KEGG
-python tests/fixtures/capture_uniprot_samples.py    # MIBiG's gene records and UniProt
+python tests/fixtures/capture_samples.py                 # PubChem, NCBI Taxonomy, KEGG
+python tests/fixtures/capture_uniprot_samples.py         # MIBiG's gene records and UniProt
+python tests/fixtures/capture_mibig_protein_samples.py   # MIBiG's protein file
 ```
 
 The new answers land in `data/samples/<date>/`, which never goes to GitHub.

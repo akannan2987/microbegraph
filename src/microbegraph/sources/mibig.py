@@ -1,5 +1,6 @@
 """
-MicrobeGraph, the MIBiG adapter (Phase 1; gene records from Phase 3).
+MicrobeGraph, the MIBiG adapter (Phase 1; gene records from Phase 3; every
+cluster's proteins from Phase 3b).
 
 WHAT MIBiG IS
     MIBiG (Minimum Information about a Biosynthetic Gene Cluster) is a public,
@@ -24,8 +25,14 @@ WHICH VERSION, EXACTLY
     an MD5 checksum we verify on every download. Pinning one exact,
     citable release means anyone re-running this project gets the same data,
     byte for byte. Moving to a newer release is a planned, documented upgrade
-    (change the four constants below, re-run, compare), so it never happens
+    (change the pinned constants below, re-run, compare), so it never happens
     by surprise.
+
+    From Phase 3b the adapter downloads a second file of the same release,
+    MIBiG's protein file (mibig_prot_seqs_4.0.fasta), from MIBiG's own
+    download server. That server publishes no checksum, so the file is pinned
+    by a SHA-256 fingerprint this project recorded from its first download,
+    and every later download must match it.
 
     Cite: Zdouc MM et al. (2025) MIBiG 4.0: advancing biosynthetic gene
     cluster curation through global collaboration. Nucleic Acids Research
@@ -40,8 +47,8 @@ WHAT tidy() TURNS ONE ENTRY INTO
                                                         kept on the compound, as
                                                         activity_notes)
            CompoundClass  mg.class:<slug>              (when MIBiG gives one)
-           Protein        ncbiprotein:<protein id>     (Phase 3: one per gene record,
-                          or mg.protein:<entry>-<id>    see "GENE RECORDS" below)
+           Protein        ncbiprotein:<protein id>     (one per protein of the cluster,
+                          or mg.protein:<entry>-<id>    see the two sections below)
     edges  HARBORS, PRODUCES, HAS_ACTIVITY, BELONGS_TO, ENCODES, CATALYZES
 
 GENE RECORDS (added in Phase 3)
@@ -49,14 +56,15 @@ GENE RECORDS (added in Phase 3)
     identifier for the protein it makes, a gene name, a short product
     description and, often, the gene's job ("function") with the experiment
     that showed it. In MIBiG 4.0 only 452 of the 2,437 active entries carry
-    gene records, so most clusters get no Protein nodes from here yet
-    (docs/ROADMAP.md, Phase 3b, plans how to fill that gap).
+    gene records; the protein file (next section) covers the rest.
 
     The protein's identifier decides its node id:
         INSDC protein id (CAE02630.1)      -> ncbiprotein:CAE02630.1
         RefSeq protein id (WP_029025939.1) -> ncbiprotein:WP_029025939.1
-        anything else (a locus tag such as TSTA_117750, or a gene name)
-                                           -> mg.protein:bgc0000154-tsta-117750
+        anything else (a locus tag, or a gene name such as abyU)
+                                           -> mg.protein:bgc0000001-abyu
+    (From Phase 3b the protein file can give a locus tag its protein number,
+    and then the number names the node; see the next section.)
     The first two are worldwide sequence numbers, so the same number in two
     entries is the same protein and gets one node. A locus tag or gene name
     only means something inside its own genome (two unrelated clusters can
@@ -73,6 +81,32 @@ GENE RECORDS (added in Phase 3)
     processing) matter to the cluster but don't carry out a step in making
     the molecule, so they get ENCODES only. They are counted, never dropped.
 
+EVERY CLUSTER'S PROTEINS (added in Phase 3b)
+    MIBiG's protein file lists every protein of every cluster (40,009 in the
+    2,437 active entries). src/microbegraph/sources/mibig_proteins.py reads
+    it; this adapter turns each protein into a Protein node and an ENCODES
+    arrow from its cluster. For each active entry, in this order:
+
+      1. MIBiG's curators' removals ("to_delete" in the JSON) are looked up
+         in the file, and those proteins are left out. The file still lists
+         them; the curators say they aren't part of the cluster.
+      2. Each gene record is looked up in the file (by number, label or
+         product, see mibig_proteins.py). When it's found, the node is named
+         after the file's protein number, so a gene record that only gave a
+         locus tag (TSTA_117750) becomes ncbiprotein:EED18001.1 and can be
+         sent to UniProt. When it isn't found, it keeps its Phase 3 node and
+         is listed in the summary.
+      3. Every remaining protein in the file gets a node and an ENCODES arrow.
+         A protein a gene record already gave is the same node, so it gains
+         the file's details (position, sequence length and fingerprint) and
+         its ENCODES arrow is the same arrow, not a second one.
+
+    Genes the curators added ("to_add") are already in the file, with a
+    sequence even where the JSON has none, so they arrive through step 3 and
+    are counted. CATALYZES still comes only from gene records, because only
+    they say what job a gene does. Proteins of entries that aren't active
+    (199 pending entries in the 4.0 file) are counted and left out.
+
 HOW EVIDENCE AND CONFIDENCE ARE SET (two separate questions)
     evidence_level answers "what KIND of evidence stands behind this?"
         HARBORS and PRODUCES follow the evidence MIBiG records for the cluster:
@@ -84,7 +118,8 @@ HOW EVIDENCE AND CONFIDENCE ARE SET (two separate questions)
         HAS_ACTIVITY without one       -> database_assertion
         BELONGS_TO                     -> database_assertion
         ENCODES                        -> database_assertion (MIBiG states which
-                                          genes the cluster holds)
+                                          genes the cluster holds, in its gene
+                                          records and in its protein file alike)
         CATALYZES, when the gene's job was shown by an experiment (knock-out,
           activity assay...)           -> curated_experimental
         CATALYZES, when the job is stated with no experiment
@@ -104,9 +139,11 @@ WHAT tidy() LEAVES OUT ON PURPOSE
       They are counted in the summary, so nothing disappears silently.
     * Gene records with no identifier at all (counted as genes_without_id),
       and the domain-by-domain detail of large enzymes, which no phase uses.
-    * MIBiG's corrections to the gene list of the underlying sequence record
-      ("to_add" and "to_delete"). They matter once the full gene lists are
-      read from MIBiG's GenBank files (Phase 3b).
+    * Proteins MIBiG's curators removed from a cluster ("to_delete"), and the
+      protein file's proteins of entries that aren't active. Both are counted,
+      and every removal is listed in the summary with the curators' reason.
+    * The protein sequences themselves. They stay in the file in the locker;
+      each node keeps the length and a fingerprint (mibig_proteins.py says why).
 """
 
 from __future__ import annotations
@@ -139,9 +176,16 @@ from microbegraph.sources.base import (
     table_text,
     write_files_together,
 )
+from microbegraph.sources.mibig_proteins import (
+    ProteinRecord,
+    count_records,
+    find_gene,
+    find_removed,
+    read_protein_file,
+)
 from microbegraph.validate import check_tables
 
-# --- The pinned release: change these four together, in one commit ----------
+# --- The pinned release: change these together, in one commit -----------------
 ZENODO_RECORD = "14169073"
 MIBIG_VERSION = "4.0"
 FILENAME = "mibig_json_4.0.tar.gz"
@@ -150,6 +194,19 @@ EXPECTED_MD5 = "ce1736f4fac7168d85dae3b37c77d3d2"
 DOWNLOAD_URL = f"https://zenodo.org/records/{ZENODO_RECORD}/files/{FILENAME}?download=1"
 RECORD_API_URL = f"https://zenodo.org/api/records/{ZENODO_RECORD}"
 RECORD_PAGE_URL = f"https://zenodo.org/records/{ZENODO_RECORD}"
+
+# MIBiG's protein file (Phase 3b), from the same release, on MIBiG's own
+# download server. The server lists no checksum, so these two numbers are the
+# ones this project measured on its first download (2026-10-12): the probe
+# compares the size without downloading, and every fetch checks the SHA-256.
+DOWNLOAD_SERVER = "https://dl.secondarymetabolites.org/mibig/"
+PROTEIN_FILE = "mibig_prot_seqs_4.0.fasta"
+PROTEIN_FILE_URL = DOWNLOAD_SERVER + PROTEIN_FILE
+PROTEIN_FILE_SHA256 = "4b196343ed82d49f2b8f3babe89d512b92f0e026040fa50b15eeb97950717e8b"
+PROTEIN_FILE_BYTES = 31_833_799
+
+# How the download server names MIBiG's files, to spot a newer release there.
+_RELEASE_FILE = re.compile(r"mibig_(?:json|prot_seqs|gbk)_(\d+)\.(\d+)(rc\d+)?[^\"'<>\s]*")
 
 # MIBiG's own quality grade, carried through as our confidence score.
 QUALITY_CONFIDENCE: dict[str, float] = {
@@ -275,7 +332,57 @@ class MibigSource(Source):
             report.facts.append(f"in your locker : yes, {n_bytes / 1_048_576:.1f} MB, {state}")
         else:
             report.facts.append("in your locker : not yet (run the fetch)")
+
+        self._probe_protein_file(report)
         return report
+
+    def _probe_protein_file(self, report: ProbeReport) -> None:
+        """
+        Phase 3b: ask MIBiG's download server about the protein file without
+        downloading it, look for newer releases in the server's file list, and
+        check the copy in the locker.
+
+        "Without downloading" works by asking for the file and hanging up as
+        soon as the reply's headers arrive (stream=True, then close()). The
+        headers say how big the file is and when it last changed, which is
+        enough to notice that it was replaced.
+        """
+        report.facts.append(f"protein file   : {PROTEIN_FILE} from {DOWNLOAD_SERVER}")
+        try:
+            response = self.http_get(PROTEIN_FILE_URL, stream=True)
+            size = int(response.headers.get("Content-Length") or 0)
+            changed = response.headers.get("Last-Modified", "?")
+            response.close()
+            if size == PROTEIN_FILE_BYTES:
+                report.facts.append(f"size           : {size:,} bytes, the pinned size "
+                                    f"(last changed {changed})")
+            else:
+                report.warnings.append(
+                    f"The download server lists {PROTEIN_FILE} at {size:,} bytes, but this "
+                    f"project pinned {PROTEIN_FILE_BYTES:,}. MIBiG may have replaced the file. "
+                    f"Do not fetch until you know why.")
+        except (requests.RequestException, SourceError, ValueError) as error:
+            report.warnings.append(f"Could not ask MIBiG's download server about the protein "
+                                   f"file ({error}). Check your connection.")
+
+        try:
+            listing = self.http_get(DOWNLOAD_SERVER).content.decode("utf-8", errors="replace")
+            newer = newer_release_files(listing, MIBIG_VERSION)
+            if newer:
+                report.facts.append(f"newer files    : the server also offers {', '.join(newer)} "
+                                    f"(not used until an upgrade is made on purpose)")
+            else:
+                report.facts.append(f"newer files    : none on the server after {MIBIG_VERSION}")
+        except (requests.RequestException, SourceError) as error:
+            report.facts.append(f"newer files    : could not read the server's file list ({error})")
+
+        local = self.locker / PROTEIN_FILE
+        if local.exists():
+            n_bytes, _, sha256 = file_digests(local)
+            state = "verified" if sha256 == PROTEIN_FILE_SHA256 else "DOES NOT MATCH the pinned SHA-256"
+            report.facts.append(f"in your locker : yes, {n_bytes / 1_048_576:.1f} MB, {state}")
+        else:
+            report.facts.append("in your locker : not yet (run the fetch)")
 
     def _newer_version(self, record: dict[str, Any]) -> tuple[str, str]:
         """
@@ -314,7 +421,41 @@ class MibigSource(Source):
     # fetch(): bring it home, untouched
     # ======================================================================
     def fetch(self) -> list[FetchResult]:
-        """Download the pinned archive into data/raw/mibig/ and log one provenance row."""
+        """
+        Download the pinned archive and (from Phase 3b) the pinned protein
+        file into data/raw/mibig/, with one provenance row for each.
+        """
+        archive = self._fetch_archive()
+        return [archive, self._fetch_protein_file()]
+
+    def _fetch_protein_file(self) -> FetchResult:
+        """The protein file: same safety rules as the archive, checked against our own SHA-256."""
+        path, outcome, n_bytes, md5, sha256 = self.download_to_locker(
+            PROTEIN_FILE_URL, PROTEIN_FILE, None, expected_sha256=PROTEIN_FILE_SHA256
+        )
+        n_records = count_records(path)
+        provenance.append(
+            {
+                "retrieved_at": provenance.utc_now(),
+                "source": self.name,
+                "source_version": MIBIG_VERSION,
+                "url": PROTEIN_FILE_URL,
+                "local_path": relative_to_repo(path),
+                "n_bytes": n_bytes,
+                "md5": md5,
+                "sha256": sha256,
+                "n_records": n_records,
+                "licence": self.licence,
+                "outcome": outcome,
+            },
+            log_path=self.provenance_log,
+        )
+        self.say(f"  [{self.name}] {outcome}: {relative_to_repo(path)} "
+                 f"({n_bytes / 1_048_576:.1f} MB, {n_records} proteins), provenance logged")
+        return FetchResult(self.name, path, outcome, n_bytes, n_records)
+
+    def _fetch_archive(self) -> FetchResult:
+        """The JSON archive from Zenodo, checked against the MD5 Zenodo publishes."""
         path, outcome, n_bytes, md5, sha256 = self.download_to_locker(
             DOWNLOAD_URL, FILENAME, EXPECTED_MD5
         )
@@ -351,7 +492,7 @@ class MibigSource(Source):
             ) from unreadable
         self.say(f"  [{self.name}] {outcome}: {relative_to_repo(path)} "
                  f"({n_bytes / 1_048_576:.1f} MB, {n_records} records), provenance logged")
-        return [FetchResult(self.name, path, outcome, n_bytes, n_records)]
+        return FetchResult(self.name, path, outcome, n_bytes, n_records)
 
     # ======================================================================
     # tidy(): make it fit the rulebook
@@ -365,8 +506,17 @@ class MibigSource(Source):
                 f"  Run:  python -m microbegraph.fetch --source mibig"
             )
 
+        protein_file = self.locker / PROTEIN_FILE
+        if not protein_file.exists():
+            raise SourceError(
+                f"{relative_to_repo(protein_file)} is not in the evidence locker yet "
+                f"(the tidy reads it from Phase 3b).\n"
+                f"  Run:  python -m microbegraph.fetch --source mibig\n"
+                f"  The JSON archive is already there, so only the protein file is downloaded."
+            )
+
         retrieved_at = self._retrieved_date(archive)
-        builder = _GraphBuilder(retrieved_at)
+        builder = _GraphBuilder(retrieved_at, read_protein_file(protein_file))
 
         # Read every entry in the order the archive stores them (fast), keep only
         # the fields we use (small), then sort by file name (same order on every
@@ -383,6 +533,7 @@ class MibigSource(Source):
             entries.append((member_name, _slim(raw)))
         for _, raw in sorted(entries, key=lambda item: item[0]):
             builder.add_entry(raw)
+        builder.finish()
 
         nodes = builder.node_rows()
         edges = builder.edge_rows()
@@ -404,8 +555,14 @@ class MibigSource(Source):
             "source": self.name,
             "source_version": MIBIG_VERSION,
             "archive": relative_to_repo(archive),
+            "protein_file": relative_to_repo(protein_file),
             "retrieved_at": retrieved_at,
             "counts": counts,
+            # Phase 3b: every decision about the protein file that a person may
+            # want to check, one line each.
+            "removed_by_curators": builder.removed,
+            "to_delete_not_found": builder.removals_not_found,
+            "genes_not_in_protein_file": builder.genes_not_found,
         }
         # All three files change together, or none of them does.
         write_files_together({
@@ -452,10 +609,18 @@ class _GraphBuilder:
         keeps every citation.
     """
 
-    def __init__(self, retrieved_at: str) -> None:
+    def __init__(self, retrieved_at: str,
+                 protein_file: dict[str, list[ProteinRecord]] | None = None) -> None:
         self.retrieved_at = retrieved_at
         self.nodes: dict[str, dict[str, Any]] = {}
         self.edges: dict[tuple[str, str, str], dict[str, Any]] = {}
+        # Phase 3b: the protein file, grouped by entry (empty when a test
+        # builds entries without one), and the decisions worth listing.
+        self.protein_file = protein_file or {}
+        self._entries_read: set[str] = set()
+        self.removed: list[dict[str, str]] = []
+        self.removals_not_found: list[dict[str, str]] = []
+        self.genes_not_found: list[str] = []
         self.counts: dict[str, int] = {
             "files_read": 0, "files_unreadable": 0, "files_not_mibig4": 0,
             "entries_active": 0, "entries_skipped_status": 0,
@@ -468,6 +633,15 @@ class _GraphBuilder:
             "genes_insdc_id": 0, "genes_refseq_id": 0, "genes_other_id": 0,
             "genes_in_biosynthesis": 0, "genes_other_roles": 0, "genes_role_not_stated": 0,
             "catalyzes_in_multi_compound_entries": 0,
+            # Phase 3b: the protein file
+            "protein_file_records": sum(len(r) for r in self.protein_file.values()),
+            "protein_file_records_not_active": 0,
+            "protein_file_insdc_id": 0, "protein_file_refseq_id": 0, "protein_file_other_id": 0,
+            "protein_file_repeats_in_entry": 0, "protein_file_version_differs": 0,
+            "proteins_added_by_curators": 0, "proteins_removed_by_curators": 0,
+            "to_delete_not_found": 0,
+            "genes_found_by_id": 0, "genes_found_by_product": 0, "genes_not_in_protein_file": 0,
+            "genes_given_a_protein_number": 0, "entries_with_proteins": 0,
         }
         # slug -> the exact (case-folded) name that first claimed it
         self._slug_owner: dict[str, str] = {}
@@ -581,16 +755,105 @@ class _GraphBuilder:
                 self._add_edge(compound_id, class_id, "BELONGS_TO", "database_assertion",
                                accession, confidence, [])
 
-        # --- each gene's protein (Phase 3) ------------------------------------------
+        # --- the cluster's proteins (Phase 3: gene records; Phase 3b: the file) ------
         genes = raw.get("genes") if isinstance(raw.get("genes"), dict) else {}
         annotations = [g for g in genes.get("annotations") or [] if isinstance(g, dict)]
+        records = self.protein_file.get(accession, [])
+        self._entries_read.add(accession)
+        for record in records:
+            self.counts[f"protein_file_{protein_id_type(record.protein_id)}_id"] += 1
+        if records and records[0].entry_version != str(raw.get("version")):
+            # The file and the JSON should describe the same version of the entry.
+            self.counts["protein_file_version_differs"] += 1
+
+        # 1. the curators' removals, 2. the gene records, 3. everything else in the file
+        removed = self._removed_by_curators(accession, records, genes.get("to_delete") or [])
         if annotations:
             self.counts["entries_with_gene_records"] += 1
         for gene in annotations:
-            self._add_gene(gene, accession, cluster_id, compound_ids, confidence, entry_refs)
+            self._add_gene(gene, accession, cluster_id, compound_ids, confidence, entry_refs,
+                           records)
+        added = {str(g.get("id")) for g in genes.get("to_add") or [] if isinstance(g, dict)}
+        seen: set[str] = set()
+        for index, record in enumerate(records):
+            if index in removed:
+                continue
+            node_id = protein_node_id(accession, record.protein_id)
+            if node_id in seen:
+                # The same protein twice in one cluster (two identical copies of a
+                # small gene, say): one node, one arrow, both positions kept.
+                self.counts["protein_file_repeats_in_entry"] += 1
+            seen.add(node_id)
+            if added & {record.protein_id, record.label}:
+                self.counts["proteins_added_by_curators"] += 1
+            self._add_file_protein(record, node_id, accession, cluster_id, confidence,
+                                   entry_refs)
+
+    def _removed_by_curators(self, accession: str, records: list[ProteinRecord],
+                             to_delete: list[Any]) -> set[int]:
+        """
+        The positions in `records` of the proteins MIBiG's curators removed from
+        this cluster. Each removal is listed in self.removed with the rule that
+        found it and the curators' reason; one that matches nothing is listed in
+        self.removals_not_found.
+        """
+        removed: set[int] = set()
+        for item in to_delete:
+            if not isinstance(item, dict):
+                continue
+            name = str(item.get("id") or "").strip()
+            reason = str(item.get("reason") or "").strip()
+            found, how = find_removed(name, records) if name else ([], "")
+            if not found:
+                self.counts["to_delete_not_found"] += 1
+                self.removals_not_found.append({"entry": accession, "to_delete": name,
+                                                "reason": reason})
+                continue
+            for index in found:
+                if index not in removed:
+                    removed.add(index)
+                    self.counts["proteins_removed_by_curators"] += 1
+                self.removed.append({"entry": accession, "to_delete": name,
+                                     "protein": records[index].protein_id,
+                                     "matched_by": how, "reason": reason})
+        return removed
+
+    def _add_file_protein(self, record: ProteinRecord, node_id: str, accession: str,
+                          cluster_id: str, confidence: float, entry_refs: list[str]) -> None:
+        """One protein from the file: its node (new, or a gene record's) and its ENCODES arrow."""
+        existing = self.nodes.get(node_id)
+        props: dict[str, Any] = {
+            "protein_id": record.protein_id,
+            "id_type": protein_id_type(record.protein_id),
+            # A RefSeq number (WP_...) can stand for the same protein in several
+            # genomes, each with its own locus tag, so this is a list.
+            "locus_tags": record.label if record.label != record.protein_id else "",
+            "locations": f"{accession}:{record.location}:{record.strand}",
+            "sequence_length": record.length,
+            "sequence_md5": record.md5,
+            "found_in": "protein_file",
+        }
+        # A gene record's own product (and name) came first and stays: MIBiG's
+        # curators wrote it, while the file's is the sequence record's.
+        if existing is None or not existing["properties"].get("product"):
+            props["product"] = record.product
+        name = (existing["name"] if existing is not None
+                else record.product or record.label or record.protein_id)
+        self._add_node(node_id, "Protein", name, props)
+        self._add_edge(cluster_id, node_id, "ENCODES", "database_assertion",
+                       accession, confidence, entry_refs)
+
+    def finish(self) -> None:
+        """After the last entry: the counts that need every entry read first."""
+        self.counts["protein_file_records_not_active"] = sum(
+            len(records) for accession, records in self.protein_file.items()
+            if accession not in self._entries_read)
+        self.counts["entries_with_proteins"] = len({source for source, _, kind in self.edges
+                                                    if kind == "ENCODES"})
 
     def _add_gene(self, gene: dict[str, Any], accession: str, cluster_id: str,
-                  compound_ids: list[str], confidence: float, entry_refs: list[str]) -> None:
+                  compound_ids: list[str], confidence: float, entry_refs: list[str],
+                  records: list[ProteinRecord] | None = None) -> None:
         """One gene record: a Protein node, its ENCODES arrow and any CATALYZES arrows."""
         self.counts["genes_read"] += 1
         raw_id = str(gene.get("id") or "").strip()
@@ -599,24 +862,35 @@ class _GraphBuilder:
             return
         id_type = protein_id_type(raw_id)
         self.counts[f"genes_{id_type}_id"] += 1
-        if id_type == "other":
-            # A locus tag or gene name: scoped to its entry (see the module notes).
-            protein_id = f"mg.protein:{slugify(accession)}-{slugify(raw_id)}"
+
+        # Phase 3b: which protein in the file is this? Its number names the node.
+        index, how = find_gene(raw_id, records or [])
+        if index is None:
+            self.counts["genes_not_in_protein_file"] += 1
+            self.genes_not_found.append(f"{accession}: {raw_id}")
+            number = raw_id
         else:
-            protein_id = f"ncbiprotein:{raw_id}"
+            self.counts[f"genes_found_by_{how}"] += 1
+            number = (records or [])[index].protein_id
+        number_type = protein_id_type(number)
+        if id_type == "other" and number_type != "other":
+            self.counts["genes_given_a_protein_number"] += 1
+        protein_id = protein_node_id(accession, number)
 
         jobs = _gene_jobs(gene)
         gene_name = str(gene.get("name") or "").strip()
         product = str(gene.get("product") or "").strip()
         self._add_node(protein_id, "Protein", gene_name or product or raw_id, {
-            "protein_id": raw_id,
-            "id_type": id_type,
+            "protein_id": number,
+            "id_type": number_type,
+            "gene_record_id": raw_id if raw_id != number else "",
             "gene_name": gene_name,
             "product": product,
             "functions": "|".join(sorted({job["name"] for job in jobs})),
             "function_evidence": "|".join(sorted({m for job in jobs for m in job["methods"]})),
             "comment": _text(gene.get("comment")),
             "mutation_phenotype": _text(gene.get("mutation_phenotype")),
+            "found_in": "gene_records",
         })
         self._add_edge(cluster_id, protein_id, "ENCODES", "database_assertion",
                        accession, confidence, entry_refs)
@@ -670,7 +944,8 @@ class _GraphBuilder:
         merged = existing["properties"]
         for key, value in clean.items():
             if key in ("synonyms", "database_ids", "loci", "bgc_class", "activity_notes",
-                       "functions", "function_evidence"):
+                       "functions", "function_evidence", "locations", "found_in",
+                       "locus_tags"):
                 parts = set(str(merged.get(key, "")).split("|")) | set(str(value).split("|"))
                 merged[key] = "|".join(sorted(p for p in parts if p))
             elif key not in merged:
@@ -730,6 +1005,30 @@ class _GraphBuilder:
         return sorted(rows, key=lambda r: (r["edge_type"], r["source_id"], r["target_id"]))
 
 
+def protein_node_id(accession: str, protein_id: str) -> str:
+    """
+    The node id for a protein of one entry. An INSDC or RefSeq number is
+    worldwide, so it names the node on its own; anything else (a locus tag, a
+    gene name, MIBiG's own label) only means something inside its entry, so the
+    entry is part of the id (see the module notes).
+    """
+    if protein_id_type(protein_id) == "other":
+        return f"mg.protein:{slugify(accession)}-{slugify(protein_id)}"
+    return f"ncbiprotein:{protein_id}"
+
+
+def newer_release_files(listing: str, pinned: str) -> list[str]:
+    """
+    MIBiG files in the download server's list whose release is newer than
+    `pinned` ("4.0"), for example mibig_json_5.0rc1.tar.bz2. A release
+    candidate ("rc") counts as newer, and is shown with its name.
+    """
+    major, minor = (int(part) for part in pinned.split("."))
+    found = {match.group(0) for match in _RELEASE_FILE.finditer(listing)
+             if (int(match.group(1)), int(match.group(2))) > (major, minor)}
+    return sorted(found)
+
+
 def _cluster_name(accession: str, compound_names: list[str]) -> str:
     """A readable label: 'surfactin BGC', or the accession if no compound is named."""
     if not compound_names:
@@ -758,9 +1057,14 @@ def _slim(raw: Any) -> Any:
                                         if isinstance(c, dict)]}
     genes = raw.get("genes") if isinstance(raw.get("genes"), dict) else {}
     gene_keys = ("id", "name", "product", "functions", "comment", "mutation_phenotype")
-    slim["genes"] = {"annotations": [{key: g[key] for key in gene_keys if key in g}
-                                     for g in genes.get("annotations") or []
-                                     if isinstance(g, dict)]}
+    slim["genes"] = {
+        "annotations": [{key: g[key] for key in gene_keys if key in g}
+                        for g in genes.get("annotations") or [] if isinstance(g, dict)],
+        # Phase 3b: the curators' corrections to the gene list
+        "to_add": [{"id": g.get("id")} for g in genes.get("to_add") or [] if isinstance(g, dict)],
+        "to_delete": [{"id": g.get("id"), "reason": g.get("reason")}
+                      for g in genes.get("to_delete") or [] if isinstance(g, dict)],
+    }
     return slim
 
 
