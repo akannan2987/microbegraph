@@ -683,8 +683,8 @@ first, all 325 once you remove its `LIMIT` line). Phase 4b took them up
 ([`06b-closing-the-gaps.md`](06b-closing-the-gaps.md)): PubChem's full list of
 names turned out to confirm none of them, but keeping every value MIBiG's
 entries give explained both cases above, a review file now keeps them apart with
-a source, and PubChem's name search reviewed the rest: 82 still rest on the
-formula alone.
+a source, and PubChem's name search reviewed the rest: 82 still rested on the
+formula alone after it, and 80 after the follow-ups at the end of that phase.
 
 ✅ **Checkpoint.** Recipe R6 shows the two ledger rows that made
 `pubchem.compound:12560` one node; recipe R8 shows three refusals with their

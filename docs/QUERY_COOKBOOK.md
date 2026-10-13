@@ -253,7 +253,7 @@ Compound       3826
 Organism       2451
 GeneCluster    2437
 Activity       70
-Pathway        53
+Pathway        48
 CompoundClass  37
 Pathogen       6
 Crop           5
@@ -316,7 +316,7 @@ You should see:
 source         version                                  retrieved_at  nodes_read
 -------------  ---------------------------------------  ------------  ----------
 mibig          4.0                                      2026-10-10    47844
-pubchem        live                                     2026-10-12    2508
+pubchem        live                                     2026-10-12    2522
 ncbi_taxonomy  Build261011-2030.1                       2026-10-12    2457
 kegg           pathway 2026/10/09, compound 2026/10/09  2026-10-12    53
 uniprot        2026_03                                  2026-10-12    20507
@@ -400,11 +400,11 @@ You should see:
 ```
 rule                      decision    rows
 ------------------------  ----------  ----
-not_used                  left_out    827
-pubchem_name_search       kept_apart  385
-pubchem_number_confirmed  kept_apart  116
+not_used                  left_out    849
+pubchem_name_search       kept_apart  384
+pubchem_number_confirmed  kept_apart  113
 uniprot_cross_reference   kept_apart  40
-pubchem_numbers_differ    kept_apart  19
+pubchem_numbers_differ    kept_apart  38
 pubchem_number_shared     kept_apart  13
 identical_sequence        kept_apart  9
 npatlas_and_formula       kept_apart  7
@@ -420,9 +420,11 @@ answer is the same every time. Since Phase 4b,
 `gene_name_in_uniprot` has no refusals left: MIBiG's GenBank file gives every
 gene record its protein number before the resolver runs. The
 `pubchem_name_search` refusals are numbers PubChem's name search found that the
-clues didn't accept, and about half of the `not_used` entries (411 of 827)
+clues didn't accept, and about half of the `not_used` entries (410 of 849)
 are records the name search found: PubChem records no compound was joined to,
-so they describe nothing in the graph.
+so they describe nothing in the graph. Five more `not_used` rows are KEGG maps
+that no arrow reaches any more (since the Phase 4b follow-ups); their
+`identifier` starts with `kegg.pathway:`.
 
 ### R8. Why was a PubChem number refused?
 
@@ -808,15 +810,16 @@ mg.compound:67-121c                                           pubchem.compound:1
 ```
 
 These are joins where PubChem's names didn't include MIBiG's, and only the
-formula confirmed the number. Without the `LIMIT` line there are 82. In Phase 4
+formula confirmed the number. Without the `LIMIT` line there are 80. In Phase 4
 this list had 325 rows, and 2-methylisoborneol was fourth: one of its three
 MIBiG entries carries a bromine compound's number, formula and structure, so
 the formulas agreed for the wrong reason. Phase 4b keeps it apart by hand
 (R20), and PubChem's name search reviewed the rest: 161 joins are now
 confirmed by name through a record of the same structure, 43 moved to the
-record PubChem files the name under, and 36 came apart. PubChem's names file
-doesn't have the names of the 82 left at all, so they wait for a second,
-independent witness
+record PubChem files the name under, and 36 came apart; the Phase 4b
+follow-ups took two more apart (corallopyronin and glidobactin, whose entries
+give a second number). PubChem's names file doesn't have the names of the 80
+left at all, so they wait for a second, independent witness
 ([`06b-closing-the-gaps.md`, Step 10](06b-closing-the-gaps.md#14-step-10-run-it-for-real)).
 
 The new piece is `LIKE` with `%` at the start only: it finds text that **ends**
@@ -848,22 +851,26 @@ ORDER BY identifier, compared_with;
 You should see:
 
 ```
-identifier                      compared_with             decision
-------------------------------  ------------------------  ----------
-mg.compound:2-methylisoborneol  pubchem.compound:9237955  kept_apart
-mg.compound:desosamine          mg.compound:methymycin    kept_apart
-mg.compound:desosamine          pubchem.compound:5282034  kept_apart
-ncbiprotein:CBF82293.1          uniprot:P0CU77            kept_apart
-ncbiprotein:CBF82293.1          uniprot:P0CU78            kept_apart
-(5 rows)
+identifier                      compared_with               decision
+------------------------------  --------------------------  ----------
+mg.compound:2-methylisoborneol  pubchem.compound:9237955    kept_apart
+mg.compound:desosamine          mg.compound:methymycin      kept_apart
+mg.compound:desosamine          pubchem.compound:5282034    kept_apart
+mg.compound:epoxomicin          pubchem.compound:11226684   merged
+mg.compound:mureidomycin-b      pubchem.compound:101627952  merged
+ncbiprotein:CBF82293.1          uniprot:P0CU77              kept_apart
+ncbiprotein:CBF82293.1          uniprot:P0CU78              kept_apart
+(7 rows)
 ```
 
-Each row comes from one line of `curation/resolution_decisions.csv`. Add
+Each row comes from one line of `curation/resolution_decisions.csv`. A `join`
+in the file shows here as `merged`, and a `keep_apart` as `kept_apart`, the
+words every other rule's rows use. Add
 `grounds` to the `SELECT` line to read the reason and the source, which the
 ledger copies from the file. `ORDER BY` with two columns sorts by the first,
 and by the second where the first is the same.
 
-### R21. Where do MIBiG's entries disagree about a compound's PubChem number?
+### R21. Which compounds does MIBiG give more than one PubChem number to?
 
 ```sql
 SELECT name, properties->>'pubchem_cid_by_entry' AS numbers_by_entry
@@ -876,18 +883,21 @@ LIMIT 5;
 You should see:
 
 ```
-name                     numbers_by_entry
------------------------  ------------------------------------------------------------
-2-methylisoborneol       BGC0000657: 9237955|BGC0000658: 16913|BGC0000659: 16913
-WS9326A                  BGC0001297: 6918144|BGC0002377: 6441210
-betaenone C              BGC0001264: 71308160|BGC0002165: 23244602
-bryostatin               BGC0000174: 25235992|BGC0000205: 6438934
-capsular polysaccharide  BGC0000728: 3083199|BGC0000729: 3083199|BGC0000730: 30831...
+name                numbers_by_entry
+------------------  -------------------------------------------------------
+2-methylisoborneol  BGC0000657: 9237955|BGC0000658: 16913|BGC0000659: 16913
+WS9326A             BGC0001297: 6918144|BGC0002377: 6441210
+alginate            BGC0000725: 131704328|BGC0000725: 25202446
+bacillaene          BGC0001089: 25144999|BGC0001089: 44227768
+betaenone C         BGC0001264: 71308160|BGC0002165: 23244602
 (5 rows)
 ```
 
 Every value comes with the MIBiG entry that gave it, separated by `|`. Without
-the `LIMIT` there are 17. Change `pubchem_cid_by_entry` to `formula_by_entry`
+the `LIMIT` there are 33. In 16 of them two entries disagree, like
+2-methylisoborneol's; in 16 more a single entry lists two numbers, like
+alginate's BGC0000725 (the Phase 4b follow-ups added those). Heme D1 is the
+33rd: its entry BGC0000905 lists two numbers, and BGC0000906 one of them. Change `pubchem_cid_by_entry` to `formula_by_entry`
 (16 compounds), `mass_by_entry` (49) or `smiles_by_entry` (109, the structure
 written as text) to see the other disagreements. `IS NOT NULL` keeps the rows
 that have the property at all. Capital letters sort before small ones, which is
@@ -943,7 +953,7 @@ print(G.number_of_nodes(), "nodes and", G.number_of_edges(), "arrows")
 You should see:
 
 ```
-48239 nodes and 57014 arrows
+48234 nodes and 57014 arrows
 ```
 
 The same numbers as R2 and R3 add up to: the build checks this every time.

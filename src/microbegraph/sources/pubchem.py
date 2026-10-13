@@ -31,9 +31,10 @@ HOW IT ASKS (PUG REST), IN THREE ROUNDS
         POST https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/synonyms/JSON
              body: cid=811,5281917,...
 
-    From Phase 4b the list also holds the second numbers MIBiG's entries
-    give (pubchem_cid_by_entry, see mibig.py) and every PubChem number named
-    in the review file, curation/resolution_decisions.csv.
+    From Phase 4b the list also holds every other number MIBiG gives
+    (pubchem_cid_by_entry, see mibig.py: a second number from another entry,
+    or since the follow-ups a second number from the same entry) and every
+    PubChem number named in the review file, curation/resolution_decisions.csv.
 
     Round 2, the name search (Phase 4b). For a MIBiG compound whose numbers
     don't list its name, or that has no number at all, the adapter asks
@@ -256,8 +257,8 @@ class PubchemSource(ApiSource):
     def _mibig_compounds(self) -> list[dict[str, Any]]:
         """
         Every MIBiG compound with what the fetch needs: its names, its formula
-        and every PubChem number its entries give (Phase 4b: the second numbers
-        in pubchem_cid_by_entry too).
+        and every PubChem number its entries give (Phase 4b: every number in
+        pubchem_cid_by_entry too, including two from the same entry).
         """
         compounds = []
         for row in read_table("mibig", "nodes", self.staging_dir, needed_by=self.name):

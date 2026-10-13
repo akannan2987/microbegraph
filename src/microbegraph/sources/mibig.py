@@ -155,6 +155,13 @@ WHEN TWO ENTRIES DISAGREE (Phase 4b)
 
         pubchem_cid_by_entry   BGC0000657: 9237955|BGC0000658: 16913|BGC0000659: 16913
 
+    A single entry can give two values, too: 17 entries list two PubChem
+    numbers for one compound. Since the Phase 4b follow-ups, each number is
+    listed with its entry, and the summary counts these compounds
+    (compounds_with_several_pubchem_cids). Ferrichrome's list reads:
+
+        pubchem_cid_by_entry   BGC0000900: 644246|BGC0000900: 90658043|BGC0000901: 644246
+
     Nothing is decided here. The list makes the disagreement visible, the
     PubChem adapter asks about every number in it, and the resolver chooses
     between them with evidence (docs/06b-closing-the-gaps.md). The summary
@@ -750,6 +757,8 @@ class _GraphBuilder:
             "compounds_read": 0, "bioactivities_observed": 0,
             "bioactivities_not_observed": 0, "compound_name_collisions": 0,
             "property_conflicts": 0,
+            # Phase 4b follow-up: an entry listing two PubChem numbers for one compound
+            "compounds_with_several_pubchem_cids": 0,
             # Phase 3: gene records
             "entries_with_gene_records": 0, "genes_read": 0, "genes_without_id": 0,
             "genes_insdc_id": 0, "genes_refseq_id": 0, "genes_other_id": 0,
@@ -838,15 +847,26 @@ class _GraphBuilder:
             compound_id = self._compound_id(str(compound["name"]))
             compound_ids.append(compound_id)
             database_ids = sorted({str(d) for d in compound.get("databaseIds") or []})
+            pubchem_numbers = [d.split(":", 1)[1] for d in database_ids
+                               if d.startswith("pubchem:")]
             self._add_node(compound_id, "Compound", str(compound["name"]), {
                 "formula": compound.get("formula"),
                 "mass": compound.get("mass"),
                 "synonyms": "|".join(sorted({str(s) for s in compound.get("synonyms") or []})),
                 "database_ids": "|".join(database_ids),
-                "pubchem_cid": next((d.split(":", 1)[1] for d in database_ids
-                                     if d.startswith("pubchem:")), None),
+                "pubchem_cid": pubchem_numbers[0] if pubchem_numbers else None,
                 "smiles": compound.get("structure"),
             })
+            # Phase 4b follow-up: one entry can list more than one PubChem
+            # number for a compound (17 do; ferrichrome's lists 644246 and
+            # 90658043). pubchem_cid keeps the first, as before, and the others
+            # are remembered with the same entry, so they show up in
+            # pubchem_cid_by_entry: the PubChem fetch asks about them, and the
+            # resolver judges every one (see WHEN TWO ENTRIES DISAGREE).
+            if len(pubchem_numbers) > 1:
+                self.counts["compounds_with_several_pubchem_cids"] += 1
+                for number in pubchem_numbers[1:]:
+                    self._remember(compound_id, "pubchem_cid", number)
             compound_refs = sorted({str(ref) for ev in compound.get("evidence") or []
                                     for ref in ev.get("references") or []} | set(entry_refs))
             self._add_edge(cluster_id, compound_id, "PRODUCES", cluster_level,
@@ -1085,8 +1105,7 @@ class _GraphBuilder:
             if key not in LIST_PROPERTIES:
                 # Phase 4b: remember which entry gave which value, so a
                 # disagreement can be shown in full (see node_rows()).
-                (self._values.setdefault((node_id, key), {})
-                 .setdefault(str(value), set()).add(self._entry))
+                self._remember(node_id, key, value)
         existing = self.nodes.get(node_id)
         if existing is None:
             self.nodes[node_id] = {"node_type": node_type, "name": name, "properties": clean}
@@ -1106,6 +1125,11 @@ class _GraphBuilder:
         if name != existing["name"]:
             others = set(str(merged.get("other_names", "")).split("|")) | {name}
             merged["other_names"] = "|".join(sorted(o for o in others if o))
+
+    def _remember(self, node_id: str, key: str, value: Any) -> None:
+        """Note that the entry being read gave this value (feeds <key>_by_entry)."""
+        (self._values.setdefault((node_id, key), {})
+         .setdefault(str(value), set()).add(self._entry))
 
     def _add_edge(self, source_id: str, target_id: str, edge_type: str, level: str,
                   accession: str, confidence: float, refs: list[str]) -> None:

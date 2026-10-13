@@ -38,6 +38,12 @@ RE-POINTING ARROWS
     the highest confidence and every record number and citation. An arrow that
     loses an end (it pointed at an entry that was left out) is dropped and
     counted.
+
+MAPS NO ARROW REACHES (a Phase 4b follow-up)
+    A KEGG map whose every compound was left out loses all its arrows that
+    way, and would stay behind as a dot with no line to anything. Such maps
+    are taken out too, each with a not_used row in the ledger naming the
+    compounds KEGG placed on it (leave_out_lone_maps, below).
 """
 
 from __future__ import annotations
@@ -176,7 +182,8 @@ def combine_nodes(pool: Pool, final_id: Callable[[str], str], ledger: Ledger,
             for identifier in identifiers:
                 left_out.add(identifier)
                 ledger.add("not_used", "left_out", identifier, next(iter(types)),
-                           _why_not_used(pool, identifier), sources="|".join(sources))
+                           _why_not_used(pool, identifier, final_id),
+                           sources="|".join(sources))
             continue
 
         node_type = _choose_type(node_id, types)
@@ -254,14 +261,68 @@ def _stronger_together(kept: dict[str, Any], other: dict[str, str]) -> dict[str,
     return result
 
 
-def _why_not_used(pool: Pool, identifier: str) -> str:
+def _why_not_used(pool: Pool, identifier: str, final_id: Callable[[str], str]) -> str:
     """The ledger's sentence for an entry no MIBiG record ended up joined to."""
     if identifier.startswith("pubchem.compound:"):
-        asked = split_list(pool.props(identifier, "pubchem").get("mibig_compound_ids"))
-        return (f"No MIBiG compound that gave this number was confirmed as this molecule "
-                f"({', '.join(asked)}; see their pubchem_number rows), so the entry "
-                f"describes nothing in the graph.")
+        props = pool.props(identifier, "pubchem")
+        asked = split_list(props.get("mibig_compound_ids"))
+        found = [m for m in split_list(props.get("found_by_name")) if m in pool.rows]
+        parts = []
+        if asked:
+            parts.append(f"No MIBiG compound that gave this number was confirmed as this "
+                         f"molecule ({', '.join(asked)}; see their rows)")
+        if found:
+            # Phase 4b follow-up: no MIBiG compound gave the number of a record
+            # only the name search found, so say whose search found it instead.
+            whose = "; ".join(_where_it_went(pool, m, final_id) for m in found)
+            lead = ("PubChem's name search also found it for" if asked
+                    else "PubChem's name search found this record for")
+            parts.append(f"{lead} {whose}")
+        if not parts:
+            parts.append("No MIBiG compound led to this record")
+        return f"{', and '.join(parts)}, so the entry describes nothing in the graph."
     asked = split_list(pool.props(identifier, "uniprot").get("mibig_protein_ids"))
     return (f"None of the protein numbers that led to this entry joined it "
             f"({', '.join(asked)}; see their uniprot_cross_reference rows), so the entry "
             f"describes nothing in the graph.")
+
+
+def _where_it_went(pool: Pool, mibig_id: str, final_id: Callable[[str], str]) -> str:
+    """'tiacumicin B' (mg.compound:tiacumicin-b), which joined pubchem.compound:70678896 instead."""
+    name = pool.name(mibig_id, "mibig")
+    target = final_id(mibig_id)
+    if target.startswith("pubchem.compound:"):
+        return f"'{name}' ({mibig_id}), which joined {target} instead"
+    return (f"'{name}' ({mibig_id}), which no rule joined to it "
+            f"(see its pubchem_name_search rows)")
+
+
+def leave_out_lone_maps(pool: Pool, nodes: list[dict[str, Any]], edges: list[dict[str, Any]],
+                        ledger: Ledger) -> set[str]:
+    """
+    Phase 4b follow-up. Take out the KEGG maps no arrow reaches any more, and
+    return their identifiers.
+
+    A map arrives from KEGG with arrows from the compounds KEGG places on it.
+    When every one of those compounds is a PubChem record nothing joined (left
+    out by combine_nodes), all of the map's arrows are dropped with it, and the
+    map would sit in the graph as a dot with no line to anything. The KEGG tidy
+    can't see this coming, because which records get joined is only decided
+    here, so the resolver takes such maps out and says why in the ledger.
+    """
+    touched = {e["source_id"] for e in edges} | {e["target_id"] for e in edges}
+    lone = {n["node_id"] for n in nodes if n["node_type"] == "Pathway"
+            and n["node_id"] not in touched}
+    for map_id in sorted(lone):
+        compounds = sorted({e["source_id"] for e in pool.edges if e["target_id"] == map_id}
+                           | {e["target_id"] for e in pool.edges if e["source_id"] == map_id})
+        which = (f"The only compound record KEGG places on this map is {compounds[0]}, and "
+                 f"it joined no MIBiG compound (see its not_used row)" if len(compounds) == 1
+                 else f"The compound records KEGG places on this map are "
+                      f"{', '.join(compounds)}, and none of them joined a MIBiG compound (see "
+                      f"their not_used rows)")
+        ledger.add("not_used", "left_out", map_id, "Pathway",
+                   f"{which}, so no arrow reaches the map and it describes nothing in the "
+                   f"graph.", sources="kegg")
+    nodes[:] = [n for n in nodes if n["node_id"] not in lone]
+    return lone

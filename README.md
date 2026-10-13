@@ -271,12 +271,12 @@ graph carries its source and how strong its evidence is, so real and curated
 facts can't be mixed up. More in [About the data](#about-the-data-honesty-notes).*
 
 This is the shape of the graph. The counts in the first row are from the build
-of 2026-10-12, after Phase 4b; `python -m microbegraph.build_graph` prints them
+after Phase 4b and its follow-ups (PubChem asked on 2026-10-12, 23:07 UTC); `python -m microbegraph.build_graph` prints them
 every time, and they move a little as the live sources update.
 
 | Fact | Value |
 |---|---|
-| The graph today | **48,239 nodes and 57,014 arrows**, merged from 71,901 identifiers in six sources, with every merge and refusal in a ledger of 25,741 decisions, five of them made by hand with a source (Phases 4 and 4b) |
+| The graph today | **48,234 nodes and 57,014 arrows**, merged from 71,915 identifiers in six sources, with every merge and refusal in a ledger of 25,775 decisions, seven of them made by hand with a source (Phases 4 and 4b) |
 | Primary real source | **MIBiG 4.0**: thousands of manually curated biosynthetic gene clusters, each linking an organism to the compound it produces, and for some, the cluster's genes with each one's protein and job ([Zenodo, CC-BY](https://doi.org/10.5281/zenodo.14169073)); plus MIBiG's protein file, every protein of every cluster ([download server](https://dl.secondarymetabolites.org/mibig/)) |
 | Chemistry source | **PubChem** (NIH): formula, weights, structure, synonyms, and KEGG and ChEBI numbers for each compound MIBiG gives a PubChem number, or whose name PubChem's names file finds |
 | Taxonomy source | **NCBI Taxonomy** (E-utilities): the lineage of every organism and pathogen, so "all *Bacillus*" is one query |
@@ -391,21 +391,25 @@ means, matching the build log below. Nothing is shown before it exists.*
   file) lists each gene's names next to its protein number, which gives all 59
   gene records named only by a gene name their protein, and finds the 4 maize
   genes MIBiG's curators removed. When MIBiG's entries describe a compound
-  differently, the node now keeps every value with the entry that gave it (120
+  differently, the node now keeps every value with the entry that gave it (135
   nodes), and that showed why two Phase 4 joins were wrong: one of
   2-methylisoborneol's entries carries a bromine compound's records, and one of
   desosamine's carries methymycin's. A review file holds decisions a person
   made, each with a reason and a source, and the resolver applies them before
   its rules; a short list folds activity words that mean the same thing (74
   activities became 70). PubChem is now asked in three rounds, with a name
-  search for 1,655 compounds in the middle. PubChem refuses a computer after
+  search for 1,653 compounds in the middle. PubChem refuses a computer after
   about 400 web name searches, so the search reads PubChem's names file
   instead (931 MB, downloaded once), and a busy PubChem stops a run cleanly
   for the next one to carry on. A compound is judged on four clues, and the
   formula alone no longer counts when the name points at another molecule.
-  1,978 of MIBiG's 3,842 compounds now have a PubChem record (1,102 before),
-  and the joins that rest on the formula alone fell from 322 to 82. The graph:
-  48,239 nodes and 57,014 arrows, 356 offline tests
+  Four follow-ups after the real run judge every PubChem number an entry lists
+  (17 entries list two), keep a record built with radioactive iron from
+  standing in for ferrichrome, say in the ledger whose name search found a
+  record nobody joined, and take out the KEGG maps no arrow reaches.
+  1,975 of MIBiG's 3,842 compounds now have a PubChem record (1,102 before),
+  and the joins that rest on the formula alone fell from 322 to 80. The graph:
+  48,234 nodes and 57,014 arrows, 361 offline tests
   ([`06b-closing-the-gaps.md`](docs/06b-closing-the-gaps.md)).
 
   ![The gaps Phase 4 left and what closed each one](docs/img/gaps_closed.svg)
@@ -557,13 +561,14 @@ without an internet connection, and they're made by
 | [One gene, part by part](docs/img/genbank_record.svg) | a CDS feature from MIBiG's GenBank file: where the gene sits, every name it goes by, its protein's number | Phase 4b, Handbook |
 | [Four clues for a compound](docs/img/clue_ladder.svg) | the clues that confirm a PubChem number, strongest first, and when the formula stops counting | Phase 4b, Handbook |
 | [A decision by hand](docs/img/review_row.svg) | a real row of the review file, column by column, and where it lands in the ledger | Phase 4b, curation |
+| [Four follow-ups](docs/img/follow_ups.svg) | what changed after the real run, before and after: every PubChem number an entry lists, ferrichrome's tracer record, a clearer ledger sentence, maps no arrow reaches | Phase 4b, Handbook |
 
 | Interactive page (download, then open) | What you can do |
 |---|---|
 | [`ontology_explorer.html`](docs/interactive/ontology_explorer.html) | hover any dot or arrow of the rulebook to see what it means and where it comes from |
 | [`evidence_chain.html`](docs/interactive/evidence_chain.html) | follow one real chain, filter it by evidence level, and see the weakest link |
 | [`roadmap_timeline.html`](docs/interactive/roadmap_timeline.html) | every phase on one timeline, with hours, status and what each adds |
-| [`resolution_cases.html`](docs/interactive/resolution_cases.html) | six real cases the resolver had to decide, clue by clue, with what it decided and why |
+| [`resolution_cases.html`](docs/interactive/resolution_cases.html) | seven real cases the resolver had to decide, clue by clue, with what it decided and why |
 
 ---
 

@@ -7,8 +7,8 @@ WHAT THIS SCRIPT DOES
         ontology_explorer.html    the rulebook: hover a node type or an arrow
         evidence_chain.html       one real chain, with evidence filters
         roadmap_timeline.html     every phase, its hours and its status
-        resolution_cases.html     six real cases the resolver decided, clue by
-                                  clue (Phase 4b)
+        resolution_cases.html     seven real cases the resolver decided, clue by
+                                  clue (Phase 4b and its follow-ups)
 
         python docs/interactive/make_interactive.py
 
@@ -616,37 +616,80 @@ CASES = [
         "id": "fer", "kind": "Compound", "title": "ferrichrome",
         "hook": "an iron carrier, and a record of it with radioactive iron",
         "sources": [
-            ["MIBiG BGC0000900", "pubchem:644246 (and 90658043)", "formula C26H43N9O12, "
+            ["MIBiG BGC0000900", "pubchem:644246, pubchem:90658043", "formula C26H43N9O12, "
              "without iron"],
             ["MIBiG BGC0000901", "pubchem:644246", "formula C27H42FeN9O12, with iron"],
-            ["PubChem 644246", "its title", "[55Fe] Ferrichrome, C27H42FeN9O12"],
+            ["PubChem 644246", "its title", "[55Fe] Ferrichrome, C27H42FeN9O12; its SMILES "
+             "writes the iron as [55Fe+3]"],
+            ["PubChem 90658043", "its title", "N-[3-[(2S,14S,17S)-...]propyl]-N-hydroxyacetamide, "
+             "C26H43N9O12, a relative without iron"],
             ["PubChem 121489511", "its title", "Ferrichrome, C27H42FeN9O12"],
         ],
         "phase4": "Phase 4 compared the first formula (without iron) with PubChem's (with "
                   "iron): they differ, and PubChem doesn't list the name, so the two stayed "
                   "apart.",
         "steps": [
-            ["info", "Every value, by entry", "Both entries give 644246, but one formula has an "
-             "iron atom and one doesn't. (BGC0000900 also lists 90658043; only the first number "
-             "an entry lists is a candidate so far.)"],
-            ["fail", "Clue 1, name", "PubChem titles the record '[55Fe] Ferrichrome', the "
-             "molecule built with radioactive iron-55, and doesn't list 'ferrichrome'."],
-            ["pass", "Clue 2, same structure", "The name search files 'ferrichrome' under "
-             "121489511. Both InChIKeys start GGUNGDGGXMHBMJ, so 644246, the number both entries "
-             "give, is confirmed and 121489511 stays apart."],
-            ["info", "What clue 2 can't see", "The first InChIKey block leaves isotopes out, so it "
-             "can't tell iron-55 from ordinary iron. The two records describe the same molecule, "
-             "but 644246 is the radioactive one; 121489511 is ferrichrome itself."],
+            ["info", "Every value, by entry", "Both entries give 644246, BGC0000900 also lists "
+             "90658043, and one formula has an iron atom while the other doesn't. Since the "
+             "Phase 4b follow-ups, both numbers are candidates."],
+            ["fail", "Clue 1, name", "Neither record lists 'ferrichrome': 644246 is titled "
+             "'[55Fe] Ferrichrome', the molecule built with radioactive iron-55, and 90658043 "
+             "has only a long systematic name."],
+            ["stop", "Clue 2, same structure", "The name search files 'ferrichrome' under "
+             "121489511, and both InChIKeys start GGUNGDGGXMHBMJ. But that first block leaves "
+             "isotopes out, and 644246's SMILES writes its iron as [55Fe+3]: a laboratory "
+             "tracer. Since the follow-ups, clue 2 doesn't confirm a tracer when the name's "
+             "record has ordinary iron. (On the first run it did, and ferrichrome joined the "
+             "tracer.)"],
+            ["pass", "Clue 3, name search", "121489511, 'Ferrichrome', has the formula "
+             "C27H42FeN9O12, which agrees with BGC0000901's."],
+            ["stop", "Clue 4 for 90658043", "The name is filed under a record with another "
+             "structure key, so the formula alone isn't trusted."],
         ],
-        "rule": "pubchem_number_confirmed", "decision": "merged",
-        "grounds": "MIBiG gives CID 644246; PubChem doesn't list the name 'ferrichrome' under "
-                   "CID 644246 (its title is '[55Fe] Ferrichrome'), but files it under CID "
-                   "121489511, the same molecule drawn another way: both InChIKeys start "
-                   "GGUNGDGGXMHBMJ; the formulas agree (C27H42FeN9O12). Confirmed by name, "
-                   "through the same structure.",
-        "next": "Still to settle: ferrichrome belongs with 121489511. The roadmap does it "
-                "before Phase 5, with a decision by hand or a clue 2 that prefers the record "
-                "PubChem files the name under when the two differ only in isotopes.",
+        "rule": "pubchem_name_search", "decision": "merged",
+        "grounds": "PubChem's name search finds 'ferrichrome' under CID 121489511 "
+                   "('Ferrichrome'); the formulas agree (C27H42FeN9O12). Confirmed by name and "
+                   "formula.",
+        "next": "Settled with the Phase 4b follow-ups: one node, pubchem.compound:121489511, "
+                "named ferrichrome. The tracer record 644246 and the relative 90658043 stay out "
+                "of the graph, each with its reason in the ledger.",
+    },
+    {
+        "id": "epo", "kind": "Compound", "title": "epoxomicin",
+        "hook": "one entry, two numbers, both with the name",
+        "sources": [
+            ["MIBiG BGC0000346", "pubchem:11226684, pubchem:9915668", "formula C28H50N4O7"],
+            ["PubChem 11226684", "its title", "Epoxomicin, C28H50N4O7, drawn with its eight "
+             "chiral centres"],
+            ["PubChem 9915668", "its title", "Epoxomicin (BU-4061T), C28H50N4O7, the same "
+             "structure drawn flat"],
+        ],
+        "phase4": "Phase 4 read only the first number the entry lists, 11226684. PubChem lists "
+                  "the name under it, so the two were joined by name.",
+        "steps": [
+            ["info", "Every number the entry lists", "Since the Phase 4b follow-ups, both "
+             "numbers BGC0000346 gives are candidates."],
+            ["pass", "Clue 1, name, for 11226684", "PubChem titles it 'Epoxomicin'."],
+            ["pass", "Clue 1, name, for 9915668", "PubChem lists 'Epoxomicin?' among its names, "
+             "the same name once the question mark is dropped."],
+            ["stop", "Two candidates equally strong", "Both pass clue 1 and they are different "
+             "records, so the rules alone keep the compound apart from both: choosing would be "
+             "a guess."],
+            ["person", "The review file", "A person read both records: the same structure (both "
+             "InChIKeys start DOGIDQKFVLKMLQ), 11226684 drawn with its eight chiral centres and "
+             "9915668 drawn flat. join, with PubChem's record 11226684 as the source."],
+        ],
+        "rule": "reviewed_by_hand", "decision": "merged",
+        "grounds": "Decided by hand on 2026-10-13: mg.compound:epoxomicin and "
+                   "pubchem.compound:11226684 are the same thing. MIBiG's entry BGC0000346 gives "
+                   "two PubChem numbers for epoxomicin, and both records list the name. Record "
+                   "11226684 is titled Epoxomicin and is drawn with its 3D shape (eight chiral "
+                   "centres; InChIKey DOGIDQKFVLKMLQ-JTHVHQAWSA-N). Record 9915668 is the same "
+                   "structure drawn without it (DOGIDQKFVLKMLQ-UHFFFAOYSA-N). Source: "
+                   "pubchem.compound:11226684 (curation/resolution_decisions.csv, line 7).",
+        "next": "Settled: one node, pubchem.compound:11226684, named epoxomicin. Mureidomycin B "
+                "had the same kind of tie and the same kind of decision; valclavam's tie waits "
+                "for a person.",
     },
     {
         "id": "las", "kind": "Compound", "title": "lasalocid",
@@ -754,11 +797,11 @@ def resolution_cases() -> str:
         f'<span class="kind mono">{c["kind"]}</span><b>{escape(c["title"])}</b>'
         f'<span class="muted">{escape(c["hook"])}</span></button>' for c in CASES)
     body = f"""
-<h1>Six real cases, clue by clue</h1>
+<h1>Seven real cases, clue by clue</h1>
 <p class="lede">Each case is a record the resolver had to decide about in Phase 4b, with what the
 sources say, what Phase 4 did, and each clue in turn. Pick a case, then press <b>Next clue</b>
 (or the right arrow key) to walk through it. Every value and every ledger sentence is copied from
-the real build of 2026-10-12.</p>
+the real build after the Phase 4b follow-ups (the PubChem run of 2026-10-12 at 23:07 UTC).</p>
 <div class="layout">
 <div class="cases" role="group" aria-label="Cases">{buttons}</div>
 <div class="card" id="detail" aria-live="polite"></div>

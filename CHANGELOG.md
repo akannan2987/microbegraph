@@ -18,6 +18,65 @@ and start a new, empty *Unreleased* above it. The
 
 ## Unreleased (toward 1.0.0)
 
+### Phase 4b follow-ups: every PubChem number, isotope tracers, a clearer ledger, maps no arrow reaches
+
+- **Changed** the MIBiG adapter to list every PubChem number an entry gives.
+  17 entries list two numbers for one compound, and only the first (after
+  sorting them as text) used to be read. Both now go into `pubchem_cid_by_entry` with their
+  entry, and the summary counts these compounds
+  (`compounds_with_several_pubchem_cids`, 17). `pubchem_cid_by_entry` is on 33
+  compounds (17 before).
+- **Changed** the same-structure clue (`src/microbegraph/resolution/compounds.py`):
+  it no longer confirms a record built with an unusual isotope (a mass number
+  in its SMILES, such as `[55Fe+3]`) when the record PubChem files the name
+  under has none. When one entry gives two numbers, the ledger says "MIBiG
+  gives this compound more than one number" instead of calling it a
+  disagreement between entries.
+- **Fixed** the ledger sentence for PubChem records only the name search found
+  (409 of them read "(; see their pubchem_number rows)"): it now names the
+  compound whose search found the record and where that compound went.
+  Records MIBiG gives point to "their rows", because a compound joined by hand
+  has no `pubchem_number` rows.
+- **Added** a resolver step that leaves out KEGG maps no arrow reaches
+  (`leave_out_lone_maps` in `src/microbegraph/resolution/combine.py`), each with
+  a `not_used` ledger row naming its compound; the summary counts them
+  (`maps_left_without_arrows`) and the resolver's nodes line says so.
+- **Added** two decisions to the review file: epoxomicin joins 11226684 and
+  mureidomycin B joins 101627952. Each entry gives two numbers and both records
+  list the name; the chosen record is titled with the name and gives the chiral
+  centres the other leaves out.
+- **Added** 5 tests (361 in all); a picture of the follow-ups
+  (`follow_ups.svg`) and the isotope check in the four-clues picture; a seventh
+  case on the resolution cases page; glossary entries for chiral centres,
+  stereoisomers and isolated nodes; a new part of the guide's Step 10; the
+  Handbook's version 1.9.
+- **Measured** (the PubChem run of 2026-10-12 at 23:07 UTC):
+  - *PubChem:* round 1, 1,209 numbers in 26 requests (14 asked for the first
+    time, 5 not in PubChem); the names file searched again on the computer
+    (answers carry over only from a fetch that stopped halfway): 1,653 names, 1,199 found under one number,
+    47 under several, 2 under more than 10, 405 not found; round 3, 1,318
+    numbers in 28 requests. 2,522 compounds (2,419 with other names, 214 with a
+    KEGG number, 1,774 with a ChEBI number). All 54 requests were answered.
+  - *Resolver:* 71,915 identifiers in; 7 decisions by hand (2 of them joins);
+    PubChem joins by MIBiG's own numbers 1,017 (80 by the formula alone), by
+    the name search 927, for shared numbers 9, and where MIBiG gives more than
+    one number 19; refused 113, 384, 13 and 38 respectively; 5 maps left out.
+  - *Out:* 48,234 nodes (Pathway 48) and 57,014 arrows; 849 entries left out;
+    a ledger of 25,775 rows. 1,975 of MIBiG's 3,842 compounds share a node with
+    a PubChem record.
+  - *Moved:* ferrichrome from 644246 to 121489511; psymberin from 11456257 to
+    11692946; echinomycin from 6857732 to 458034; valclavam, corallopyronin
+    and glidobactin have no PubChem record now; epoxomicin and mureidomycin B
+    keep theirs, by hand.
+- **Known limits:** in 137 of the 180 same-structure joins the two records give
+  different 3D detail, and some may be stereoisomers the first InChIKey block
+  can't tell apart (echinomycin's new join is one of them); the tracer check
+  covers clue 2 only (no other clue joins an isotope-labelled record on
+  today's data); valclavam's two numbers tie, and corallopyronin's and glidobactin's can't be confirmed, each
+  for a person to read.
+- **Planned:** a check of those 137 joins, chiral centre by chiral centre,
+  before Phase 5.
+
 ### Phase 4b: closing the gaps, with GenBank, PubChem names and a review file
 
 - **Added** MIBiG's GenBank file to the MIBiG adapter: `mibig_gbk_4.0.tar.gz`

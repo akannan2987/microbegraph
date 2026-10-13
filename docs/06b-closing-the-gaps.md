@@ -6,7 +6,7 @@
 finished: `pytest` passes, `python -m microbegraph.build_graph` ends with
 `every count matches`, and `data/processed/resolve_summary.json` exists. You need
 the internet for two steps: MIBiG's GenBank file (about 80 MB) and PubChem
-(about 50 small requests, plus PubChem's file of every name, 931 MB, so
+(54 small requests, plus PubChem's file of every name, 931 MB, so
 keep 1 GB of disk space free). Everything else runs offline. No chemistry or
 biology background is needed: each idea is explained where it first appears.
 
@@ -59,7 +59,7 @@ seconds, the resolver about ten.
 
 ## 1. What this phase builds, in one picture
 
-![The gaps Phase 4 left and what closed each one: 21 gene records and 4 curators' removals closed by MIBiG's GenBank file; the disagreements between MIBiG's entries kept as every value with its entry, on 120 nodes; two wrong joins (2-methylisoborneol, desosamine) settled in the review file; four activity words folded into two; PubChem's name search, in its names file, cuts the joins on the formula alone from 322 to 82 and finds a record by name for 865 compounds that had no number](img/gaps_closed.svg)
+![The gaps Phase 4 left and what closed each one: 21 gene records and 4 curators' removals closed by MIBiG's GenBank file; the disagreements between MIBiG's entries kept as every value with its entry, on 135 nodes; two wrong joins (2-methylisoborneol, desosamine) settled in the review file; four activity words folded into two; PubChem's name search, in its names file, cuts the joins on the formula alone from 322 to 82 (80 after the follow-ups) and finds a record by name for 865 compounds that had no number](img/gaps_closed.svg)
 
 Phase 4's rules refused every join they couldn't confirm, and listed what they
 left over. That was the right call, but a list of refusals is a queue, and a
@@ -82,7 +82,11 @@ queue needs a way to be worked. This phase works it in three ways:
    activity words that mean the same thing.
 
 It also fixes a small structural fault Phase 4 found: one Python file couldn't
-be imported on its own (Step 1).
+be imported on its own (Step 1). Four small follow-ups, found while checking
+the real run, close the phase (Step 10, [the follow-ups](#the-follow-ups-after-the-run)):
+every PubChem number an entry lists becomes a candidate, a record built with
+radioactive iron no longer counts as ferrichrome, a ledger sentence names whose
+name search found a record, and KEGG maps no arrow reaches leave the graph.
 
 The commands:
 
@@ -90,7 +94,7 @@ The commands:
 |---|---|---|
 | `python tests/fixtures/capture_gap_samples.py` | Looks at the evidence before any code (Step 2); optional when you repeat the build | Yes, once |
 | `python -m microbegraph.fetch --source mibig` | Downloads the GenBank file into the locker and rebuilds MIBiG's tables (Step 3) | Yes, about 80 MB |
-| `python -m microbegraph.fetch --source pubchem` | Asks PubChem about every number, and looks the names up in PubChem's file of every name (Step 5) | Yes: about 50 requests and a 930 MB download |
+| `python -m microbegraph.fetch --source pubchem` | Asks PubChem about every number, and looks the names up in PubChem's file of every name (Step 5) | Yes: 54 requests and a 931 MB download |
 | `python -m microbegraph.fetch --tidy-only --source kegg --source curation` | Rebuilds the two tables that read PubChem's and MIBiG's | No |
 | `python -m microbegraph.resolve` | Merges the six sources again, now with the two curated files | No |
 | `python -m microbegraph.build_graph` | Loads the graph into DuckDB and NetworkX, compares | No |
@@ -100,7 +104,7 @@ The commands:
 | Path | New or changed | What it is |
 |---|---|---|
 | `src/microbegraph/sources/mibig_genbank.py` | new | Reads MIBiG's GenBank file: every gene's names and protein number |
-| `src/microbegraph/sources/mibig.py` | changed | The third pinned file; places gene records and removals through it; keeps every value of a disputed property |
+| `src/microbegraph/sources/mibig.py` | changed | The third pinned file; places gene records and removals through it; keeps every value of a disputed property, and every PubChem number an entry lists |
 | `src/microbegraph/sources/pubchem.py` | changed | Three rounds: every number, the name search, the numbers it found; a polite pace; a clean stop and a resume |
 | `src/microbegraph/sources/pubchem_names.py` | new | Searches PubChem's file of every name on your computer (Step 5) |
 | `src/microbegraph/provenance.py` | changed | A third outcome in the log, `derived` (Step 5) |
@@ -109,11 +113,12 @@ The commands:
 | `src/microbegraph/staging.py`, `src/microbegraph/resolution/pool.py` | changed | Read the helpers from `tables.py` |
 | `src/microbegraph/resolution/reviewed.py` | new | Reads the review file and applies it before the matching rules |
 | `src/microbegraph/resolution/activities.py` | new | Reads the activity synonyms and folds the words |
-| `src/microbegraph/resolution/compounds.py` | changed | The four clues, every number MIBiG gives, the name search |
+| `src/microbegraph/resolution/compounds.py` | changed | The four clues, every number MIBiG gives, the name search; clue 2 skips a record built with an unusual isotope |
+| `src/microbegraph/resolution/combine.py` | changed | The ledger sentence for a record only the name search found; KEGG maps no arrow reaches are left out |
 | `src/microbegraph/resolution/groups.py` | changed | A pair a person kept apart can never meet, even through a chain |
 | `src/microbegraph/resolution/proteins.py`, `ledger.py` | changed | Respect decisions by hand; four new rules in the ledger |
-| `src/microbegraph/resolve.py` | changed | Runs the new steps; the summary lists what is still open |
-| `curation/resolution_decisions.csv` | new | The review file, with the first 5 decisions |
+| `src/microbegraph/resolve.py` | changed | Runs the new steps; the summary lists what is still open and counts the maps left out |
+| `curation/resolution_decisions.csv` | new | The review file, with the first 7 decisions |
 | `curation/activity_synonyms.csv` | new | 4 activity words and the word each means the same as |
 | `curation/README.md` | changed | How to add a row to either file |
 | `tests/fixtures/capture_gap_samples.py` | new | The look at the evidence (Step 2), and the GenBank test sample (`--fixture`); searches PubChem's names file when it's there |
@@ -126,8 +131,8 @@ The commands:
 | `tests/conftest.py`, `tests/test_mibig_fetch_probe.py`, `tests/test_pubchem.py`, `tests/test_resolve.py`, `tests/test_build_graph.py`, `tests/test_query.py` | changed | The third MIBiG file, the PubChem rounds, the real Phase 4b cases |
 | `docs/06b-closing-the-gaps.md` | new | This guide |
 | `docs/QUERY_COOKBOOK.md` | changed | New recipes R20 to R22; R19 and the answers updated |
-| `docs/img/gaps_closed.svg`, `genbank_record.svg`, `clue_ladder.svg`, `review_row.svg` | new | Four new pictures |
-| `docs/interactive/resolution_cases.html` | new | Six real cases, clue by clue, in your browser |
+| `docs/img/gaps_closed.svg`, `genbank_record.svg`, `clue_ladder.svg`, `review_row.svg`, `follow_ups.svg` | new | Five new pictures |
+| `docs/interactive/resolution_cases.html` | new | Seven real cases, clue by clue, in your browser |
 | `docs/img/make_illustrations.py`, `docs/interactive/make_interactive.py` and the files they draw | changed | The new pictures and page; the journey map shows Phase 4b done |
 | `docs/phases.csv` | changed | Phase 4b done |
 | `README.md`, `CHANGELOG.md`, `docs/HANDBOOK.md`, `docs/ROADMAP.md`, `docs/GLOSSARY.md`, `docs/00-architecture.md`, `docs/02-ontology-and-data-model.md`, `docs/03-ingestion-mibig.md`, `docs/04-more-sources-secrets.md`, `docs/05b-all-cluster-proteins.md`, `docs/06-entity-resolution-graph-build.md` | changed | Updated for this phase |
@@ -229,7 +234,21 @@ carries the common name.
 That arrangement in space is called **stereochemistry**. Your two hands are the
 everyday version: made of the same parts, connected the same way, yet a left
 glove doesn't fit a right hand. Some molecules come in such mirror forms, and
-chemists draw them differently.
+chemists draw them differently. An atom with four different neighbours, which
+can sit around it in two mirror-image ways, is a **chiral centre**; a record "drawn with its 3D shape"
+says which way each one goes, and a record drawn flat leaves them open. Two
+molecules with the same atoms, connected the same way, but different 3D
+shapes are **stereoisomers**, and they can behave quite differently in a cell.
+
+The isotope case is a little different from the others. An **isotope** is a
+heavier or lighter version of an atom. Its **mass number**, the count of
+particles in the atom's core, says which: ordinary iron is iron-56, and
+iron-55 is a radioactive isotope. A molecule built with a radioactive one is a
+**tracer**: chemists make it in the laboratory so they can follow where the
+molecule goes, much as a parcel carries a tracking tag. PubChem's
+"[55Fe] Ferrichrome" is ferrichrome carrying radioactive iron-55. A microbe
+makes ferrichrome with ordinary iron, so the tracer's record isn't the
+compound MIBiG describes.
 
 ### The InChIKey, and its first block
 
@@ -244,14 +263,16 @@ block 1        block 2    block 3
 That one is methymycin's. The **first block** encodes the atoms and how they
 are connected, and nothing else. The second encodes the 3D arrangement and
 isotopes, the third whether protons were added or taken away (a sign of a
-charge). Two PubChem records with the same first block are the same molecule
-drawn in different ways (with or without its 3D arrangement, or with an unusual
-isotope); two records with different first blocks are different molecules,
+charge). Two PubChem records with the same first block have the same atoms,
+connected the same way: usually the same molecule drawn in different ways (with
+or without its 3D arrangement), but they can also be a tracer built with an
+unusual isotope, or two stereoisomers. Two records with different first blocks
+are different molecules,
 however similar their names or formulas. A salt counts as different here: the
 first block also encodes the formula, sodium included, so a salt's first block
 differs from its acid's. Block 1 is
-the part this phase uses: it can tell "another record of the same molecule"
-from "another molecule".
+the part this phase uses: it can usually tell "another record of the same
+molecule" from "another molecule".
 
 ### Activity words
 
@@ -421,7 +442,7 @@ file from the table in section 1 at the path shown. Then:
    staging loads on its own
    ```
 
-✅ **Checkpoint.** `pytest` ends with `356 passed` and no `failed`.
+✅ **Checkpoint.** `pytest` ends with `361 passed` and no `failed`.
 
 ---
 
@@ -497,8 +518,9 @@ trusting either. Names whose number Phase 4 refused show the same thing:
 
 **Keeping both values explained two of Phase 4's joins.** A quick re-run of the
 MIBiG tidy that recorded every disagreement found that 17 compounds get
-different PubChem numbers from different entries. Two of them were joined
-wrongly in Phase 4:
+different PubChem numbers from different entries (and, as the follow-ups in
+Step 10 found later, 17 compounds get two numbers from a single entry). Two
+of the first 17 were joined wrongly in Phase 4:
 
 | Compound | What the entries say | What Phase 4 did |
 |---|---|---|
@@ -578,6 +600,7 @@ removal removes every protein the name leads to, as before.
 2. Among the counts, these are new or changed:
 
    ```
+       compounds_with_several_pubchem_cids     17
        genbank_cds                          46987
        genes_found_by_genbank                  59
        genes_given_a_protein_number           511
@@ -602,6 +625,11 @@ removal removes every protein the name leads to, as before.
    nothing left to match on this data. The
    gene records given a protein number go from 452 to 511 (452 + 59), and the
    curators' removals from 18 to 22.
+
+**17 compounds with several PubChem numbers in one entry.** This count came
+with the follow-ups in Step 10: it's the number of times one entry lists more
+than one PubChem number for one compound. Ferrichrome's entry BGC0000900, for
+example, lists 644246 and 90658043. Step 4 says what happens to them.
 
 **278, not 275.** `property_conflicts` counts every time an entry gives a
 value different from the one already kept. The three new ones are real:
@@ -629,14 +657,26 @@ which value. When a property got more than one value, the node gains
 |---|---|
 | `smiles_by_entry` (the structure as text) | 109 compounds |
 | `mass_by_entry` | 49 compounds |
-| `pubchem_cid_by_entry` | 17 compounds |
+| `pubchem_cid_by_entry` | 33 compounds |
 | `formula_by_entry` | 16 compounds |
 | `gene_name_by_entry`, `product_by_entry` | 2 proteins, 1 protein |
 
-That's 194 properties on 120 nodes (118 compounds and 2 proteins), since many
+That's 210 properties on 135 nodes (133 compounds and 2 proteins), since many
 nodes disagree about more than one property. The MIBiG summary's
 `property_conflicts` says 278 because it counts every entry that disagrees,
 and some nodes are described by many entries.
+
+**One entry can give two numbers, too.** 17 entries list two PubChem numbers
+for one compound. Until the follow-ups in Step 10, only the first of them
+became `pubchem_cid`, and the second stayed unread in `database_ids`. "First"
+meant first after sorting the numbers as text, which puts 11226684 before
+9915668: an order MIBiG's curators never chose. Now both go into
+`pubchem_cid_by_entry`, each with the entry that gave it, which is why the
+list grew from 17 compounds to 33 (heme D1 was in both groups):
+
+```
+pubchem_cid_by_entry    BGC0000900: 644246|BGC0000900: 90658043|BGC0000901: 644246
+```
 
 The first value stays under the property's own name, so every recipe and every
 rule that read `formula` or `pubchem_cid` still works. The new lists feed three
@@ -661,20 +701,22 @@ The PubChem adapter now asks in three rounds, all saved in one snapshot:
 
 ```mermaid
 flowchart TD
-    R1["Round 1: every number MIBiG gives (now including pubchem_cid_by_entry)<br/>and every number in the review file<br/>1,193 numbers, 24 requests"] --> S{"Does any of a compound's numbers<br/>list its name (title or full list)?"}
+    R1["Round 1: every number MIBiG gives (now including pubchem_cid_by_entry)<br/>and every number in the review file<br/>1,209 numbers, 26 requests"] --> S{"Does any of a compound's numbers<br/>list its name (title or full list)?"}
     S -- yes --> K[nothing to search]
-    S -- no, or no number but a formula --> R2["Round 2: the name search, 1,655 names<br/>in PubChem's file of every name, on your computer"]
+    S -- no, or no number but a formula --> R2["Round 2: the name search, 1,653 names<br/>in PubChem's file of every name, on your computer"]
     R2 --> R3["Round 3: formula, InChIKey and names<br/>of every number it found"]
 ```
 
 **Who gets a name search.** A compound whose own numbers already list its name
 is skipped. So is a compound with no number and no formula, because a name
 match is only accepted when the formula agrees (Step 6), and without a formula
-it never could be. On the real data that came to 1,655 names. The Phase 2
-snapshot had suggested up to 1,660: up to 406 compounds whose numbers don't
-list their name, and 1,254 with no number but a formula. Round 1 also brings
-the records of the 17 second numbers, and where such a record lists the name,
-that compound needs no search.
+it never could be. On the real data that came to 1,653 names (1,655 before the
+follow-ups). The Phase 2 snapshot had suggested up to 1,660: up to 406
+compounds whose numbers don't list their name, and 1,254 with no number but a
+formula. Round 1 also brings the records of every other number MIBiG gives,
+and where such a record lists the name, that compound needs no search: that's
+why psymberin and fusaridione A dropped off the list once the follow-ups made
+their second numbers candidates.
 
 **Where the names are looked up.** In PubChem's file of every name, on your
 computer, whenever there are more than 300 names or the file is already there
@@ -776,12 +818,15 @@ and the strongest one present decides:
 | Clue | What must be true | Rule in the ledger |
 |---|---|---|
 | 1. name | MIBiG gives the number and PubChem lists the name under it (title, short list, full list), or the name search returns that very number | `pubchem_number_confirmed`, or `pubchem_numbers_differ` when entries give several numbers |
-| 2. same structure | MIBiG gives the number, PubChem files the name under another number, and the two records share the first block of their InChIKey | the same |
+| 2. same structure | MIBiG gives the number, PubChem files the name under another number, and the two records share the first block of their InChIKey, unless MIBiG's record is built with an unusual isotope and the name's record isn't | the same |
 | 3. name search | MIBiG gives no number that passes 1 or 2, and the name search finds the name under exactly one number whose formula agrees with MIBiG's (with one of them, when the entries give several: here the name is the independent clue, and the formula a check on it) | `pubchem_name_search` |
 | 4. formula alone | MIBiG gives one number, its formula agrees, the name search points at no other molecule, and MIBiG's entries agree about the formula | `pubchem_number_confirmed` |
 
 Two candidates equally strong and different stay apart from the compound, and
-the ledger names both: choosing would be a guess. A number several MIBiG
+the ledger names both: choosing would be a guess. That holds for two numbers
+MIBiG gives in one entry, too. When both records list the name, the compound
+joins neither until a person decides (Step 7 has the two the follow-ups
+settled: epoxomicin and mureidomycin B). A number several MIBiG
 compounds share still needs each compound's own name (clue 1 only), for the
 reason Phase 4 gave: isomers share formulas and can share structure keys.
 
@@ -801,6 +846,24 @@ reason Phase 4 gave: isomers share formulas and can share structure keys.
   joins them, because the name is the evidence there and the formula only a
   check.
 
+**The limit on clue 2: isotopes.** The first InChIKey block
+leaves isotopes out, so clue 2 can't see the difference between ferrichrome and
+"[55Fe] Ferrichrome", and on the first real run it confirmed ferrichrome's
+number through the record PubChem files the name under, 121489511. Since the
+follow-ups, clue 2 looks at the record's SMILES first, the structure written as
+text. An atom written with a mass number in front of it, like `[55Fe+3]`, is
+an isotope label (section 2 explains mass numbers). If MIBiG's record has one and the name's record has none,
+clue 2 doesn't confirm MIBiG's number, and the ledger says why:
+
+```
+... and this record is built with the isotope 55Fe. PubChem files the name under CID 121489511, the same structure without the isotope, so that record is the compound; ...
+```
+
+The name's own record then wins on clue 3. The other way round (the name's
+record labelled, MIBiG's not) changes nothing: N-myristoyl-D-asparagine's name
+is filed under a record built with deuterium (heavy hydrogen, written `[2H]`),
+138986957, and MIBiG's own number, 102500690, stays joined.
+
 The ledger's sentence says which clue decided, so recipe R19 can list the
 joins that still rest on the formula alone: every merged row that ends with
 `Confirmed by the formula alone.`
@@ -809,8 +872,8 @@ A walk through all of it, case by case, is in your browser:
 [`interactive/resolution_cases.html`](interactive/resolution_cases.html).
 
 ✅ **Checkpoint.** You can say which clue would decide for a compound whose
-MIBiG number lists its name, and why one matching formula still doesn't
-confirm ferrichrome's number.
+MIBiG number lists its name, why one matching formula still doesn't confirm
+ferrichrome's number, and why clue 2 doesn't either.
 
 ---
 
@@ -829,7 +892,7 @@ confirm ferrichrome's number.
 | `citation` | `pubchem.compound:9237955` | Where to check: `doi:`, `pubmed:` or a database record |
 | `decided_on` | `2026-10-12` | The date, written YYYY-MM-DD |
 
-The first five decisions:
+The first seven decisions (the last two came with the follow-ups in Step 10):
 
 | Records | Decision | Source |
 |---|---|---|
@@ -838,6 +901,8 @@ The first five decisions:
 | desosamine and MIBiG's methymycin | keep apart: a sugar and the molecule that carries it | pubmed:9770448 |
 | CBF82293.1 and UniProt P0CU77 | keep apart: MIBiG's 822-amino-acid sequence spans two genes UniProt describes separately | UniProt's entry P0CU77 |
 | CBF82293.1 and UniProt P0CU78 | keep apart, for the same reason | UniProt's entry P0CU78 |
+| epoxomicin and PubChem 11226684 | join: MIBiG's entry gives two numbers and both list the name; 11226684 is titled Epoxomicin and drawn with its eight chiral centres, 9915668 is the same structure drawn flat | PubChem's record 11226684 |
+| mureidomycin B and PubChem 101627952 | join: the same situation; 101627952 is titled Mureidomycin B and gives its three chiral centres, 3037873 gives none | PubChem's record 101627952 |
 
 **What the resolver does with it** (`src/microbegraph/resolution/reviewed.py`):
 
@@ -868,7 +933,7 @@ Their right records need no decision by hand: the rules find them once the
 PubChem fetch has run, 16913 for 2-methylisoborneol and 168997 for desosamine
 (Step 10 shows how).
 
-✅ **Checkpoint.** Recipe R20 lists the five decisions.
+✅ **Checkpoint.** Recipe R20 lists the seven decisions.
 
 ---
 
@@ -899,7 +964,8 @@ Activities went from 74 to 70.
 
 ## 13. Step 9. Tests
 
-There are 356 tests, 60 more than Phase 4. The new ones are in
+There are 361 tests, 65 more than Phase 4 (five of them came with the
+follow-ups). The new ones are in
 `tests/test_closing_the_gaps.py`, plus additions in the PubChem, MIBiG and
 resolver test files:
 
@@ -913,9 +979,10 @@ resolver test files:
 | The review file and the synonyms | Joins and refusals applied and recorded; a chain can't undo a refusal; a `keep_apart` row for two records rows above already joined is refused; bad rows refused with their line number; the real files read cleanly |
 | The real cases | The slice the resolver tests use now holds 2-methylisoborneol, desosamine, the maize cluster, scbR and the activity words, cut from the real tables by `tests/fixtures/capture_resolution_samples.py` |
 | The import fix | A fresh Python loads `microbegraph.staging` on its own, and the resolver no longer loads any source adapter |
-| The new recipes | R20 to R22 run on the slice like every other recipe, and give the real answers: the five decisions by hand, 2-methylisoborneol's three numbers, antitumor folded into anticancer |
+| The new recipes | R20 to R22 run on the slice like every other recipe, and give the real answers: the decisions by hand, 2-methylisoborneol's three numbers, antitumor folded into anticancer |
+| The follow-ups | One entry's two numbers both reach `pubchem_cid_by_entry`; a record built with iron-55 loses to the ordinary record the name is filed under; two numbers from one entry are described as such in the ledger; a record only the name search found says whose search it was; a map no arrow reaches is left out with a ledger row. Each test fails on the code from before the follow-ups |
 
-✅ **Checkpoint.** `pytest` ends with `356 passed`.
+✅ **Checkpoint.** `pytest` ends with `361 passed`.
 
 ---
 
@@ -943,52 +1010,56 @@ resolver test files:
    or RHEL 8 (Settings, Power, Automatic Suspend), turn sleep off until it
    finishes.
 
-   This is the output for the answers PubChem gave on 2026-10-12, shortened
-   where it says `...`. Where it says `<date>`, yours shows the time the fetch
-   started, as a folder name like `2026-10-12T211128Z`. PubChem is a live
-   database, so your counts may differ slightly too (the sanity checks below
-   the counts tell you whether they make sense):
+   This is the output for the answers PubChem gave on the project's fifth run,
+   at 23:07 UTC on 2026-10-12 (after [the follow-ups](#the-follow-ups-after-the-run)
+   at the end of this step), shortened where it says `...`. Where it says
+   `<date>`, yours shows the time the fetch started, as a folder name like
+   `2026-10-12T230729Z`. The names file is downloaded on a first run, as shown;
+   when it's already in your locker, those three lines become two:
+   `[pubchem] CID-Synonym-filtered.gz is already in the locker and verified, nothing to download`
+   and `[pubchem] already_present: data/raw/pubchem/CID-Synonym-filtered.gz (931 MB), provenance logged`. PubChem is a live database, so your counts may differ slightly
+   too (the sanity checks below the counts tell you whether they make sense):
 
    ```
    [pubchem] fetch
-     [pubchem] round 1: asking about 1,193 CIDs in 12 batches of up to 100
+     [pubchem] round 1: asking about 1,209 CIDs in 13 batches of up to 100
      [pubchem] data/raw/pubchem/<date>/properties_001.json
      [pubchem] data/raw/pubchem/<date>/synonyms_001.json
      ...
-     [pubchem] data/raw/pubchem/<date>/synonyms_012.json
+     [pubchem] data/raw/pubchem/<date>/synonyms_013.json
      [pubchem] downloading CID-Synonym-filtered.gz
         931.3 MB of 931.3 MB (100%)
      [pubchem] downloaded: data/raw/pubchem/CID-Synonym-filtered.gz (931 MB), provenance logged
-     [pubchem] round 2: the name search, 1,655 names, in CID-Synonym-filtered.gz on this computer (a few minutes)
+     [pubchem] round 2: the name search, 1,653 names, in CID-Synonym-filtered.gz on this computer (a few minutes)
        searched 10% of CID-Synonym-filtered.gz
        ...
        searched 100% of CID-Synonym-filtered.gz
-     [pubchem] name search: 1,655 names searched, 1,250 found
-     [pubchem] round 3: asking about the 1,320 CIDs the name search found
-     [pubchem] data/raw/pubchem/<date>/properties_013.json
-     [pubchem] data/raw/pubchem/<date>/synonyms_013.json
+     [pubchem] name search: 1,653 names searched, 1,248 found
+     [pubchem] round 3: asking about the 1,318 CIDs the name search found
+     [pubchem] data/raw/pubchem/<date>/properties_014.json
+     [pubchem] data/raw/pubchem/<date>/synonyms_014.json
      ...
-     [pubchem] data/raw/pubchem/<date>/synonyms_026.json
-     [pubchem] downloaded: data/raw/pubchem/<date>/ (56 answers, 4.7 MB), provenance logged
+     [pubchem] data/raw/pubchem/<date>/synonyms_027.json
+     [pubchem] downloaded: data/raw/pubchem/<date>/ (58 answers, 4.7 MB), provenance logged
    [pubchem] tidy
      [pubchem] wrote pubchem_nodes.csv and pubchem_edges.csv
-       cids_requested                 1193
-       compounds_found                2508
+       cids_requested                 1209
+       compounds_found                2522
        cids_not_in_pubchem               5
-       compounds_with_synonyms        2409
+       compounds_with_synonyms        2419
        compounds_with_kegg_id          214
-       compounds_with_chebi_id        1772
-       names_searched                 1655
-       names_found_one_number         1201
+       compounds_with_chebi_id        1774
+       names_searched                 1653
+       names_found_one_number         1199
        names_found_several_numbers      47
        names_found_too_many_numbers      2
        names_not_found                 405
        names_pubchem_could_not_read      0
        names_not_asked                   0
-       cids_found_by_name             1320
+       cids_found_by_name             1318
    ```
 
-   The 56 answers are round 1's 24, the four files of search answers
+   The 58 answers are round 1's 26, the four files of search answers
    (`names_from_file_001.json` to `004`) and round 3's 28. The first six counts
    are the ones Phase 2 explained
    ([`04-more-sources-secrets.md`, Step 10](04-more-sources-secrets.md#14-step-10-run-it-for-real)).
@@ -1007,9 +1078,9 @@ resolver test files:
 
    **Sanity checks on your numbers** (the run above in brackets):
    * the five name outcomes add up to `names_searched`
-     (1,201 + 47 + 2 + 405 + 0 = 1,655);
+     (1,199 + 47 + 2 + 405 + 0 = 1,653);
    * `compounds_found` is `cids_requested` minus `cids_not_in_pubchem` plus
-     `cids_found_by_name` (1,193 - 5 + 1,320 = 2,508);
+     `cids_found_by_name` (1,209 - 5 + 1,318 = 2,522);
    * `names_not_asked` is 0.
 
    **If PubChem is refusing your computer**, you'll see it wait and try again
@@ -1019,7 +1090,7 @@ resolver test files:
 
    ```
    [pubchem] fetch
-     [pubchem] round 1: asking about 1,193 CIDs in 12 batches of up to 100
+     [pubchem] round 1: asking about 1,209 CIDs in 13 batches of up to 100
      [pubchem] attempt 1 of 5 failed (https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/property/...
    ```
 
@@ -1068,11 +1139,13 @@ resolver test files:
      [pubchem] downloaded: data/raw/pubchem/2026-10-12T211128Z/ (53 answers, 4.7 MB), provenance logged
    ```
 
-   The tidy counts that follow are the same as above. This time the snapshot
-   holds 53 answers, because the search's four files are carried over as one,
+   The tidy counts that followed were those of 12 October, before the
+   follow-ups: 1,193 numbers asked, 2,508 compounds found, 1,655 names searched
+   (1,250 found) and 1,320 numbers found by name. This time the snapshot holds
+   53 answers, because the search's four files are carried over as one,
    `names_carried_over.json`.
 
-   > **How the project's own run went, on 2026-10-12.** It took four runs.
+   > **How the project's own run went, on 2026-10-12.** It took five runs.
    > The first, at 16:31 UTC, still used PubChem's web search and was refused
    > after 372 of the 1,655 names; that's what moved the search into the names
    > file (section 3). The second, at 17:07, downloaded the file, searched every
@@ -1081,8 +1154,10 @@ resolver test files:
    > got two answers and was then stopped by hand, so it never finished its
    > snapshot and counts for nothing (section 18 has that case). The fourth, at
    > 21:11, is the resumed run above, and PubChem answered all 28 requests. The
-   > graph described below was built from that snapshot,
-   > `data/raw/pubchem/2026-10-12T211128Z/`.
+   > fifth, at 23:07, came after the follow-ups at the end of this step had
+   > added 16 numbers to round 1. PubChem answered all 54 requests, and the
+   > graph described below is built from that snapshot,
+   > `data/raw/pubchem/2026-10-12T230729Z/`.
 
 3. **The two tables that read PubChem's and MIBiG's.** KEGG's table takes its
    compounds from PubChem's, and the curated table checks its compounds against
@@ -1118,9 +1193,12 @@ resolver test files:
 
    `our_compounds_with_kegg_id` must equal PubChem's `compounds_with_kegg_id`
    (214 = 214). That's 83 more compounds with a KEGG number than Phase 2's 131
-   (80 that round 3 brought in, and 3 among round 1's 17 new numbers), and
-   they reach 14 more maps (53 instead of 39). The curation counts are the
-   same as in Phase 2, because the bridge is a file in the repository.
+   (80 that round 3 brought in, and 3 among the numbers round 1 asks about
+   since this phase), and
+   they reach 14 more maps (53 instead of 39). Five of the 53 have only
+   compounds no MIBiG compound joins, so the resolver takes them out again
+   (item 4). The curation counts are the same as in Phase 2, because the
+   bridge is a file in the repository.
 
 4. **Resolve.**
 
@@ -1133,7 +1211,7 @@ resolver test files:
    ```
    [resolve] reading data/processed/staging/ (six sources) and curation/
      mibig           47,844 nodes   version 4.0
-     pubchem          2,508 nodes   version live
+     pubchem          2,522 nodes   version live
      ncbi_taxonomy    2,457 nodes   version Build261011-2030.1
      kegg                53 nodes   version pathway 2026/10/09, compound 2026/10/09
      uniprot         20,507 nodes   version 2026_03
@@ -1143,18 +1221,18 @@ resolver test files:
      ncbi_merged_number        moved 7
      organism_and_pathogen     combined 2
      activity_synonym          merged 4
-     reviewed_by_hand          kept_apart 5
-     pubchem_number_confirmed  merged 1,029   kept_apart 116
+     reviewed_by_hand          merged 2   kept_apart 5
+     pubchem_number_confirmed  merged 1,017   kept_apart 113
      pubchem_number_shared     merged 9   kept_apart 13
-     pubchem_numbers_differ    merged 11   kept_apart 19
-     pubchem_name_search       merged 928   kept_apart 385
+     pubchem_numbers_differ    merged 19   kept_apart 38
+     pubchem_name_search       merged 927   kept_apart 384
      pubchem_number_unknown    kept_apart 5
      npatlas_and_formula       merged 1   kept_apart 7
      uniprot_cross_reference   merged 20,626   kept_apart 40
      identical_sequence        merged 220   kept_apart 9
-     not_used                  left_out 827
+     not_used                  left_out 849
    [resolve] the merged graph
-     nodes  48,239   from 71,901 identifiers (827 left out)
+     nodes  48,234   from 71,915 identifiers (849 left out, 5 of them maps no arrow reaches)
        Activity           70
        Compound        3,826
        CompoundClass      37
@@ -1162,7 +1240,7 @@ resolver test files:
        GeneCluster     2,437
        Organism        2,451
        Pathogen            6
-       Pathway            53
+       Pathway            48
        Protein        39,354
      edges  57,014   from 57,105 (66 combined, 25 dropped with left-out entries)
        BELONGS_TO        528
@@ -1175,7 +1253,7 @@ resolver test files:
        MEMBER_OF       2,449
        PARTICIPATES_IN    117
        PRODUCES        4,282
-   [resolve] curation/: 4 of 4 activity synonyms applied, 5 decisions by hand
+   [resolve] curation/: 4 of 4 activity synonyms applied, 7 decisions by hand
    [resolve] the twelve rules pass on the merged tables
    [resolve] every identifier that disappeared has a ledger row
    [resolve] wrote data/processed/: nodes.csv, edges.csv, resolution_ledger.csv, resolve_summary.json
@@ -1183,9 +1261,10 @@ resolver test files:
    ```
 
    Two rules appear for the first time: `pubchem_numbers_differ`, for a
-   compound whose entries give different numbers (Step 4), and
+   compound MIBiG gives more than one number (Step 4), and
    `pubchem_name_search`, clue 3. `gene_name_in_uniprot` has gone from the
-   list because it found nothing to do.
+   list because it found nothing to do. The nodes line counts the five KEGG
+   maps no arrow reaches, which are left out (the follow-ups, below).
 
 5. **Build.**
 
@@ -1193,24 +1272,26 @@ resolver test files:
    python -m microbegraph.build_graph
    ```
 
-   It should end with `every count matches`, the ledger holding 25,741 rows.
+   It should end with `every count matches`, the ledger holding 25,775 rows.
 
 **What the name search did.** Before it, 1,102 of MIBiG's 3,842 compounds
-shared a node with a PubChem record; now 1,978 do. The grounds of every
-PubChem join contain a sentence naming the clue that decided it ("Confirmed by
-name." and so on; seven add a sentence about which formula is kept after it),
-so the ledger can count them:
+shared a node with a PubChem record; after it, 1,978 did, and after the
+follow-ups 1,975 do. The grounds of every PubChem join contain a sentence
+naming the clue that decided it ("Confirmed by name." and so on; seven add a
+sentence about which formula is kept after it), so the ledger can count them:
 
-| Clue | Joins before the name search | Joins now |
-|---|---|---|
-| 1. name | 780 | 785 |
-| 2. same structure | none (it needs the search) | 182 |
-| 3. name search | none | 928 |
-| 4. formula alone | 322 | 82 |
-| All four | 1,102 | 1,977 |
+| Clue | Before the name search | After the name search | After the follow-ups |
+|---|---|---|---|
+| 1. name | 780 | 785 | 785 |
+| 2. same structure | none (it needs the search) | 182 | 180 |
+| 3. name search | none | 928 | 927 |
+| 4. formula alone | 322 | 82 | 80 |
+| By hand, in the review file | none | none | 2 |
+| All | 1,102 | 1,977 | 1,974 |
 
-(The 1,978th, gladiostatin A, joins through the NPAtlas rule, which ties it to
-gladiofungin A.) The changes, one kind at a time:
+(Add gladiostatin A, which joins through the NPAtlas rule that ties it to
+gladiofungin A, for 1,978 and 1,975.) The changes the name search made, one
+kind at a time:
 
 * **Compounds with a formula but no number.** 866 of the 1,254 now share a
   node with a PubChem record: 865 found theirs by name, with a formula that
@@ -1226,7 +1307,7 @@ gladiofungin A.) The changes, one kind at a time:
   equally good records or, for capsular polysaccharide, entries that give
   three numbers for three different polysaccharides. The 82 joins left rest on
   the formula alone because PubChem's file doesn't have their names at all
-  (recipe R19).
+  (recipe R19). The follow-ups took two more apart, which leaves 80.
 * **Two MIBiG names, one molecule.** 11 nodes that held one MIBiG compound now
   hold two. For 10 of them PubChem files both names under one record, and most
   are long-known synonyms: natamycin and pimaricin, netropsin and congocidine,
@@ -1242,17 +1323,19 @@ gladiofungin A.) The changes, one kind at a time:
   as an open chain, while 419813, the number entry BGC0000899 gives, draws
   the ring the chain closes into in water, so their InChIKeys differ in the
   first block and clue 2 can't link them; the name decides.
-* **One join to look at again.** Ferrichrome joined 644246 through clue 2.
-  PubChem files the name under 121489511, and 644246 shares its first InChIKey
-  block, but 644246 is "[55Fe] Ferrichrome", the molecule built with
-  radioactive iron-55. The first block leaves isotopes out (section 2), so
-  clue 2 can't tell the two apart. Section 17 lists it.
+* **Ferrichrome.** It joined 644246 through clue 2. PubChem files the name
+  under 121489511, and 644246 shares its first InChIKey block, but 644246 is
+  "[55Fe] Ferrichrome", the molecule built with radioactive iron-55. The first
+  block leaves isotopes out (section 2), so clue 2 couldn't tell the two apart.
+  The follow-ups below settled it: ferrichrome now joins 121489511.
 
 **The sanity checks,** against Phase 4, with the middle column showing the
 graph this phase builds before the name search (the project's own first build,
-which used the PubChem snapshot from Phase 2):
+which used the PubChem snapshot from Phase 2), and the last one the build
+after the name search, before the follow-ups. What the follow-ups changed has
+[a table of its own](#the-follow-ups-after-the-run):
 
-| Number | Phase 4 | Before the name search | Phase 4b | Why it changed |
+| Number | Phase 4 | Before the name search | After the name search | Why it changed |
 |---|---|---|---|---|
 | Activity nodes | 74 | 70 | 70 | Four words folded |
 | Compound nodes | 3,836 | 3,837 | 3,826 | First, desosamine and methymycin became two nodes again (+1); 2-methylisoborneol left the bromine compound's record and lasalocid its sodium salt's, which changed nothing in the count. Then the name search: 910 MIBiG compound nodes became part of the record found under their name (-910), 941 PubChem records joined the graph and 78 left it (+863), and 36 joins on the formula alone came apart (+36) |
@@ -1266,23 +1349,131 @@ which used the PubChem snapshot from Phase 2):
 | Identifiers in | 70,613 | 70,550 | 71,901 | The 59 gene records and 4 removed proteins no longer arrive as identifiers of their own (-63). Then 1,337 more PubChem records (1,320 from round 3, and 17 from round 1's new numbers) and 14 more KEGG maps |
 | Ledger rows | 23,989 | 23,937 | 25,741 | No gene-name rows (-59), the new rules' rows (+9), and the changes above. Then 1,313 name-search rows, 30 for numbers the entries disagree on, 474 more left out, and a few fewer for the other PubChem rules (-13) |
 
-Check that the numbers add up, the way the Phase 4 guide did. 71,901
-identifiers went in; 22,828 were merged into other nodes (4 + 1,029 + 9 + 11 +
-928 + 1 + 20,626 + 220, the `merged` counts above), 7 old organism numbers
-moved and 827 entries were left out: 71,901 - 22,828 - 7 - 827 = 48,239 nodes.
-And by type: 70 + 3,826 + 37 + 5 + 2,437 + 2,451 + 6 + 53 + 39,354 = 48,239.
-The arrows add up the same way: 57,105 read, 66 combined and 25 dropped,
-57,105 - 66 - 25 = 57,014.
+Check that the numbers in the resolver's output above add up, the way the
+Phase 4 guide did. 71,915 identifiers went in; 22,825 were merged into other
+nodes (4 + 2 + 1,017 + 9 + 19 + 927 + 1 + 20,626 + 220, the `merged` counts),
+7 old organism numbers moved and 849 entries were left out:
+71,915 - 22,825 - 7 - 849 = 48,234 nodes. And by type: 70 + 3,826 + 37 + 5 +
+2,437 + 2,451 + 6 + 48 + 39,354 = 48,234. The arrows add up the same way:
+57,105 read, 66 combined and 25 dropped, 57,105 - 66 - 25 = 57,014.
+
+### The follow-ups, after the run
+
+![Four follow-ups, before and after: every PubChem number an entry lists becomes a candidate (17 compounds, round 1 asks about 1,209 numbers instead of 1,193); ferrichrome leaves PubChem's iron-55 record for its own, 121489511; the ledger sentence of 408 records only the name search found now says whose search it was; 5 KEGG maps no arrow reaches leave the graph, so 53 maps became 48](img/follow_ups.svg)
+
+Checking the run turned up four small things. They went on the roadmap's list
+for Phase 4b, and I settled them in the night of 12 to 13 October, before
+starting Phase 5 (the PubChem run above started at 23:07 UTC on the 12th).
+Three of them change the graph and the fourth the ledger's wording, so the
+outputs above already include them.
+
+1. **Every PubChem number an entry lists.** 17 entries list two PubChem
+   numbers for one compound (Step 4). The adapter used only the first, in its
+   own sorted order, which is a choice MIBiG's curators never made. Now both are
+   candidates, and the MIBiG tidy counts these compounds
+   (`compounds_with_several_pubchem_cids`). Round 1 asks about 16 more numbers
+   (1,193 became 1,209): 14 PubChem had never been asked about, and 2 that
+   round 3 had already described.
+2. **Ferrichrome and the iron-55 tracer.** Clue 2 no longer confirms a record built
+   with an unusual isotope when the name's record has none (Step 6).
+   Ferrichrome now joins 121489511, the record PubChem files its name under,
+   through clue 3, and 644246, "[55Fe] Ferrichrome", stays apart with the
+   reason in its ledger row.
+3. **A ledger sentence that says whose search it was.** 409 PubChem records
+   that only the name search found, and that no compound joined, had a
+   sentence with nothing in its brackets: "No MIBiG compound that gave this
+   number was confirmed as this molecule (; see their pubchem_number rows)".
+   No compound gave those numbers, so the sentence now names the compound
+   whose search found the record, and where that compound went instead:
+
+   ```
+   PubChem's name search found this record for 'tiacumicin B' (mg.compound:tiacumicin-b), which joined pubchem.compound:70678896 instead, so the entry describes nothing in the graph.
+   ```
+
+   There are 408 such records now. The sentence for a record MIBiG gives
+   ends in "see their rows" instead of "see their pubchem_number rows",
+   because a compound a person joined by hand has no `pubchem_number` rows.
+4. **Maps no arrow reaches.** Five KEGG maps had a single compound each, a
+   PubChem record no MIBiG compound joined. When that record was left out,
+   its arrow went with it, and the map stayed behind as a dot with no line to
+   anything (an **isolated node**). The KEGG tidy can't see this coming,
+   because which records get joined is only decided in the resolver, so the
+   resolver now takes such maps out, each with a `not_used` row that names its
+   compound. The five are Folate biosynthesis (map00790), Porphyrin
+   metabolism (map00860), Biosynthesis of unsaturated fatty acids (map01040),
+   Plant hormone signal transduction (map04075) and Sulfur relay system
+   (map04122).
+
+**What they changed, compound by compound.** Six compounds now have a
+different PubChem record or none, and two more needed a person:
+
+| Compound | Before the follow-ups | After | Why |
+|---|---|---|---|
+| ferrichrome | 644246, "[55Fe] Ferrichrome" (clue 2) | 121489511, "Ferrichrome" (clue 3) | The tracer check |
+| psymberin | 11456257, "Irciniastatin A" (clue 2) | 11692946, "Psymberin, (+)-" (clue 1) | Its entry also gives 11692946, which lists the name |
+| echinomycin | 6857732, "Echinomycin" (clue 3) | 458034 (clue 2, through 6857732) | Its entry also gives 458034, and a number MIBiG gives wins over one only the search found. The two records give different 3D detail, so this join is one of those the wider question at the end of this part is about |
+| valclavam | 126919 (clue 2) | none | Its entry also gives 441132; both reach clue 2 through 118701744, "Valclavam", so they tie |
+| corallopyronin | 136192878 (formula alone) | none | Its entry gives two numbers with different first InChIKey blocks (two forms of the molecule that differ in where one hydrogen sits), and a formula can't choose between them |
+| glidobactin | 6439229, "Glidobactin A" (formula alone) | none | Its entry also gives 6505332. With two numbers the formula alone doesn't count, and neither record lists "glidobactin" |
+| epoxomicin | 11226684, "Epoxomicin" (clue 1) | 11226684, by hand | Its entry also gives 9915668, and both records list the name: a tie, which I settled in the review file (Step 7) |
+| mureidomycin B | 101627952, "Mureidomycin B" (clue 1) | 101627952, by hand | The same: 3037873 lists the name too |
+
+Fusaridione A keeps its record, 91819845, now through clue 1, because MIBiG
+gives that number as well. Valclavam, corallopyronin and glidobactin wait for
+a person; [the roadmap](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file-)
+lists them.
+
+**The numbers, before and after:**
+
+| Number | Before the follow-ups | After | Why it changed |
+|---|---|---|---|
+| PubChem records read | 2,508 | 2,522 | The 14 numbers PubChem was asked about for the first time |
+| Identifiers in | 71,901 | 71,915 | The same 14 |
+| Pathway nodes | 53 | 48 | The five maps no arrow reaches |
+| Nodes | 48,239 | 48,234 | The same five. The compounds that moved don't change the count: each MIBiG compound is one node either way |
+| Left out | 827 | 849 | The 5 maps; 13 of the 14 new records (only 458034 joins); 6 records that lost their compound (644246, 11456257, 6857732, 126919, 136192878, 6439229); minus 2 that gained one (121489511, 11692946) |
+| Ledger rows | 25,741 | 25,775 | 22 more left out, 2 decisions by hand, and 10 more PubChem rows (`pubchem_numbers_differ` 30 to 57, `pubchem_number_confirmed` 1,145 to 1,130, `pubchem_name_search` 1,313 to 1,311) |
+| MIBiG compounds with a PubChem record | 1,978 | 1,975 | Valclavam, corallopyronin and glidobactin |
+| Joins on the formula alone | 82 | 80 | Corallopyronin and glidobactin |
+| Decisions by hand | 5 | 7 | Epoxomicin and mureidomycin B |
+| Arrows | 57,014 | 57,014 | Unchanged: the five maps' arrows had already been dropped, and the compounds that moved kept theirs |
+
+**If you built this phase before the follow-ups,** five commands bring your
+graph up to date. The PubChem fetch sends 54 requests, so run it once, at a
+quiet moment, and not straight after another PubChem fetch:
+
+```bash
+python -m microbegraph.fetch --tidy-only --source mibig     # every number an entry lists
+python -m microbegraph.fetch --source pubchem               # 54 requests; the names file is searched again
+python -m microbegraph.fetch --tidy-only --source kegg
+python -m microbegraph.resolve
+python -m microbegraph.build_graph
+```
+
+The names file is searched again (a few minutes, on your computer, sending
+PubChem nothing), because search answers are only carried over from a fetch
+that stopped halfway and asked exactly the same list. The fetch before it
+finished, so every later fetch reads the file again.
+
+**A wider question, for later.** While checking echinomycin I looked at all
+180 joins clue 2 now makes. In 137 of them both records give 3D detail, but
+different detail: their second InChIKey blocks differ, and neither is the flat
+drawing. Most will be one molecule drawn more or less completely, but some may
+be two stereoisomers, which clue 2 can't tell apart. Telling them apart means
+comparing the 3D details themselves, chiral centre by chiral centre, and
+[the roadmap](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file-)
+plans that check before Phase 5.
 
 ---
 
 ## 15. Step 11. Pictures, the Handbook and the records
 
-**The pictures.** Four new diagrams drawn by `docs/img/make_illustrations.py`:
+**The pictures.** Five new diagrams drawn by `docs/img/make_illustrations.py`:
 the gaps and what closed them (`gaps_closed.svg`, in section 1), one CDS feature
-part by part (`genbank_record.svg`), the four clues (`clue_ladder.svg`), and a
-decision by hand column by column (`review_row.svg`). A new page,
-`docs/interactive/resolution_cases.html`, walks through six real cases clue by
+part by part (`genbank_record.svg`), the four clues (`clue_ladder.svg`), a
+decision by hand column by column (`review_row.svg`), and the four follow-ups
+before and after (`follow_ups.svg`, in Step 10). A new page,
+`docs/interactive/resolution_cases.html`, walks through seven real cases clue by
 clue. The journey map now shows Phase 4b done.
 
 **At the end of this phase,** as at the end of every phase:
@@ -1295,7 +1486,7 @@ clue. The journey map now shows Phase 4b done.
    python docs/interactive/make_interactive.py
    ```
 
-   The first prints `Done: 31 figures in docs/img/`, the second names four
+   The first prints `Done: 32 figures in docs/img/`, the second names four
    pages.
 3. In `docs/HANDBOOK.md`: Stage 7b is ✅ and Stage 8 (Phase 5) is ⏳, with the
    version, date and repository state at the top updated, and a change-log line.
@@ -1325,16 +1516,14 @@ because of a decision by hand. What does change:
 
 | Gap | How big | What happens to it |
 |---|---|---|
-| Joins on the formula alone | 82 (recipe R19), down from 322 before the name search | PubChem's names file doesn't have these names at all, so the name search can't confirm or refute them. They need a second, independent witness; [the roadmap](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file-) plans NPAtlas, whose records tie a name to a PubChem number independently of MIBiG |
-| MIBiG compounds with no PubChem record | 1,864 of 3,842 stand alone: 1,402 with no number and no formula, 299 with a formula but no record found by name (297 names PubChem's file doesn't have, and 2 it files under more than 10 records), and the 163 in the next two rows | They stay `mg.compound:` nodes. Without a formula, a name match could never be confirmed; NPAtlas is the next place to look |
-| Names PubChem files under several equally good records | 34 compounds, among them cercosporin, macbecin and tirandamycin | Choosing one would be a guess, so each stays apart, with every record named in the ledger. A person can settle each one in the review file |
-| Compounds the clues refused | 129. In 99 a formula disagrees, as for butirosin (MIBiG gives its sulfate salt's number and formula) and epothilone (MIBiG gives epothilone B's number and formula under the general name); in 25 MIBiG gives a number but no formula to check it with (3-decalonectrin, recipe R8) | Each is a short read for a person, and the review file is the place to record it |
-| Ferrichrome joined to a radioactive record | 1: ferrichrome is part of PubChem's 644246, "[55Fe] Ferrichrome", through clue 2 | Clue 2 compares the first block of the InChIKey, which leaves isotopes out, so it can't tell 644246 from 121489511, the record PubChem files the name under. [The roadmap](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file-) settles it before Phase 5 |
+| Joins on the formula alone | 80 (recipe R19), down from 322 before the name search | PubChem's names file doesn't have these names at all, so the name search can't confirm or refute them. They need a second, independent witness; [the roadmap](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file-) plans NPAtlas, whose records tie a name to a PubChem number independently of MIBiG |
+| MIBiG compounds with no PubChem record | 1,867 of 3,842 stand alone: 1,402 with no number and no formula, 299 with a formula but no record found by name (297 names PubChem's file doesn't have, and 2 it files under more than 10 records), and the 166 in the next two rows | They stay `mg.compound:` nodes. Without a formula, a name match could never be confirmed; NPAtlas is the next place to look |
+| Ties between equally good records | 35 compounds: 33 whose name PubChem files under several equally good records (cercosporin, macbecin, tirandamycin...), and 2 whose own PubChem numbers tie: kosinostatin (two entries, two numbers) and valclavam (one entry, two numbers) | Choosing one would be a guess, so each stays apart, with every record named in the ledger. A person can settle each one in the review file, as epoxomicin and mureidomycin B were (Step 7) |
+| Compounds the clues refused | 131. In 99 a formula disagrees, as for butirosin (MIBiG gives its sulfate salt's number and formula) and epothilone (MIBiG gives epothilone B's number and formula under the general name); in 25 MIBiG gives a number but no formula to check it with (3-decalonectrin, recipe R8). Corallopyronin and glidobactin are two of the other 7: each entry gives two numbers, and no name confirms either | Each is a short read for a person, and the review file is the place to record it |
+| Same-structure joins with different 3D detail | 137 of the 180 joins clue 2 makes (echinomycin's among them) | Clue 2 trusts the first InChIKey block, which can't tell two stereoisomers apart. [The roadmap](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file-) plans a check that compares the 3D details before Phase 5 |
 | Two MIBiG names on one PubChem record | 11 nodes gained a second MIBiG name (16 nodes now hold two) | Most are long-known synonyms (natamycin and pimaricin, netropsin and congocidine). Dixiamycin A and B are now one node too, because PubChem files both names under one record, and pyrrolomycin, a general name, joined pyrrolomycin A's record on the formula alone; whether they should is a person's call |
-| KEGG maps with no arrow | 5 of 53 | Their only compounds are PubChem records no MIBiG compound joined, so their arrows were dropped and the maps stay as lone nodes. [The roadmap](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file-) drops them with the follow-ups before Phase 5 |
 | Protein numbers with tied UniProt entries | 40 (42 in Phase 4: CBF82293.1 is settled by hand, and NP_001140431.1 was one of the maize proteins the curators removed) | Each needs a person's reading; the review file is the place |
 | Gene names for proteins without a gene record | 19,759 of the 46,987 CDS in the GenBank file carry a `/gene`, most for proteins MIBiG has no gene record for | Not used yet; [the roadmap](ROADMAP.md#phase-5-graph-analytics) adds them as protein labels in Phase 5, where readable names matter for the network pictures |
-| A second PubChem number in the same entry | 17 compounds in active entries list two PubChem numbers in one entry (ferrichrome in BGC0000900 lists 644246 and 90658043; echinomycin, lincomycin...). The MIBiG adapter makes only the first, in sorted order, the compound's `pubchem_cid`; the other stays in `database_ids` | Found while checking this guide. [The roadmap](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file-) makes every number an entry lists a candidate. It changes round 1's list, so the next PubChem fetch asks rounds 1 and 3 again (about 52 requests in all): best run a day after a full PubChem fetch, not the same day |
 
 ---
 
@@ -1351,6 +1540,8 @@ because of a decision by hand. What does change:
 | The probe says `WARNING: 1 unfinished fetch folder(s) in data/raw/pubchem/: ...` | A fetch was stopped by hand (Ctrl+C, or the window closed) before it finished, so it never wrote its `manifest.json` | Nothing to repair: fetch and tidy ignore a folder without a manifest, and the next run carries over from the last finished one. Delete the folder or keep it as a record. Next time, let a refused fetch end by itself (about three minutes): it then keeps what arrived |
 | `No space left on device` while the PubChem fetch downloads `CID-Synonym-filtered.gz` | The names file needs about 1 GB | Free some space and run the same command; the half-finished download was thrown away, so it starts the file again |
 | `data/raw/pubchem/CID-Synonym-filtered.gz, line N, isn't a number, a tab and a name (...)` | PubChem changed the file's layout, or the file is damaged | Look at what the message quotes. If the file is damaged, move it out of `data/raw/pubchem/` and run the fetch again; if PubChem changed the layout, `src/microbegraph/sources/pubchem_names.py` has to learn the new one |
+| The PubChem fetch searches the names file again, although the file hasn't changed | Search answers are only carried over from a fetch that stopped halfway and asked exactly the same list. After a fetch that finished, or when round 1's list changed (a new number in MIBiG's tables or in the review file), the file is searched again | Nothing to fix: the search takes a few minutes on your computer and sends PubChem nothing |
+| The resolver says `(... left out, 5 of them maps no arrow reaches)` | Not an error: KEGG maps whose only compounds no MIBiG compound joined (the follow-ups in Step 10) | Nothing to fix. Each map has a `not_used` row in the ledger: `python -m microbegraph.query "SELECT identifier, grounds FROM ledger WHERE identifier LIKE 'kegg.pathway:%' ORDER BY identifier"` |
 | You want names PubChem added after your download | The locker keeps the names file it downloaded first (the probe shows the date of PubChem's copy) | Move the old file out of `data/raw/pubchem/` and run the fetch again on a later day (on the same day, it reuses that day's finished snapshot): it downloads the new file and searches every name again |
 | `... isn't on this computer yet, so this survey would send 541 name searches ...` | Step 2's survey, run before the PubChem fetch | Run the PubChem fetch first (Step 10), or skip the survey; `--web` asks PubChem's web service anyway |
 | `curation/resolution_decisions.csv has N problem(s): line 4: ...` | A row in the review file is incomplete or malformed | Fix the line it names. Columns, allowed values and an example are in [`curation/README.md`](../curation/README.md) |
@@ -1382,7 +1573,8 @@ You have finished this phase when you can answer these without scrolling up:
 10. Why did the import fix move code into a new file rather than reorder the
     imports?
 11. Why does the fetch download a 931 MB file instead of asking PubChem about
-    1,655 names?
+    1,653 names?
+12. Why doesn't clue 2 accept ferrichrome's PubChem number 644246 any more?
 
 <details>
 <summary>Answers (open after you've tried)</summary>
@@ -1414,6 +1606,11 @@ You have finished this phase when you can answer these without scrolling up:
     their pace, and went on refusing for hours. The file costs one request, can be
     searched as often as you like, and gave the same answers as the web search
     on all 673 names both had answered.
+12. 644246 is "[55Fe] Ferrichrome", built with radioactive iron-55 (its SMILES
+    shows `[55Fe+3]`): a laboratory tracer, not the molecule a microbe makes.
+    The first InChIKey block can't see isotopes, so clue 2 now checks the SMILES
+    of both records first, and the record PubChem files the name under,
+    121489511, joins instead.
 
 </details>
 
@@ -1431,7 +1628,7 @@ line.
 
 ```bash
 git switch develop
-python docs/img/make_illustrations.py          # must end "Done: 31 figures in docs/img/"
+python docs/img/make_illustrations.py          # must end "Done: 32 figures in docs/img/"
 python docs/interactive/make_interactive.py
 git add -A                    # stage first, so the gate can see the new files
 
@@ -1454,9 +1651,37 @@ git switch develop
 Then open the **Actions** tab on GitHub and wait for the green ticks (about five
 minutes).
 
+**The follow-ups** (Step 10) went into a commit of their own, after the phase
+commit and the names-file commit. If you're building the phase from the
+repository as it is now, your phase commit already holds them. The project's
+own commit was:
+
+```bash
+git switch develop
+python docs/img/make_illustrations.py          # must end "Done: 32 figures in docs/img/"
+python docs/interactive/make_interactive.py
+git add -A
+
+git status --short            # .env must NOT be listed, nor anything under data/
+pytest                        # must end with "361 passed"
+ruff check .                  # must say "All checks passed!"
+./check-public-safe.sh        # must print "SAFE TO PUSH"
+                              # Windows: bash check-public-safe.sh
+
+git commit -m "fix: settle the Phase 4b follow-ups" -m "Every PubChem number a MIBiG entry lists is now a candidate, clue 2 no longer confirms a record built with an unusual isotope (ferrichrome joins its own record), the ledger says whose name search found a record, KEGG maps no arrow reaches are left out, and two ties are settled in the review file; with the real numbers in the guide, cookbook, Handbook, roadmap and pictures."
+git push origin develop develop:beta develop:master
+## --tags is optional, only when a release tag was created (not here)
+
+# bring local master in step with the remote master just updated
+git switch master
+git pull --ff-only origin master
+git switch develop
+```
+
 ---
 
-**Next:** the PubChem name search (Step 10, item 2) when PubChem lets your
-computer back in, then Phase 5, `07-graph-analytics.md`: evidence paths from any
+**Next:** the check of same-structure joins with different 3D detail
+([the roadmap](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file-),
+"Handed on"), then Phase 5, `07-graph-analytics.md`: evidence paths from any
 crop back to candidate microbes, hubs, bridges and communities. The plan is in
 the [Handbook, Stage 8](HANDBOOK.md#stage-8-graph-analytics-phase-5).

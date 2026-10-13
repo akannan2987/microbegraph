@@ -1805,16 +1805,16 @@ def gaps_closed() -> str:
          "4 of 4 removed", "22 removals in all, none left", "done"),
         ("275 values MIBiG's entries disagree on", "only the first one was kept",
          "every value, with its entry", "<property>_by_entry", "kept",
-         "278 kept, on 120 nodes", "showed why two joins were wrong", "done"),
+         "every value kept, on 135 nodes", "showed why two joins were wrong", "done"),
         ("2 wrong joins", "2-methylisoborneol, desosamine",
          "the review file", "a reason and a source on each row", "person",
-         "kept apart, 5 decisions", "recorded as reviewed_by_hand", "done"),
+         "kept apart by hand", "recorded as reviewed_by_hand", "done"),
         ("activity words meaning the same", "antitumor, anticancer...",
          "activity_synonyms.csv", "4 rows, each with a source", "person",
          "74 activities became 70", "the old words kept as names", "done"),
         ("325 joins on the formula alone", "and 2,656 compounds with no number",
          "PubChem's name search", "in PubChem's names file, on your computer", "evidence",
-         "322 became 82", "865 compounds found by name", "partial"),
+         "322 became 82", "80 after the follow-ups; 865 found by name", "partial"),
         ("42 protein numbers with tied entries", "UniProt couldn't choose one",
          "the review file", "one number at a time", "person",
          "1 decided, 1 removed", "40 still open", "partial"),
@@ -1843,17 +1843,16 @@ def gaps_closed() -> str:
     parts.append(t(32, y + 18, "Also fixed: a circular import (two files that each needed the other "
                    "to load). The shared table helpers moved to src/microbegraph/tables.py.",
                    size=12.5, fill=INK2))
-    parts.append(t(32, y + 40, "Counts from the build of 2026-10-12, after PubChem's name search "
-                   "in its names file.",
-                   size=12.5, fill=MUTED))
+    parts.append(t(32, y + 40, "Counts from the build after the Phase 4b follow-ups (the "
+                   "PubChem run of 2026-10-12 at 23:07 UTC).", size=12.5, fill=MUTED))
     return svg(1200, int(y + 64), "".join(parts), "Closing the gaps Phase 4 left",
                "Seven gaps Phase 4 left and what closed each one. MIBiG's GenBank file placed all "
                "59 gene records named only by a gene name, and the 4 genes the curators removed. "
-               "Every value MIBiG's entries disagree on is now kept with its entry: 278 on 120 "
+               "Every value MIBiG's entries disagree on is now kept with its entry, on 135 "
                "nodes. The review file keeps two wrong joins apart with five decisions, each with "
                "a source. Four activity words are folded, so 74 activities became 70. PubChem's "
                "name search, done in PubChem's names file, cut the joins on the formula alone "
-               "from 322 to 82 and found 865 compounds with no number by name. Of 42 protein numbers with tied UniProt "
+               "from 322 to 82 (80 after the follow-ups) and found 865 compounds with no number by name. Of 42 protein numbers with tied UniProt "
                "entries, one is decided by hand, one left with a removed protein, and 40 are "
                "still open. The circular import is fixed.")
 
@@ -1941,16 +1940,16 @@ def clue_ladder() -> str:
     rungs = [
         ("1", "name", "MIBiG gives the number, and PubChem lists MIBiG's name under it",
          "(its title or any of its names), or the name search returns that very number",
-         "785 joins on 2026-10-12", "erythromycin A and CID 12560"),
+         "785 joins", "erythromycin A and CID 12560"),
         ("2", "same structure", "MIBiG gives the number; PubChem files the name under another",
          "record with the same first InChIKey block: the same molecule, drawn another way",
-         "182 joins on 2026-10-12", "with or without its 3D shape"),
+         "180 joins", "with or without its 3D shape"),
         ("3", "name search", "MIBiG gives no number that passes 1 or 2, but the name search finds",
          "the name under exactly one number whose formula agrees with MIBiG's",
-         "928 joins on 2026-10-12", "for the 1,254 with a formula, no number"),
+         "927 joins", "for the 1,254 with a formula, no number"),
         ("4", "formula alone", "MIBiG gives one number and the formulas agree; nothing above",
          "points elsewhere. The weakest clue, so two things switch it off:",
-         "82 joins on 2026-10-12", "R19 lists them"),
+         "80 joins", "R19 lists them"),
     ]
     y = 98
     for k, (num, name, l1, l2, count, example) in enumerate(rungs):
@@ -1977,6 +1976,8 @@ def clue_ladder() -> str:
         parts.append(t(134, yy + 38, example, size=12, fill=INK2))
     y += 2 * 56 + 16
     notes = ["Before any clue: a person's decision in the review file wins, and says so.",
+             "Clue 2 skips a record built with an unusual isotope, a tracer such as ferrichrome's "
+             "[55Fe] record.",
              "Two candidates equally strong and different: kept apart, both named in the ledger.",
              "A number several MIBiG compounds share: clue 1 only (isomers share formulas).",
              "The ledger names the clue that decided: \"Confirmed by name.\", \"Confirmed by the "
@@ -1984,11 +1985,15 @@ def clue_ladder() -> str:
     for k, note in enumerate(notes):
         parts.append(f'<circle cx="40" cy="{y + k * 22 - 4}" r="3" fill="{INK2}"/>')
         parts.append(t(52, y + k * 22, note, size=12.5, fill=INK2))
-    return svg(1060, int(y + 4 * 22 + 12), "".join(parts), "Four clues for a compound's PubChem number",
+    parts.append(t(32, y + len(notes) * 22 + 4, "Counts from the build after the Phase 4b "
+                   "follow-ups.", size=12, fill=MUTED))
+    return svg(1060, int(y + len(notes) * 22 + 22), "".join(parts),
+               "Four clues for a compound's PubChem number",
                "Four clues, strongest first. 1, name: PubChem lists MIBiG's name under the number, "
                "785 joins. 2, same structure: the name is filed under another record with the same "
-               "first InChIKey block, 182 joins. 3, name search: the name is found under exactly one "
-               "number with an agreeing formula, 928 joins. 4, formula alone: 82 joins, switched off when the name "
+               "first InChIKey block, 180 joins, but not for a tracer built with an unusual "
+               "isotope. 3, name search: the name is found under exactly one "
+               "number with an agreeing formula, 927 joins. 4, formula alone: 80 joins, switched off when the name "
                "search points at a different molecule or MIBiG's entries disagree about the "
                "formula, as for 2-methylisoborneol, ferrichrome and lasalocid. A person's "
                "decision comes first; ties stay apart; shared numbers need clue 1.")
@@ -2053,6 +2058,99 @@ def review_row() -> str:
                "source.")
 
 
+def follow_ups() -> str:
+    """Phase 4b follow-ups: four small changes after the real run, before and after."""
+    aqua, orange, grey = LAYER["metabolomics"], LAYER["proteomics"], LAYER["context"]
+    parts = [t(32, 46, "Four follow-ups after the real run", size=22, weight=700),
+             t(32, 70, "Small things found while checking Phase 4b's run, settled before Phase 5. "
+               "Three changed the graph and one the ledger's wording.", size=14,
+               fill=INK2)]
+    parts.append(t(300, 104, "BEFORE", size=12, weight=700, fill=MUTED))
+    parts.append(t(760, 104, "AFTER", size=12, weight=700, fill=MUTED))
+    rows = [
+        ("1", "Every number an entry lists", "17 entries list two",
+         ("BGC0000900 lists 644246 and 90658043", False),
+         ("only the first, after sorting, was read", False),
+         ("both numbers are candidates", False),
+         ("round 1: 1,193 numbers became 1,209", False), aqua, "compound"),
+        ("2", "A tracer isn't the compound", "ferrichrome",
+         ("joined 644246, \"[55Fe] Ferrichrome\"", False),
+         ("a laboratory tracer with radioactive iron", False),
+         ("joins 121489511, \"Ferrichrome\"", False),
+         ("clue 2 reads [55Fe+3] in the SMILES", True), aqua, "compound"),
+        ("3", "Whose search was it?", "the ledger's sentence",
+         ("(; see their pubchem_number rows)", True),
+         ("409 records, nothing in the brackets", False),
+         ("found this record for 'tiacumicin B'", True),
+         ("names the compound and where it went", False), orange, "ledger"),
+        ("4", "Maps no arrow reaches", "KEGG maps",
+         ("5 maps stayed as lone dots", False),
+         ("their only compound was left out", False),
+         ("left out, each with a ledger row", False),
+         ("Pathway nodes: 53 became 48", False), grey, "map"),
+    ]
+    y = 116
+    for num, title, sub, b1, b2, a1, a2, colour, kind in rows:
+        cy = y + 38
+        parts.append(f'<circle cx="52" cy="{cy}" r="16" fill="{colour}"/>')
+        parts.append(t(52, cy + 5, num, size=15, weight=700, fill=SURFACE, anchor="middle"))
+        parts.append(t(80, cy - 4, title, size=15, weight=700))
+        parts.append(t(80, cy + 16, sub, size=12.5, fill=INK2))
+        # before
+        parts.append(rect(300, y, 400, 76, fill=SURFACE, stroke=BASE, rx=10, sw=1.5))
+        parts.append(cross_mark(322, cy, 9))
+        for k, (text, mono) in enumerate((b1, b2)):
+            parts.append(t(342, y + 30 + k * 24, text, size=12.5 if mono else 13,
+                           weight=600 if k == 0 else 400, fill=INK if k == 0 else INK2,
+                           family=MONO if mono else FONT))
+        if kind == "map":           # a lone dot: a node with no line to anything
+            parts.append(f'<circle cx="672" cy="{cy}" r="9" fill="{SURFACE}" stroke="{grey}" '
+                         f'stroke-width="2"/>')
+        parts.append(line(706, cy, 752, cy, color=INK2, sw=2))
+        # after
+        parts.append(rect(760, y, 408, 76, fill=SURFACE, stroke=colour, rx=10, sw=2))
+        parts.append(check_mark(782, cy, 9))
+        for k, (text, mono) in enumerate((a1, a2)):
+            parts.append(t(802, y + 30 + k * 24, text, size=12.5 if mono else 13,
+                           weight=600 if k == 0 else 400, fill=INK if k == 0 else INK2,
+                           family=MONO if mono else FONT))
+        y += 96
+    # what moved
+    y += 8
+    parts.append(t(32, y, "WHAT IT CHANGED, COMPOUND BY COMPOUND", size=12, weight=700, fill=MUTED))
+    groups = [("moved to another record", aqua,
+               "ferrichrome to 121489511, psymberin to 11692946, echinomycin to 458034"),
+              ("waits for a person", MUTED,
+               "valclavam (two numbers tie), corallopyronin and glidobactin (no name confirms)"),
+              ("settled by hand", orange,
+               "epoxomicin (11226684) and mureidomycin B (101627952): two records with the name")]
+    for k, (label, colour, text) in enumerate(groups):
+        yy = y + 16 + k * 34
+        parts.append(chip(32, yy, label, colour, w=200))
+        parts.append(t(248, yy + 16, text, size=13, fill=INK2))
+    y += 16 + 3 * 34 + 14
+    parts.append(t(32, y, "Compounds with a PubChem record: 1,978 became 1,975. Joins on the "
+                   "formula alone: 82 became 80. Decisions by hand: 5 became 7.", size=12.5,
+                   fill=INK2))
+    parts.append(t(32, y + 22, "Counts from the build after the follow-ups (the PubChem run of "
+                   "2026-10-12 at 23:07 UTC). Details in docs/06b-closing-the-gaps.md, Step 10.",
+                   size=12.5, fill=MUTED))
+    return svg(1200, int(y + 46), "".join(parts), "Four follow-ups after the real run",
+               "Four small changes after Phase 4b's real run, before and after. 1: 17 MIBiG "
+               "entries list two PubChem numbers for one compound, such as BGC0000900 with "
+               "644246 and 90658043; only the first was read, and now both are candidates, so "
+               "round 1 asks about 1,209 numbers instead of 1,193. 2: ferrichrome was joined to "
+               "644246, a laboratory tracer with radioactive iron-55; clue 2 now reads the "
+               "isotope label in the SMILES, and ferrichrome joins 121489511. 3: 409 ledger "
+               "sentences had nothing in their brackets; they now name the compound whose name "
+               "search found the record and where it went. 4: 5 KEGG maps stayed as lone dots; "
+               "they are left out with a ledger row, so Pathway nodes went from 53 to 48. "
+               "Ferrichrome, psymberin and echinomycin moved to another record; valclavam, "
+               "corallopyronin and glidobactin wait for a person; epoxomicin and mureidomycin B "
+               "were settled by hand. Compounds with a PubChem record went from 1,978 to 1,975, "
+               "joins on the formula alone from 82 to 80, decisions by hand from 5 to 7.")
+
+
 FIGURES = {
     "logo_microbegraph.svg": logo,
     "cover_microbegraph.svg": cover,
@@ -2085,6 +2183,7 @@ FIGURES = {
     "genbank_record.svg": genbank_record,
     "clue_ladder.svg": clue_ladder,
     "review_row.svg": review_row,
+    "follow_ups.svg": follow_ups,
 }
 
 

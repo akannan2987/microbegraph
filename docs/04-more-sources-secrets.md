@@ -628,7 +628,7 @@ and from joining them to MIBiG's compounds (Phase 4), which is what
 `mibig_compound_ids` is kept for.
 
 > **From Phase 4b** the adapter asks in three rounds: these numbers (plus every
-> second number MIBiG's entries give, and any number in the review file), then
+> other number MIBiG gives, and any number in the review file), then
 > a name search for MIBiG names their numbers don't list (and for compounds
 > with no number but a formula), then the numbers that
 > search found. The nodes gain `found_by_name`, `names_matching_mibig` and

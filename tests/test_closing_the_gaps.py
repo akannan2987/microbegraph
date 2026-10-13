@@ -23,7 +23,7 @@ from conftest import build_archive, genbank_file_bytes, read_rows
 from microbegraph.resolution.activities import read_synonyms
 from microbegraph.resolution.groups import Groups
 from microbegraph.resolution.reviewed import read_decisions
-from microbegraph.resolve import resolve
+from microbegraph.resolve import report, resolve
 from microbegraph.sources.base import EDGE_COLUMNS, NODE_COLUMNS, SourceError, write_table
 from microbegraph.sources.mibig import GENBANK_FILE
 from microbegraph.sources.mibig_genbank import find_in_genbank, read_cds
@@ -469,6 +469,141 @@ def test_mibig_keeps_every_value_when_entries_disagree(make_adapter, tmp_path):
     assert props["formula_by_entry"] == "BGC0000001: C1|BGC0000002: C2"
     assert props["pubchem_cid_by_entry"] == "BGC0000001: 7|BGC0000002: 8"
     assert builder.counts["property_conflicts"] == 2
+
+
+# ------------------------------------------------------------- the Phase 4b follow-ups
+def test_mibig_lists_every_number_one_entry_gives():
+    """Ferrichrome's shape: one entry, two PubChem numbers for one compound."""
+    from microbegraph.sources.mibig import _GraphBuilder
+    builder = _GraphBuilder(DATE)
+    builder.add_entry({"status": "active", "taxonomy": {"name": "x", "ncbiTaxId": 1},
+                       "loci": [], "accession": "BGC0000900",
+                       "compounds": [{"name": "Ferri", "formula": "C27H42FeN9O12",
+                                      "databaseIds": ["pubchem:90658043", "pubchem:644246"]}]})
+    [row] = [r for r in builder.node_rows() if r["node_id"] == "mg.compound:ferri"]
+    props = json.loads(row["properties"])
+    assert props["pubchem_cid"] == "644246"                # the first, as before
+    assert props["pubchem_cid_by_entry"] == "BGC0000900: 644246|BGC0000900: 90658043"
+    assert builder.counts["compounds_with_several_pubchem_cids"] == 1
+    assert builder.counts["property_conflicts"] == 0       # nothing was overwritten
+
+
+def follow_up_staging(folder: Path) -> Path:
+    """
+    The four follow-ups, made up:
+      ferri   one entry gives two numbers; one is an iron-55 record, and PubChem
+              files the name under the ordinary record of the same structure
+      omega   joins its own number by name; the name search also hit a
+              look-alike, which is left out
+      psi     no number; the name search finds one record, with a different
+              formula, so nothing joins and that record is left out
+      two KEGG maps: one holds omega's record, the other only the look-alike
+    """
+    folder.mkdir(parents=True, exist_ok=True)
+    mibig = [
+        node("mibig:BGC0000001", "GeneCluster", "test BGC", "mibig"),
+        compound("ferri", "ferri", pubchem_cid="20", formula="C27H42FeN9O12",
+                 pubchem_cid_by_entry="BGC0000001: 20|BGC0000001: 22"),
+        compound("omega", "omega", pubchem_cid="31", formula="C8H8"),
+        compound("psi", "psi", formula="C2H2"),
+    ]
+    mibig_edges = [edge("mibig:BGC0000001", r["node_id"], "PRODUCES")
+                   for r in mibig if r["node_id"].startswith("mg.compound:")]
+    pubchem_rows = [
+        pubchem(20, "[55Fe] Ferri", "C27H42FeN9O12", "FFFFFFFFFFFFFF-AAAAAAAAAA-N",
+                smiles="CC(=O)N[O-].[55Fe+3]", mibig_compound_ids="mg.compound:ferri"),
+        pubchem(21, "Ferri", "C27H42FeN9O12", "FFFFFFFFFFFFFF-BBBBBBBBBB-N",
+                smiles="CC(=O)N[O-].[Fe+3]", found_by_name="mg.compound:ferri"),
+        pubchem(22, "an unrelated record", "C5H5", "QQQQQQQQQQQQQQ-QQQQQQQQQQ-N",
+                mibig_compound_ids="mg.compound:ferri"),
+        pubchem(30, "an omega look-alike", "C9H9", "RRRRRRRRRRRRRR-RRRRRRRRRR-N",
+                found_by_name="mg.compound:omega"),
+        pubchem(31, "Omega", "C8H8", "SSSSSSSSSSSSSS-SSSSSSSSSS-N",
+                mibig_compound_ids="mg.compound:omega"),
+        pubchem(32, "Psi", "C3H3", "TTTTTTTTTTTTTT-TTTTTTTTTT-N", found_by_name="mg.compound:psi"),
+    ]
+    kegg = [node("kegg.pathway:map00001", "Pathway", "A map with omega", "kegg"),
+            node("kegg.pathway:map00002", "Pathway", "A map with the look-alike", "kegg")]
+    kegg_edges = [edge("pubchem.compound:31", "kegg.pathway:map00001", "PARTICIPATES_IN",
+                       source="kegg", record="C00031"),
+                  edge("pubchem.compound:30", "kegg.pathway:map00002", "PARTICIPATES_IN",
+                       source="kegg", record="C00030")]
+    tables = {s: ([], []) for s in SOURCES}
+    tables["mibig"] = (mibig, mibig_edges)
+    tables["pubchem"] = (pubchem_rows, [])
+    tables["kegg"] = (kegg, kegg_edges)
+    for source, (nodes, edges) in tables.items():
+        write_table(folder / f"{source}_nodes.csv", NODE_COLUMNS, nodes)
+        write_table(folder / f"{source}_edges.csv", EDGE_COLUMNS, edges)
+        summary = {"source_version": "test", "retrieved_at": DATE}
+        if source == "pubchem":
+            summary["cids_not_in_pubchem"] = []
+            summary["name_search_complete"] = True
+        (folder / f"{source}_summary.json").write_text(json.dumps(summary), encoding="utf-8")
+    return folder
+
+
+@pytest.fixture
+def follow_up(tmp_path):
+    staging = follow_up_staging(tmp_path / "staging")
+    result = resolve(staging, tmp_path / "out", tmp_path / "no-curation")
+    return result, {r["node_id"]: r for r in read_rows(result.nodes_path)}, \
+        read_rows(result.ledger_path)
+
+
+def _row(ledger: list[dict], identifier: str, compared_with: str = "") -> dict:
+    [found] = [r for r in ledger if r["identifier"] == identifier
+               and r["compared_with"] == compared_with]
+    return found
+
+
+def test_an_isotope_labelled_record_is_not_the_compound(follow_up):
+    _, nodes, ledger = follow_up
+    tracer = _row(ledger, "mg.compound:ferri", "pubchem.compound:20")
+    assert (tracer["rule"], tracer["decision"]) == ("pubchem_numbers_differ", "kept_apart")
+    assert "built with the isotope 55Fe" in tracer["grounds"]
+    assert "CID 21 is better supported" in tracer["grounds"]
+    ordinary = _row(ledger, "mg.compound:ferri", "pubchem.compound:21")
+    assert (ordinary["rule"], ordinary["decision"]) == ("pubchem_name_search", "merged")
+    assert nodes["pubchem.compound:21"]["name"] == "ferri"
+    assert "pubchem.compound:20" not in nodes
+
+
+def test_two_numbers_from_one_entry_are_described_as_such(follow_up):
+    _, _, ledger = follow_up
+    row = _row(ledger, "mg.compound:ferri", "pubchem.compound:22")
+    assert row["grounds"].startswith(
+        "MIBiG gives this compound more than one number: CID 22 (BGC0000001) and "
+        "20 (BGC0000001). ")
+    assert "disagree" not in row["grounds"]
+
+
+def test_a_record_only_the_name_search_found_says_whose_search_it_was(follow_up):
+    _, _, ledger = follow_up
+    joined_elsewhere = _row(ledger, "pubchem.compound:30")
+    assert (joined_elsewhere["rule"], joined_elsewhere["decision"]) == ("not_used", "left_out")
+    assert joined_elsewhere["grounds"] == (
+        "PubChem's name search found this record for 'omega' (mg.compound:omega), which "
+        "joined pubchem.compound:31 instead, so the entry describes nothing in the graph.")
+    not_joined = _row(ledger, "pubchem.compound:32")
+    assert "for 'psi' (mg.compound:psi), which no rule joined to it" in not_joined["grounds"]
+    assert "(; see" not in joined_elsewhere["grounds"] + not_joined["grounds"]
+
+
+def test_a_map_no_arrow_reaches_is_left_out_with_a_ledger_row(follow_up):
+    result, nodes, ledger = follow_up
+    assert "kegg.pathway:map00001" in nodes                # omega's record keeps it
+    assert "kegg.pathway:map00002" not in nodes
+    row = _row(ledger, "kegg.pathway:map00002")
+    assert (row["rule"], row["decision"], row["node_type"]) == ("not_used", "left_out", "Pathway")
+    assert row["grounds"] == (
+        "The only compound record KEGG places on this map is pubchem.compound:30, and it "
+        "joined no MIBiG compound (see its not_used row), so no arrow reaches the map and it "
+        "describes nothing in the graph.")
+    counts = result.summary["counts"]
+    assert counts["maps_left_without_arrows"] == 1
+    assert counts["identifiers_left_out"] == 5             # records 20, 22, 30, 32 and the map
+    assert "1 of them maps no arrow reaches" in report(result.summary)
 
 
 # ------------------------------------------------------------------------- housekeeping

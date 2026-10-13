@@ -59,6 +59,12 @@ In a GenBank record each one is a feature of its own, followed by qualifiers
 that give the gene's names and the protein's number (Phase 4b). See
 [`img/genbank_record.svg`](img/genbank_record.svg).
 
+**Chiral centre**: an atom, usually a carbon, with four different neighbours,
+which can sit around it in two mirror-image ways. A molecule with several has a
+left-or-right choice at each one. A PubChem record "drawn with its 3D shape"
+says which way every chiral centre goes; a record drawn flat leaves them open.
+Epoxomicin has eight (Phase 4b).
+
 **Charge (of a molecule)**: a molecule with an electric charge is an **ion**,
 and its formula ends in a sign: `C10H16NO4-` has one negative charge. Databases
 don't always write the sign, so the same atoms can appear as `C10H16NO4` in one
@@ -140,11 +146,16 @@ isomers, which is why a matching formula alone never proves that two records
 are one molecule.
 
 **Isotope**: a version of an atom with a different weight. Most iron is iron-56;
-iron-55 is a radioactive isotope. PubChem keeps a separate record for a
-molecule built with an unusual isotope, such as "[55Fe] Ferrichrome", which is
-why a matching formula can point at the wrong record (Phase 4b). A matching
-first InChIKey block can too, because that block leaves isotopes out: it's how
-ferrichrome ended up joined to the iron-55 record.
+iron-55 is a radioactive isotope. A molecule built with a radioactive isotope
+is a **tracer**: chemists make it so they can follow where the molecule goes,
+much as a drop of dye shows where water flows. PubChem keeps a separate record for
+each, such as "[55Fe] Ferrichrome", which is why a matching formula can point
+at the wrong record (Phase 4b). A matching first InChIKey block can too,
+because that block leaves isotopes out, and that's how ferrichrome first ended
+up joined to the iron-55 record. Since the Phase 4b follow-ups the resolver
+reads the isotope label in the record's SMILES (`[55Fe+3]`: the mass number,
+the count of particles in the atom's core, in front of the element), and the
+same-structure clue no longer confirms a tracer.
 
 **Jujube** (*Ziziphus jujuba*): a fruit tree grown widely in China, whose fruit
 rots easily after harvest. It's the crop in the running example, because Xiao
@@ -278,6 +289,13 @@ parts, connected the same way, yet a left glove won't go on a right hand. PubChe
 often has one record with the 3D arrangement spelled out and one without; the
 first block of the **InChIKey** is the same for both.
 
+**Stereoisomers**: two molecules with the same atoms, connected the same way,
+whose **chiral centres** point different ways. They share a formula and the
+first InChIKey block, yet a cell can treat them as two different things (one
+may work as a medicine while its mirror form does nothing). That's why the
+Phase 4b follow-ups list the same-structure joins whose two records give
+different 3D detail for a closer check.
+
 **Strain**: one specific isolate within a species. If "species" is a car model,
 a strain is one particular car with its own history and quirks, and two strains
 of the same species can behave quite differently.
@@ -376,6 +394,12 @@ collect relevant facts, then giving those facts to a language model to phrase
 the answer. See also *RAG*.
 
 **Hop**: one step along one arrow. A "three-hop path" crosses three arrows.
+
+**Isolated node**: a node with no arrow to or from anything (degree 0). In a
+knowledge graph it says nothing, since every fact is an arrow. MicrobeGraph's
+resolver takes out KEGG maps that end up isolated, because every compound KEGG
+placed on them was left out, and writes a ledger row for each (Phase 4b
+follow-ups).
 
 **Knowledge graph**: a graph whose nodes are real-world concepts and whose edges
 are meaningful relationships between them, usually with provenance attached.
@@ -803,7 +827,7 @@ to download instead of answered one question at a time. When the list of
 questions is long and the service limits how many it answers, one big file can
 be both kinder to the service and faster. From Phase 4b, MicrobeGraph takes
 PubChem's names this way (see *Names file (PubChem)*): one 931 MB download in
-place of 1,655 questions.
+place of 1,653 questions.
 
 **Checksum**: a short fingerprint calculated from every byte of a file; change
 one byte and the fingerprint changes completely. Publishers list it beside a
@@ -989,10 +1013,11 @@ the results, so this project compares what it asked with what came back.
 every database, which makes it handy for matching compounds across sources. It
 has three blocks: the **first** encodes the atoms and how they connect, the
 second the 3D arrangement and isotopes, the third the charge. Two PubChem records
-with the same first block are the same molecule drawn in different ways, or
-built with different isotopes (Phase 4b uses this to tell "another record of
-the same molecule" from "another molecule", and ferrichrome's iron-55 record
-shows its limit).
+with the same first block are usually the same molecule drawn in different ways,
+but they can also be a molecule and its isotope-labelled tracer, or two
+**stereoisomers** (Phase 4b uses the first block to tell "another record of
+the same molecule" from "another molecule"; ferrichrome's iron-55 record and
+the stereoisomer question show where that stops working).
 
 **INSDC** (International Nucleotide Sequence Database Collaboration): GenBank
 (USA), the European Nucleotide Archive (Europe) and DDBJ (Japan), three public

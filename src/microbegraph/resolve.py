@@ -28,7 +28,9 @@ WHAT HAPPENS, IN ORDER
     5. join MIBiG's compounds to PubChem's, where confirmed resolution/compounds.py
     6. join protein numbers to UniProt, identical
        sequences, and gene records by gene name            resolution/proteins.py
-    7. one node per group, arrows re-pointed               resolution/combine.py
+    7. one node per group, arrows re-pointed, and KEGG     resolution/combine.py
+       maps no arrow reaches any more taken out
+       (Phase 4b follow-up)
     8. the twelve rules on the merged tables, and a check that every
        identifier that disappeared has a ledger row; if either fails,
        nothing is written
@@ -77,7 +79,12 @@ from microbegraph.paths import (
 )
 from microbegraph.provenance import utc_now
 from microbegraph.resolution.activities import fold_activities, read_synonyms
-from microbegraph.resolution.combine import ResolutionError, combine_edges, combine_nodes
+from microbegraph.resolution.combine import (
+    ResolutionError,
+    combine_edges,
+    combine_nodes,
+    leave_out_lone_maps,
+)
 from microbegraph.resolution.compounds import join_pubchem, join_same_npatlas
 from microbegraph.resolution.groups import Groups
 from microbegraph.resolution.ledger import LEDGER_COLUMNS, RULES, Ledger
@@ -143,6 +150,9 @@ def resolve(staging_dir: Path = STAGING_DIR, out_dir: Path = PROCESSED_DIR,
 
     nodes, left_out = combine_nodes(pool, final_id, ledger, notes, renames)
     edges, edge_counts = combine_edges(pool, final_id, left_out)
+    lone_maps = leave_out_lone_maps(pool, nodes, edges, ledger)
+    left_out |= lone_maps
+    edge_counts["maps_left_without_arrows"] = len(lone_maps)
     nodes.sort(key=lambda r: (r["node_type"], r["node_id"]))
     edges.sort(key=lambda r: (r["edge_type"], r["source_id"], r["target_id"], r["source"]))
 
@@ -215,6 +225,7 @@ def _summary(pool: Pool, nodes: list[dict[str, Any]], edges: list[dict[str, Any]
             "edges_combined": edge_counts["edges_combined"],
             "edges_dropped_at_left_out_nodes": edge_counts["edges_dropped_at_left_out_nodes"],
             "edges_that_became_loops": edge_counts["edges_that_became_loops"],
+            "maps_left_without_arrows": edge_counts["maps_left_without_arrows"],
         },
         "nodes_by_type": dict(sorted(by_type.items())),
         "edges_by_type": dict(sorted(by_edge.items())),
@@ -287,8 +298,11 @@ def report(summary: dict[str, Any]) -> str:
         out.write(f"  {rule:<{width}}  {text}\n")
     counts = summary["counts"]
     out.write("[resolve] the merged graph\n")
+    left = f"{counts['identifiers_left_out']:,} left out"
+    if counts.get("maps_left_without_arrows"):
+        left += f", {counts['maps_left_without_arrows']:,} of them maps no arrow reaches"
     out.write(f"  nodes {counts['nodes_written']:>7,}   from {counts['identifiers_read']:,} "
-              f"identifiers ({counts['identifiers_left_out']:,} left out)\n")
+              f"identifiers ({left})\n")
     for node_type, n in summary["nodes_by_type"].items():
         out.write(f"    {node_type:<14}{n:>7,}\n")
     out.write(f"  edges {counts['edges_written']:>7,}   from {counts['edges_read']:,} "

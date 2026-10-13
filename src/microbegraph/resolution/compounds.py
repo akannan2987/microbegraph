@@ -37,11 +37,21 @@ THE CLUES, FROM STRONGEST TO WEAKEST (Phase 4, extended in Phase 4b)
                 of a structure in three blocks; the first block encodes the
                 atoms and how they connect, and leaves out the 3D arrangement.
                 PubChem often keeps one record per way of drawing a molecule
-                (with its 3D arrangement, without it, with an unusual
-                isotope...), and only one of them carries the name. A salt
-                isn't one of these: its metal is part of the first block. Two library copies of one book,
+                (with its 3D arrangement, without it...), and only one of
+                them carries the name. A salt isn't one of these: its metal
+                is part of the first block. Two library copies of one book,
                 one with a library stamp on the cover and one without, are
                 still the same book.
+
+                One exception (a Phase 4b follow-up): the first block leaves
+                out isotopes too, so a record built with an unusual isotope,
+                such as PubChem's "[55Fe] Ferrichrome" with radioactive
+                iron-55, shares it with the ordinary molecule. That record is a
+                tracer made in a laboratory, not the compound a microbe makes,
+                so clue 2 doesn't confirm a number whose record carries an
+                isotope label (a mass number in its SMILES, as in [55Fe+3])
+                when the record PubChem files the name under has none. The
+                name's own record is then the candidate that wins.
 
     3. name search  (Phase 4b) MIBiG gives no number that passes 1 or 2, but
                 PubChem's name search finds the name under exactly one
@@ -71,7 +81,8 @@ THE CLUES, FROM STRONGEST TO WEAKEST (Phase 4, extended in Phase 4b)
 THE RULES IN THE LEDGER
     pubchem_number_confirmed  one number from MIBiG; clue 1, 2 or 4
     pubchem_number_shared     a number several MIBiG compounds give; clue 1 only
-    pubchem_numbers_differ    (Phase 4b) MIBiG's entries give different numbers
+    pubchem_numbers_differ    (Phase 4b) MIBiG gives more than one number, in
+                              different entries or in one
     pubchem_name_search       (Phase 4b) a number only the name search found
     pubchem_number_unknown    a number PubChem doesn't have
     npatlas_and_formula       two MIBiG compounds with one NPAtlas number and one formula
@@ -87,6 +98,7 @@ THE RULES IN THE LEDGER
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -130,6 +142,16 @@ def _pubchem_names(pool: Pool, node_id: str) -> set[str]:
 def _skeleton(pool: Pool, pubchem_id: str) -> str:
     """The first block of a PubChem record's InChIKey ("" if it has none)."""
     return str(pool.props(pubchem_id, "pubchem").get("inchikey") or "").split("-")[0]
+
+
+# An atom written with a mass number in a SMILES string: [55Fe+3], [13CH3], [2H].
+ISOTOPE_ATOM = re.compile(r"\[\d+[A-Z][a-z]?")
+
+
+def _isotope_label(pool: Pool, pubchem_id: str) -> str:
+    """The first isotope-labelled atom in a PubChem record's SMILES ("" if none)."""
+    found = ISOTOPE_ATOM.search(str(pool.props(pubchem_id, "pubchem").get("smiles") or ""))
+    return found.group(0)[1:] if found else ""
 
 
 @dataclass
@@ -220,6 +242,15 @@ def _judge(pool: Pool, mibig_id: str, candidates: list[Candidate],
             twin = next((f for f in found_elsewhere if f.pubchem_id != c.pubchem_id
                          and _skeleton(pool, f.pubchem_id)
                          and _skeleton(pool, f.pubchem_id) == _skeleton(pool, c.pubchem_id)), None)
+            label = _isotope_label(pool, c.pubchem_id) if twin is not None else ""
+            if twin is not None and label and not _isotope_label(pool, twin.pubchem_id):
+                # Phase 4b follow-up: an isotope-labelled tracer, not the compound itself
+                c.why = (f"PubChem doesn't list the name '{name}' under CID {c.cid} (its title "
+                         f"is '{title}'), and this record is built with the isotope {label}. "
+                         f"PubChem files the name under CID {twin.cid}, the same structure "
+                         f"without the isotope, so that record is the compound; "
+                         f"{c.formula_text}")
+                continue
             if twin is not None:
                 c.level = SAME_STRUCTURE
                 c.why = (f"PubChem doesn't list the name '{name}' under CID {c.cid} (its title "
@@ -379,9 +410,14 @@ def _lead(c: Candidate, name: str, candidates: list[Candidate]) -> str:
     if c.shared:
         others = ", ".join(f"'{o}'" for o in c.others)
         return f"MIBiG gives CID {c.cid} to '{name}' and also to {others}. "
-    if sum(1 for o in candidates if o.given) > 1:
+    given = [o for o in candidates if o.given]
+    if len(given) > 1:
         others = ", ".join(f"{o.cid} ({', '.join(o.entries) or 'its first entry'})"
-                           for o in candidates if o.given and o is not c)
+                           for o in given if o is not c)
+        if set(c.entries) & {e for o in given if o is not c for e in o.entries}:
+            # Phase 4b follow-up: an entry lists two numbers, so "disagree" won't do
+            return (f"MIBiG gives this compound more than one number: CID {c.cid} "
+                    f"({', '.join(c.entries)}) and {others}. ")
         return (f"MIBiG's entries disagree: {', '.join(c.entries) or 'one entry'} "
                 f"give{'s' if len(c.entries) == 1 else ''} CID {c.cid}, others give {others}. ")
     return f"MIBiG gives CID {c.cid}; "

@@ -479,6 +479,11 @@ real-world thing, and merging them into one node.
    worse than a missed one, because a missed merge is visible (two dots where
    you expected one) while a wrong merge is invisible (one dot that quietly
    contains a lie).
+6. **Leave out what describes nothing, and say so.** A PubChem or UniProt
+   record that no MIBiG record joined describes nothing in the graph, so it
+   stays out, with a ledger row saying whose search or number led to it. Since
+   the Phase 4b follow-ups the same goes for a KEGG map that no arrow reaches
+   any more, because every compound KEGG placed on it was left out.
 
 I treat the ledger as one of the project's outputs, alongside the graph itself.
 It answers the question "how do you know these are the same thing?", and people

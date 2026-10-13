@@ -127,7 +127,7 @@ or two they can't join that are really one. The resolver applies every decision
 before the rules that join compounds and proteins, and the ledger records it
 under the rule
 `reviewed_by_hand`, so nobody mistakes a person's decision for a rule's. The
-whole story, with the five real cases, is in
+whole story, with the seven real cases, is in
 [`docs/06b-closing-the-gaps.md`, Step 7](../docs/06b-closing-the-gaps.md#11-step-7-the-review-file-decisions-made-by-a-person).
 
 | Column | What goes in it | Example |
@@ -219,7 +219,7 @@ disease). When in doubt, leave the two words apart.
    word no source uses yet is named, and its row waits:
 
    ```
-   [resolve] curation/: 4 of 4 activity synonyms applied, 5 decisions by hand
+   [resolve] curation/: 4 of 4 activity synonyms applied, 7 decisions by hand
    ```
 
 4. **Check the result** with recipe R22, run the tests, and commit the row on
