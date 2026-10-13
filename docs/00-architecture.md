@@ -255,7 +255,9 @@ Phase 2 asks about the CIDs MIBiG already records; Phase 4 joins each one to
 MIBiG's compound where the name or the formula confirms it; and Phase 4b adds the
 name search, finding which records a MIBiG name is filed under. PubChem limits
 how many names one computer may ask about, so for a long list the search runs
-on your own computer, in PubChem's downloadable file of every name.
+on your own computer, in PubChem's downloadable file of every name. When two
+records share a skeleton, Phase 4c compares how their atoms sit in space (with
+RDKit, a chemistry library) before treating them as one compound.
 
 We need it for two reasons. First, it makes compounds *comparable*: every
 compound in the graph gets one canonical PubChem identity. Second, its synonym
@@ -484,6 +486,13 @@ real-world thing, and merging them into one node.
    stays out, with a ledger row saying whose search or number led to it. Since
    the Phase 4b follow-ups the same goes for a KEGG map that no arrow reaches
    any more, because every compound KEGG placed on it was left out.
+7. **When two sources disagree, ask a third, then a person.** Since Phase 4c,
+   when the PubChem number MIBiG gives and the record PubChem names share a
+   skeleton but differ in 3D, MIBiG's own structure decides which is the
+   compound. When it can't tell, neither is joined, and the ledger says a
+   person should decide. The third witness can be wrong as well (MIBiG's
+   structure may be a copy of the record its number points at), so a decision
+   by hand with a source still wins over it, as it does for echinomycin.
 
 I treat the ledger as one of the project's outputs, alongside the graph itself.
 It answers the question "how do you know these are the same thing?", and people

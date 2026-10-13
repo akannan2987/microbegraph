@@ -16,6 +16,7 @@ THE STEPS, IN THE ORDER THEY RUN
     pool.py         read every source's staging tables into one pool
     organisms.py    move organisms whose NCBI number was merged
     compounds.py    join MIBiG's compounds to PubChem's, where confirmed
+                    (stereo.py compares two records' 3D detail, Phase 4c)
     proteins.py     join protein numbers to UniProt entries, identical
                     sequences, and gene records named only by a gene name
     combine.py      turn each group of records into one node, re-point every

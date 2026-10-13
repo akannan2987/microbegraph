@@ -32,6 +32,12 @@ its phase and skim the rest. Within each section they're alphabetical.
 
 ## Biology and agriculture
 
+**Alpha carbon**: the carbon in an amino acid that carries the amino group, the
+acid group and the side chain. In every amino acid but glycine it is a
+**chiral centre**, so it decides whether the amino acid is the D or the L form.
+Echinomycin's two PubChem records differ at the alpha carbons of its two
+alanines (Phase 4c).
+
 **Amino acid**: one of the twenty or so small building blocks that proteins are
 made of. A protein is a chain of them, folded into shape, and its length is
 counted in amino acids: surfactin synthetase A is 3,584 long.
@@ -59,11 +65,12 @@ In a GenBank record each one is a feature of its own, followed by qualifiers
 that give the gene's names and the protein's number (Phase 4b). See
 [`img/genbank_record.svg`](img/genbank_record.svg).
 
-**Chiral centre**: an atom, usually a carbon, with four different neighbours,
-which can sit around it in two mirror-image ways. A molecule with several has a
+**Chiral centre**: an atom, usually a carbon, with four different groups
+attached, which can sit around it in two mirror-image ways. A molecule with several has a
 left-or-right choice at each one. A PubChem record "drawn with its 3D shape"
 says which way every chiral centre goes; a record drawn flat leaves them open.
-Epoxomicin has eight (Phase 4b).
+Epoxomicin has eight (Phase 4b). The two ways are named **R and S**, and a
+SMILES string marks them with `@` and `@@` (Phase 4c).
 
 **Charge (of a molecule)**: a molecule with an electric charge is an **ion**,
 and its formula ends in a sign: `C10H16NO4-` has one negative charge. Databases
@@ -78,22 +85,49 @@ atoms: an acid and its ion usually differ by a hydrogen, and stay different.
 **Crop**: a cultivated plant grown for food or material. In this project it sits
 at the end of the chain, as the one who ultimately suffers from the disease.
 
+**D and L (amino acids)**: the older names for the two mirror-image forms of an
+amino acid, given by how its **alpha carbon** is arranged. Proteins are built
+from L amino acids, but microbes often put D forms into the small molecules
+they make. For most amino acids L is S and D is R (cysteine is the usual
+exception), so "N-myristoyl-D-asparagine" means the record with R at that
+carbon (Phase 4c).
+
 **Damping-off**: seedlings rotting at the soil line and collapsing, just before
 or after they come up. Soil organisms such as *Globisporangium ultimum* (long
 called *Pythium ultimum*) and *Rhizoctonia solani* cause it. Two bridge rows are
 about damping-off of cotton.
 
+**Diastereomers**: stereoisomers that aren't mirror images of each other: some
+of their chiral centres (or double bonds) point the same way and some don't.
+Echinomycin's two PubChem records are diastereomers, agreeing at 6 of the 8
+chiral centres both describe (Phase 4c).
+
 **Domain**: the top rank of NCBI's ladder of life: Bacteria, Archaea and
 Eukaryota (living things whose cells have a nucleus, which includes fungi,
 plants and animals). NCBI called this rank "superkingdom" until 2025.
+
+**E and Z**: the two names for the arrangement around a double bond that can't
+rotate. When the more important group at each end sits on the same side, it's
+Z (German *zusammen*, together); on opposite sides, E (*entgegen*, against). A
+SMILES string shows it with `/` and `\` next to the double bond: `F/C=C/F` is
+E, `F/C=C\F` is Z. Macbecin II's two PubChem records draw three double bonds
+opposite ways (Phase 4c).
 
 **EC number**: Enzyme Commission number, the standard code describing what
 reaction an enzyme performs. You can think of it as a job title chosen from a
 fixed vocabulary.
 
+**Enantiomers**: two stereoisomers that are mirror images, with every chiral
+centre the other way round. Brevione E's two PubChem records are drawn as
+enantiomers (Phase 4c).
+
 **Enzyme**: a protein that speeds up one specific chemical reaction, rather like
 a specialised machine on a production line that does one step, very fast, over
 and over.
+
+**Epimer**: a stereoisomer that differs from another at exactly one of its two
+or more chiral centres, the closest kind of diastereomer. Colistin A's two PubChem records are
+epimers (Phase 4c).
 
 **Fungus** (plural *fungi*): a kingdom of life including moulds, yeasts and
 mushrooms. Some fungi attack crops; others protect them.
@@ -230,6 +264,11 @@ cause serious plant diseases, so the bridge records them as their own
 sequence. Think of a production line with named stations, where each station's
 output feeds the next.
 
+**Place (in the 3D check)**: one spot in a molecule where the atoms can sit in
+two ways: a chiral centre (R or S) or a double bond whose ends can be E or Z.
+The ledger counts places when it compares two records' 3D detail: "their 3D
+detail agrees at the 8 places both describe" (Phase 4c).
+
 **Powdery mildew**: a white, powdery fungal growth on leaves. On melons and
 cucumbers one cause is *Podosphaera fusca*, also called *Podosphaera xanthii*.
 
@@ -240,6 +279,15 @@ project the proteins that matter are the enzymes encoded by a gene cluster.
 
 **Proteomics**: the study of the full set of proteins in a sample. One of the
 three molecular layers this project joins together.
+
+**R and S**: the two names for the arrangement of a chiral centre, from the CIP
+rules (after Cahn, Ingold and Prelog). Rank the four groups by the atomic number
+of the atom attached (roughly, by weight), turn the lowest one away from you,
+and follow the other three from highest to lowest: clockwise is R (*rectus*),
+anticlockwise S (*sinister*). The alanine in proteins is S. RDKit names every
+centre a SMILES describes, but the resolver compares the arrangement itself,
+because a name can change between **tautomers** while nothing moves in space
+(Phase 4c).
 
 **Rank**: one rung on the taxonomy ladder: strain, species, genus, family,
 order, class, phylum, kingdom, domain. NCBI also uses in-between ranks such as
@@ -292,9 +340,10 @@ first block of the **InChIKey** is the same for both.
 **Stereoisomers**: two molecules with the same atoms, connected the same way,
 whose **chiral centres** point different ways. They share a formula and the
 first InChIKey block, yet a cell can treat them as two different things (one
-may work as a medicine while its mirror form does nothing). That's why the
-Phase 4b follow-ups list the same-structure joins whose two records give
-different 3D detail for a closer check.
+may work as a medicine while its mirror form does nothing). That's why Phase 4c
+compares the chiral centres and double bonds of two records before clue 2
+treats them as one compound ([`06c-checking-3d-detail.md`](06c-checking-3d-detail.md)).
+See also **enantiomers**, **diastereomers** and **epimer**.
 
 **Strain**: one specific isolate within a species. If "species" is a car model,
 a strain is one particular car with its own history and quirks, and two strains
@@ -310,6 +359,14 @@ surfactin synthetase joins seven amino acids and a fatty acid.
 **Take-all**: a root disease of wheat caused by the fungus *Gaeumannomyces
 tritici* (in older papers, *G. graminis* var. *tritici*). It blackens the roots
 and leaves white, empty heads.
+
+**Tautomers**: two forms of one compound that turn into each other on their own,
+a hydrogen atom moving to a neighbouring atom and a double bond moving with
+it. They count as one compound. For the common kind, where the hydrogen moves
+between nitrogen or oxygen atoms, the first InChIKey block is the same for
+both. Saxitoxin has two PubChem records that are tautomers (Phase 4c). Moving
+the hydrogen can change the name R or S of a centre nearby, though nothing
+moved in space.
 
 **Taxid** (taxon ID): NCBI Taxonomy's number for an organism or a group, for
 example `326423` for *Bacillus velezensis* FZB42, written `ncbitaxon:326423`
@@ -340,6 +397,11 @@ route between other nodes*, which makes it a kind of "bridge" score. A road
 junction can be quiet itself and still break half the city's journeys if it
 closes; that junction has high betweenness. This often tells you more than raw
 popularity does.
+
+**Canonical numbering**: a fixed way of numbering the atoms of a molecule (or
+the nodes of any graph) that gives the same numbers to the same structure
+however it was written down. Two drawings of one skeleton numbered this way can
+be matched atom for atom. RDKit's version is `CanonicalRankAtoms` (Phase 4c).
 
 **Centrality**: any measure of how important a node is within a graph. There
 are several kinds because "important" means different things.
@@ -567,9 +629,16 @@ project is a box, this is the label on it.
 **Python**: the programming language this project is written in. I chose it for
 readability, and because every library the project needs already exists in it.
 
+**RDKit**: the free chemistry library for Python (BSD licence) this project uses
+to read SMILES strings and compare how molecules sit in 3D (Phase 4c). It is
+the one package pinned to an exact version, `rdkit==2025.9.3`, because newer
+versions have no ready-made install for Intel Macs and because its answers
+decide the resolver's counts.
+
 **requirements.txt**: a text file listing exactly which packages the project
 needs. It acts as the project's *receipt*: with it, anyone can rebuild an
-identical toolbox.
+identical toolbox. Most lines give a range of versions; RDKit's gives one exact
+version (Phase 4c).
 
 **Script**: a file of code you run from start to finish, as opposed to a
 library you import.
@@ -894,7 +963,9 @@ leaves a half-file that looks finished.
 its name and fingerprint into the code, so a newer or altered file can't slip in
 unnoticed. MIBiG's archive is pinned by the MD5 Zenodo publishes; MIBiG's protein
 file, whose server publishes no checksum, by the SHA-256 and size of its first
-download (Phase 3b). Changing a pin is an upgrade made on purpose.
+download (Phase 3b). A package can be pinned too, by giving one exact version
+instead of a range, as `requirements.txt` does for RDKit (Phase 4c). Changing a
+pin is an upgrade made on purpose.
 
 **Polling**: asking the same question again and again, a few seconds apart,
 until the answer changes ("is my job finished yet?").
@@ -1009,6 +1080,12 @@ database (an INSDC or RefSeq protein number, for example) into UniProt
 accessions. It runs as a job. An id it can't translate doesn't appear in
 the results, so this project compares what it asked with what came back.
 
+**InChI**: the text form of a structure that an **InChIKey** is made from, built
+of layers separated by `/`. The `/t` layer lists each chiral centre by atom
+number with `+` or `-`, `/b` each double bond, and `/m` says whether the signs
+are written for the mirror image. Phase 4c's survey compares two records'
+layers number by number as a second check on `stereo.py`'s answers.
+
 **InChIKey**: a 27-character fingerprint of a chemical structure, the same in
 every database, which makes it handy for matching compounds across sources. It
 has three blocks: the **first** encodes the atoms and how they connect, the
@@ -1017,7 +1094,10 @@ with the same first block are usually the same molecule drawn in different ways,
 but they can also be a molecule and its isotope-labelled tracer, or two
 **stereoisomers** (Phase 4b uses the first block to tell "another record of
 the same molecule" from "another molecule"; ferrichrome's iron-55 record and
-the stereoisomer question show where that stops working).
+the stereoisomer question show where that stops working). A drawing without
+3D detail or isotope labels always gets the second block `UHFFFAOYSA`. Since Phase 4c the
+resolver compares the 3D detail itself whenever two records share a first
+block.
 
 **INSDC** (International Nucleotide Sequence Database Collaboration): GenBank
 (USA), the European Nucleotide Archive (Europe) and DDBJ (Japan), three public
@@ -1128,7 +1208,11 @@ copy of the public sequence archives. Its protein ids start with `WP_`, `NP_`,
 clusters are unreviewed.
 
 **SMILES**: a way of writing a molecule's structure as one line of text, for
-example `C=C(CC(=O)O)C(=O)O` for itaconic acid.
+example `C=C(CC(=O)O)C(=O)O` for itaconic acid. `@` and `@@` at an atom say
+which way a chiral centre goes, and `/` and `\` beside a double bond which side
+its groups are on (**R and S**, **E and Z**). A SMILES without them is drawn
+**flat**: it leaves those places open, so it agrees with any drawing that
+fills them in (Phase 4c).
 
 **Synonym**: another name for the same thing. One molecule can have dozens
 (itaconic acid has about ninety in PubChem), which is why names alone can't be

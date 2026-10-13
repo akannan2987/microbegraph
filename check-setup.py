@@ -79,6 +79,7 @@ PACKAGES = [
     ("tenacity", "tenacity"),
     ("duckdb", "duckdb"),
     ("networkx", "networkx"),
+    ("rdkit", "rdkit"),                 # Phase 4c: the 3D check of compounds
     ("matplotlib", "matplotlib"),
     ("plotly", "plotly"),
     ("pyvis", "pyvis"),

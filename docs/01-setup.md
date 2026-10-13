@@ -992,6 +992,9 @@ duckdb>=1.0,<2           # the analytics database (one file, no server)
 # --- The graph ---
 networkx>=3.3,<4         # build and walk graphs; classic algorithms included
 
+# --- Chemistry (Phase 4c) ---
+rdkit==2025.9.3          # reads SMILES and compares how molecules sit in 3D
+
 # --- Visualisation ---
 matplotlib>=3.8,<4       # static charts (for docs and figures)
 plotly>=5.22,<8          # interactive charts you can hover and zoom
@@ -1016,6 +1019,21 @@ python-dotenv>=1.0,<2    # reads optional API keys from a .env file
 #   and a green result stops meaning what you think it means. A check script
 #   that has drifted from reality is worse than none, because it reassures
 #   you about things it no longer checks.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# WHY RDKIT IS PINNED EXACTLY, UNLIKE EVERYTHING ELSE
+#   Both reasons came up when it was added in Phase 4c.
+#   1. RDKit stopped publishing ready-made installs for Intel Macs after
+#      2025.9.3. On an Intel Mac, pip would quietly pick 2025.9.3 while every
+#      other computer picked the newest version.
+#   2. RDKit decides which chiral centres a drawing describes, and the
+#      resolver's counts depend on that. Two versions could disagree about an
+#      unusual drawing and print different numbers.
+#   One exact version everywhere keeps every computer's output identical.
+#   2025.9.3 has ready-made installs for Python 3.10 to 3.14 (this project
+#   uses 3.11 to 3.13) on 64-bit Windows, Linux (including RHEL 8) and both
+#   kinds of Mac. More in docs/06c-checking-3d-detail.md, section 3.
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -1856,6 +1874,7 @@ PACKAGES = [
     ("tenacity", "tenacity"),
     ("duckdb", "duckdb"),
     ("networkx", "networkx"),
+    ("rdkit", "rdkit"),                 # Phase 4c: the 3D check of compounds
     ("matplotlib", "matplotlib"),
     ("plotly", "plotly"),
     ("pyvis", "pyvis"),
@@ -1999,6 +2018,7 @@ MicrobeGraph setup check
   [PASS]  package: tenacity
   [PASS]  package: duckdb
   [PASS]  package: networkx
+  [PASS]  package: rdkit
   [PASS]  package: matplotlib
   [PASS]  package: plotly
   [PASS]  package: pyvis

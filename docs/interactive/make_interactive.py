@@ -7,8 +7,8 @@ WHAT THIS SCRIPT DOES
         ontology_explorer.html    the rulebook: hover a node type or an arrow
         evidence_chain.html       one real chain, with evidence filters
         roadmap_timeline.html     every phase, its hours and its status
-        resolution_cases.html     seven real cases the resolver decided, clue by
-                                  clue (Phase 4b and its follow-ups)
+        resolution_cases.html     ten real cases the resolver decided, clue by
+                                  clue (Phase 4b, its follow-ups and Phase 4c)
 
         python docs/interactive/make_interactive.py
 
@@ -534,8 +534,12 @@ document.querySelectorAll('.bar').forEach(g => {{
 # 4. Real resolution cases, clue by clue (Phase 4b)
 # =============================================================================
 # Every value below is copied from the real tables and the real ledger of the
-# build of 2026-10-12 (docs/06b-closing-the-gaps.md, Step 10). The grounds are
-# the ledger's own sentences.
+# build of 2026-10-13 after Phase 4c (docs/06c-checking-3d-detail.md, Step 6).
+# The grounds are the ledger's own sentences. The first seven cases are the ones
+# Phase 4b decided; the last three show the 3D check of Phase 4c: MIBiG's own
+# structure keeping the number and a decision by hand overruling it
+# (echinomycin), the compound moving (macbecin II), and a person to decide
+# (nocardicin A).
 CASES = [
     {
         "id": "mib", "kind": "Compound", "title": "2-methylisoborneol",
@@ -562,14 +566,16 @@ CASES = [
              "list the name."],
             ["pass", "Clue 2, same structure", "The name search files the name under 11062802. Its "
              "InChIKey starts LFYXNXGVLGKVCJ, like 16913's: the same molecule, drawn with its 3D "
-             "shape (11062802) and without it (16913)."],
+             "shape (11062802) and without it (16913). Since Phase 4c the 3D detail is compared "
+             "too, and a drawing without any can't disagree."],
         ],
         "rule": "pubchem_number_confirmed", "decision": "merged",
         "grounds": "MIBiG gives CID 16913; PubChem doesn't list the name '2-methylisoborneol' "
                    "under CID 16913 (its title is '2-Bornanol, 2-methyl-'), but files it under "
                    "CID 11062802, the same molecule drawn another way: both InChIKeys start "
-                   "LFYXNXGVLGKVCJ; the formulas agree (C11H20O). Confirmed by name, through the "
-                   "same structure.",
+                   "LFYXNXGVLGKVCJ, and CID 16913 describes no place in 3D, so nothing can "
+                   "disagree; the formulas agree (C11H20O). Confirmed by name, through the same "
+                   "structure.",
         "next": "Settled: one node, pubchem.compound:16913, named 2-methylisoborneol. 11062802 "
                 "stays out of the graph (16913 is better supported, being the number MIBiG "
                 "gives), and the decision by hand stays in the ledger.",
@@ -784,6 +790,127 @@ CASES = [
         "next": "Settled: one node, uniprot:Q1RS74, named baeI. Bacillus velezensis FZB42 now "
                 "leads to 174 proteins instead of 175 (cookbook recipe N5).",
     },
+    {
+        "id": "ech", "kind": "Compound", "title": "echinomycin",
+        "hook": "two alanines drawn the other way, and a decision by hand",
+        "before": "Before the 3D check",
+        "sources": [
+            ["MIBiG BGC0000339", "pubchem:3197, pubchem:458034", "formula C51H64N12O12S2, and "
+             "its own SMILES, describing 8 chiral centres"],
+            ["PubChem 3197", "its title", "Quinomycin C, drawn flat; MIBiG gives it to "
+             "quinomycin too"],
+            ["PubChem 458034", "its title", "S-426-S (Lepetit); its 8 centres read R R R S R R R S"],
+            ["PubChem 6857732", "its title", "Echinomycin; its 8 centres read S R R S R S R S"],
+        ],
+        "phase4": "Clue 2 joined echinomycin to 458034 through 6857732, because both InChIKeys "
+                  "start AUJXLBOHYWTPFV. Nothing compared the 3D detail.",
+        "steps": [
+            ["info", "Every number the entry lists", "BGC0000339 gives 3197 and 458034. MIBiG "
+             "gives 3197 to quinomycin as well, so it needs clue 1, and PubChem doesn't list "
+             "'echinomycin' under it."],
+            ["fail", "Clue 1, name", "Record 458034 is titled 'S-426-S (Lepetit)' and doesn't "
+             "list 'echinomycin'."],
+            ["info", "Clue 2, same skeleton", "The name search files 'echinomycin' under 6857732, "
+             "and both InChIKeys start AUJXLBOHYWTPFV: the same atoms, joined the same way."],
+            ["stop", "The 3D check", "Matched atom for atom, both records describe 8 chiral "
+             "centres (a ninth, in the sulfur bridge, is open in both). 6 agree and 2 differ, at "
+             "the two alanines, so they are two stereoisomers and the shared skeleton alone "
+             "can't confirm 458034."],
+            ["info", "MIBiG's own structure", "The SMILES in MIBiG's entry matches 458034 at all "
+             "8 centres and differs from 6857732 at the same two, so the rule alone would keep "
+             "the number MIBiG gives."],
+            ["person", "The review file", "A review of echinomycin and its relatives (Dawson et "
+             "al., Natural Product Reports, 2007) gives L at the alpha carbon of every residue "
+             "but the serine, so the alanines are S, as 6857732 draws them. MIBiG's SMILES most "
+             "likely came from the record its number points at. The row says join, with the "
+             "review as the source, and it wins over clue 2."],
+        ],
+        "rule": "reviewed_by_hand", "decision": "merged",
+        "grounds": "Decided by hand on 2026-10-13: mg.compound:echinomycin and "
+                   "pubchem.compound:6857732 are the same thing. Echinomycin's ring is built from "
+                   "D-serine, which carries the quinoxaline, and L-amino acids: the cited review "
+                   "gives L at the alpha carbon of every other residue. PubChem's record 6857732, "
+                   "titled Echinomycin, draws both alanines L (S at the alpha carbon). Record "
+                   "458034, which MIBiG's entry BGC0000339 gives, and MIBiG's own SMILES draw both "
+                   "alanines D (R); the two records agree at the other six chiral centres. Source: "
+                   "doi:10.1039/b516347c (curation/resolution_decisions.csv, line 9).",
+        "next": "Settled by hand: one node, pubchem.compound:6857732, named echinomycin. 458034 "
+                "stays out of the graph with a ledger row. 38 other compounds keep their number "
+                "on MIBiG's structure alone (recipe R23), and the roadmap plans a person's check "
+                "of each against the literature.",
+    },
+    {
+        "id": "mac", "kind": "Compound", "title": "macbecin II",
+        "hook": "three double bonds, and the record PubChem names wins",
+        "before": "Before the 3D check",
+        "sources": [
+            ["MIBiG BGC0000090", "pubchem:6438438", "formula C30H44N2O8, and its own SMILES "
+             "with three double bonds drawn Z"],
+            ["PubChem 6438438", "its title", "Geldanamycin, 18,21-didehydro-...; the same three "
+             "double bonds drawn E"],
+            ["PubChem 5778325", "its title", "Macbecin II; the three drawn Z"],
+        ],
+        "phase4": "Clue 2 joined macbecin II to 6438438, the number MIBiG gives, through "
+                  "5778325, because both InChIKeys start SVSFCSOFEPJFSF.",
+        "steps": [
+            ["fail", "Clue 1, name", "Record 6438438 has a long chemical name as its title and "
+             "doesn't list 'macbecin II'."],
+            ["info", "Clue 2, same skeleton", "The name search files 'macbecin II' under 5778325, "
+             "titled 'Macbecin II', and both InChIKeys start SVSFCSOFEPJFSF."],
+            ["stop", "The 3D check", "Both records describe the same three double bonds and "
+             "nothing else, and they draw all three the other way round: E in 6438438, Z in "
+             "5778325. Two stereoisomers."],
+            ["pass", "MIBiG's own structure", "MIBiG's SMILES draws the three double bonds Z, as "
+             "5778325 does. So the compound joins the record PubChem names, and 6438438 is "
+             "another stereoisomer."],
+        ],
+        "rule": "pubchem_name_search", "decision": "merged",
+        "grounds": "PubChem's name search finds 'macbecin II' under CID 5778325 ('Macbecin II'), "
+                   "and MIBiG's own structure matches its 3D detail; CID 6438438, the number "
+                   "MIBiG gives, has the same skeleton and differs in 3D at 3 double bonds; the "
+                   "formulas agree (C30H44N2O8). Confirmed by name and by MIBiG's own 3D "
+                   "structure.",
+        "next": "Settled: one node, pubchem.compound:5778325, named macbecin II. MIBiG's number "
+                "is kept on the node as pubchem_cid_not_confirmed (6438438), so nobody takes it "
+                "for a confirmed one. 17 compounds moved like this.",
+    },
+    {
+        "id": "noc", "kind": "Compound", "title": "nocardicin A",
+        "hook": "one double bond drawn both ways, and MIBiG's drawing leaves it open",
+        "before": "Before the 3D check",
+        "sources": [
+            ["MIBiG BGC0000395", "pubchem:6419429", "formula C23H24N4O9, and its own SMILES "
+             "without any 3D marks"],
+            ["PubChem 6419429", "its title", "1-Azetidineacetic acid, 3-(((2E)-...: the C=N of "
+             "its =N-OH group drawn E"],
+            ["PubChem 6400657", "its title", "Nocardicin A: the same C=N drawn Z"],
+        ],
+        "phase4": "Clue 2 joined nocardicin A to 6419429, the number MIBiG gives, through "
+                  "6400657, because both InChIKeys start CTNZOGJNVIFEBA.",
+        "steps": [
+            ["fail", "Clue 1, name", "Record 6419429 has a long chemical name as its title and "
+             "doesn't list 'nocardicin A'."],
+            ["info", "Clue 2, same skeleton", "The name search files 'nocardicin A' under "
+             "6400657, and both InChIKeys start CTNZOGJNVIFEBA."],
+            ["stop", "The 3D check", "The records agree at 3 chiral centres and differ at one "
+             "double bond, the C=N of the =N-OH group: E in 6419429, Z in 6400657."],
+            ["wait", "MIBiG's own structure", "MIBiG's SMILES has no 3D marks at all, so it can't "
+             "say which drawing is right. Neither record joins."],
+        ],
+        "rule": "pubchem_number_confirmed", "decision": "kept_apart",
+        "grounds": "MIBiG gives CID 6419429; PubChem doesn't list the name 'nocardicin A' under "
+                   "CID 6419429 (its title is '1-Azetidineacetic acid, 3-(((2E)-(4-((3R)-3-amino-"
+                   "3-carboxypropoxy)phenyl)(hydroxyimino)acetyl)amino)-alpha-(4-hydroxyphenyl)-"
+                   "2-oxo-, (alphaR,3S)-'), and files it under CID 6400657, a record with the "
+                   "same skeleton (both InChIKeys start CTNZOGJNVIFEBA) that differs in 3D at 1 "
+                   "double bond, and MIBiG's own structure gives no 3D detail, so a person should "
+                   "decide between them; the formulas agree (C23H24N4O9). Nothing else confirms "
+                   "it, so the two stay apart.",
+        "next": "Waiting for a person: nocardicin A stays an mg.compound node without a PubChem "
+                "record, and recipe R24 lists it with the 8 others. Once a paper settles which "
+                "way that double bond goes, one row in curation/resolution_decisions.csv joins "
+                "the right record.",
+    },
 ]
 
 STEP_LOOK = {"pass": ("&#10003;", "passes"), "fail": ("&#10007;", "doesn't confirm"),
@@ -797,11 +924,12 @@ def resolution_cases() -> str:
         f'<span class="kind mono">{c["kind"]}</span><b>{escape(c["title"])}</b>'
         f'<span class="muted">{escape(c["hook"])}</span></button>' for c in CASES)
     body = f"""
-<h1>Seven real cases, clue by clue</h1>
-<p class="lede">Each case is a record the resolver had to decide about in Phase 4b, with what the
-sources say, what Phase 4 did, and each clue in turn. Pick a case, then press <b>Next clue</b>
-(or the right arrow key) to walk through it. Every value and every ledger sentence is copied from
-the real build after the Phase 4b follow-ups (the PubChem run of 2026-10-12 at 23:07 UTC).</p>
+<h1>Ten real cases, clue by clue</h1>
+<p class="lede">Each case is a record the resolver had to decide about, in Phase 4b or (the last
+three) in the 3D check of Phase 4c, with what the sources say, what happened before, and each clue
+in turn. Pick a case, then press <b>Next clue</b> (or the right arrow key) to walk through it. Every
+value and every ledger sentence is copied from the real build of 2026-10-13 after Phase 4c (the
+PubChem run of 2026-10-12 at 23:07 UTC).</p>
 <div class="layout">
 <div class="cases" role="group" aria-label="Cases">{buttons}</div>
 <div class="card" id="detail" aria-live="polite"></div>
@@ -810,8 +938,10 @@ the real build after the Phase 4b follow-ups (the PubChem run of 2026-10-12 at 2
 <p>{''.join(f'<span class="chip"><span class="mark {k}">{m}</span>{w}</span>'
                for k, (m, w) in STEP_LOOK.items())}</p>
 <p class="muted">The four clues for a compound, strongest first, are explained in
-<span class="mono">docs/06b-closing-the-gaps.md</span>, Step 6; the review file in Step 7. Recipe R20
-in the query cookbook lists every decision made by hand.</p>
+<span class="mono">docs/06b-closing-the-gaps.md</span>, Step 6; the review file in Step 7. The 3D
+check is in <span class="mono">docs/06c-checking-3d-detail.md</span>, Step 5. Recipe R20 in the query
+cookbook lists every decision made by hand, and R24 the compounds the 3D check leaves for a
+person.</p>
 </details>"""
     style = """<style>
 .layout { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: 16px; }
@@ -855,7 +985,7 @@ function render() {{
     <p><b>Next:</b> ${{esc(c.next)}}</p>` : '';
   detail.innerHTML = `<h2>${{esc(c.title)}}<span class="muted" style="font-weight:400">: ${{esc(c.hook)}}</span></h2>
     <table><tr><th>Who</th><th>Record</th><th>What it says</th></tr>${{rows}}</table>
-    <p><b>What Phase 4 did:</b> ${{esc(c.phase4)}}</p>
+    <p><b>${{esc(c.before || 'What Phase 4 did')}}:</b> ${{esc(c.phase4)}}</p>
     <h3>The clues, one by one</h3>${{steps || '<p class="muted">Press Next clue to start.</p>'}}
     <div class="btns"><button id="prev" ${{shown === 0 ? 'disabled' : ''}}>Back</button>
     <button id="next" ${{done ? 'disabled' : ''}}>Next clue</button>

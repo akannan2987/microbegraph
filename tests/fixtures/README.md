@@ -247,6 +247,24 @@ python -c "import hashlib, pathlib; h = hashlib.sha256(); [h.update(p.read_bytes
 
 Cutting the slice again from the same staging tables gives the same bytes.
 
+## The 3D check (Phase 4c)
+
+No new files here. `tests/test_3d_check.py` writes its made-up records in the
+test itself: threonine in three of its four 3D arrangements, plus a drawing
+that describes only one of its two centres and a flat one (and alanine,
+butane-2,3-diol and crotonic acid for the comparison alone), under names and
+numbers no compound has (tau to omega, sigma and rho, CIDs 41 to 113). The one
+real pair is saxitoxin's two PubChem records, 37165 and 56947150, two
+tautomers, whose SMILES the test copies from PubChem's answers in Phase 4b's
+run.
+
+`survey_3d_detail.py`, beside the capture scripts, is the look at the real data
+that came before the Phase 4c rules ([`docs/06c-checking-3d-detail.md`, Step 2](../../docs/06c-checking-3d-detail.md#6-step-2-look-at-the-real-data-first)).
+It captures nothing: it reads the ledger and two staging tables on your
+computer, compares every same-skeleton pair in two ways (both start from
+RDKit's reading of the SMILES, then use different code) and prints what it
+found. It imports `stereo.py`, so that file has to be in place first.
+
 ## Refreshing the samples
 
 If a source changes its format, run the capture again (after Phase 1, with

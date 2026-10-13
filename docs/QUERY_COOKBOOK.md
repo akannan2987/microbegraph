@@ -1,4 +1,4 @@
-[← Handbook](HANDBOOK.md) · [README](../README.md) · [Glossary](GLOSSARY.md) · [Roadmap](ROADMAP.md) · [Phase 4 guide](06-entity-resolution-graph-build.md) · [Phase 4b guide](06b-closing-the-gaps.md)
+[← Handbook](HANDBOOK.md) · [README](../README.md) · [Glossary](GLOSSARY.md) · [Roadmap](ROADMAP.md) · [Phase 4 guide](06-entity-resolution-graph-build.md) · [Phase 4b guide](06b-closing-the-gaps.md) · [Phase 4c guide](06c-checking-3d-detail.md)
 
 # Query cookbook
 
@@ -11,9 +11,10 @@ exists ([`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build
 Step 10). No SQL knowledge is needed: section 2 teaches the little you need, and
 each recipe explains its own new piece.
 
-**What's here:** 22 SQL recipes (R1 to R22) and 5 graph recipes in Python
+**What's here:** 24 SQL recipes (R1 to R24) and 5 graph recipes in Python
 (N1 to N5). R20 to R22 arrived with Phase 4b
-([`06b-closing-the-gaps.md`](06b-closing-the-gaps.md)). Recipes in Cypher, the query language of graph databases, join them
+([`06b-closing-the-gaps.md`](06b-closing-the-gaps.md)), and R23 and R24 with
+the 3D check of Phase 4c ([`06c-checking-3d-detail.md`](06c-checking-3d-detail.md)). Recipes in Cypher, the query language of graph databases, join them
 in Phase 11, when the graph also moves into PostgreSQL with Apache AGE
 ([`ROADMAP.md`](ROADMAP.md#phase-11-postgresql--apache-age--pgvector)).
 
@@ -21,9 +22,9 @@ in Phase 11, when the graph also moves into PostgreSQL with Apache AGE
 runs every recipe in this file, SQL and Python, on a small real slice of the
 graph each time the tests run, locally and on GitHub. A recipe that stops
 working fails the build. The answers shown below come from the full build of
-2026-10-12 after Phase 4b (MIBiG 4.0 with its GenBank file, UniProt 2026_03,
-and the PubChem snapshot with the name search,
-[`06b-closing-the-gaps.md`, Step 10](06b-closing-the-gaps.md#14-step-10-run-it-for-real));
+2026-10-13 after Phase 4c (MIBiG 4.0 with its GenBank file, UniProt 2026_03,
+the PubChem snapshot with the name search, and the 3D check,
+[`06c-checking-3d-detail.md`, Step 6](06c-checking-3d-detail.md#10-step-6-run-it-on-your-data));
 yours match if you built from the same downloads.
 
 > Every term here is also in [`GLOSSARY.md`](GLOSSARY.md). How the database is
@@ -39,7 +40,7 @@ yours match if you built from the same downloads.
 4. [Following the resolver's decisions (R5 to R8)](#4-following-the-resolvers-decisions-r5-to-r8)
 5. [Questions about the science (R9 to R16)](#5-questions-about-the-science-r9-to-r16)
 6. [Housekeeping (R17 to R19)](#6-housekeeping-r17-to-r19)
-7. [Decisions by hand and disagreements (R20 to R22)](#7-decisions-by-hand-and-disagreements-r20-to-r22)
+7. [Decisions by hand and disagreements (R20 to R24)](#7-decisions-by-hand-and-disagreements-r20-to-r24)
 8. [The same facts as a graph: NetworkX recipes (N1 to N5)](#8-the-same-facts-as-a-graph-networkx-recipes-n1-to-n5)
 9. [Writing a recipe of your own](#9-writing-a-recipe-of-your-own)
 10. [What could go wrong](#10-what-could-go-wrong)
@@ -400,12 +401,12 @@ You should see:
 ```
 rule                      decision    rows
 ------------------------  ----------  ----
-not_used                  left_out    849
-pubchem_name_search       kept_apart  384
-pubchem_number_confirmed  kept_apart  113
+not_used                  left_out    857
+pubchem_name_search       kept_apart  374
+pubchem_number_confirmed  kept_apart  139
 uniprot_cross_reference   kept_apart  40
-pubchem_numbers_differ    kept_apart  38
-pubchem_number_shared     kept_apart  13
+pubchem_numbers_differ    kept_apart  37
+pubchem_number_shared     kept_apart  12
 identical_sequence        kept_apart  9
 npatlas_and_formula       kept_apart  7
 pubchem_number_unknown    kept_apart  5
@@ -420,7 +421,7 @@ answer is the same every time. Since Phase 4b,
 `gene_name_in_uniprot` has no refusals left: MIBiG's GenBank file gives every
 gene record its protein number before the resolver runs. The
 `pubchem_name_search` refusals are numbers PubChem's name search found that the
-clues didn't accept, and about half of the `not_used` entries (410 of 849)
+clues didn't accept, and almost half of the `not_used` entries (392 of 857)
 are records the name search found: PubChem records no compound was joined to,
 so they describe nothing in the graph. Five more `not_used` rows are KEGG maps
 that no arrow reaches any more (since the Phase 4b follow-ups); their
@@ -832,12 +833,14 @@ tip for your own searches: inside single quotes, an apostrophe is written twice
 
 ---
 
-## 7. Decisions by hand and disagreements (R20 to R22)
+## 7. Decisions by hand and disagreements (R20 to R24)
 
 Phase 4b gave a person's decisions a place of their own, kept every value when
 MIBiG's entries disagree, and folded activity words that mean the same thing
-([`06b-closing-the-gaps.md`](06b-closing-the-gaps.md)). These recipes follow
-each of the three.
+([`06b-closing-the-gaps.md`](06b-closing-the-gaps.md)). R20 to R22 follow each
+of the three. Phase 4c added a check of how the atoms sit in 3D whenever two
+PubChem records share a skeleton ([`06c-checking-3d-detail.md`](06c-checking-3d-detail.md)),
+and R23 and R24 show what it decided.
 
 ### R20. Which decisions did a person make?
 
@@ -856,14 +859,16 @@ identifier                      compared_with               decision
 mg.compound:2-methylisoborneol  pubchem.compound:9237955    kept_apart
 mg.compound:desosamine          mg.compound:methymycin      kept_apart
 mg.compound:desosamine          pubchem.compound:5282034    kept_apart
+mg.compound:echinomycin         pubchem.compound:6857732    merged
 mg.compound:epoxomicin          pubchem.compound:11226684   merged
 mg.compound:mureidomycin-b      pubchem.compound:101627952  merged
 ncbiprotein:CBF82293.1          uniprot:P0CU77              kept_apart
 ncbiprotein:CBF82293.1          uniprot:P0CU78              kept_apart
-(7 rows)
+(8 rows)
 ```
 
-Each row comes from one line of `curation/resolution_decisions.csv`. A `join`
+Each row comes from one line of `curation/resolution_decisions.csv`; the
+echinomycin row came with Phase 4c (its Step 5 says why). A `join`
 in the file shows here as `merged`, and a `keep_apart` as `kept_apart`, the
 words every other rule's rows use. Add
 `grounds` to the `SELECT` line to read the reason and the source, which the
@@ -927,6 +932,90 @@ mg.activity:antitumor-duplicate-of-anticancer  mg.activity:anticancer
 `AS` gives a column a name of your own for the answer. The old words aren't
 lost: they stay in the `other_names` of the node they were folded into, and R5
 finds that node from an old identifier such as `mg.activity:antitumor`.
+
+### R23. When two records differ in 3D, what did MIBiG's own structure decide?
+
+```sql
+SELECT CASE
+         WHEN grounds LIKE '%so the number MIBiG gives stands%' THEN 'keeps MIBiG''s number'
+         WHEN grounds LIKE '%so this record is another stereoisomer%' THEN 'moves to the name''s record'
+         ELSE 'can''t decide'
+       END AS mibig_structure,
+       count(*) AS pairs
+FROM ledger
+WHERE grounds LIKE '%that differs in 3D at%'
+GROUP BY mibig_structure
+ORDER BY pairs DESC, mibig_structure;
+```
+
+You should see:
+
+```
+mibig_structure             pairs
+--------------------------  -----
+keeps MIBiG's number        38
+moves to the name's record  17
+can't decide                10
+(3 rows)
+```
+
+Each row of the ledger that says "that differs in 3D at" belongs to a number
+MIBiG gives, compared with the record PubChem files the name under. `LIKE`
+with `%` on both sides finds a phrase anywhere in the text, and `CASE` sorts
+each row into one of three groups by a phrase its sentence contains, a bit
+like sorting letters by the stamp in the corner. Inside quotes, two single
+quotes stand for one (`MIBiG''s`), because a lone `'` would end the text.
+
+The 10 that MIBiG's structure can't decide belong to 10 compounds, and 9 of
+them are left without a PubChem record (R24). The tenth, kosinostatin, has a
+second number from another entry that agrees in 3D with PubChem's
+"Kosinostatin", so it joined that one. To read why, put
+`pubchem.compound:102302126` into R6 and ask Python for the whole sentence
+with `.df()` (section 1), because the query command cuts it at 60 characters.
+
+Echinomycin isn't in these counts: its decision is made by hand (R20), so
+clue 2 never looks at it. None of the 38 numbers MIBiG's structure keeps has
+been checked against the literature yet. Echinomycin was the 39th until it
+was checked, and the literature gave the other record.
+
+### R24. Which compounds does the 3D check leave for a person?
+
+```sql
+SELECT identifier, compared_with AS number_mibig_gives,
+       regexp_extract(grounds, 'differs in 3D at ([^,;]+)', 1) AS where_they_differ
+FROM ledger
+WHERE decision = 'kept_apart'
+  AND grounds LIKE '%that differs in 3D at%'
+  AND identifier NOT IN (SELECT identifier FROM ledger
+                         WHERE decision = 'merged' AND compared_with LIKE 'pubchem.compound:%')
+ORDER BY identifier;
+```
+
+You should see:
+
+```
+identifier                   number_mibig_gives          where_they_differ
+---------------------------  --------------------------  -----------------
+mg.compound:brasilinolide-a  pubchem.compound:6438451    1 chiral centre
+mg.compound:brevione-e       pubchem.compound:101092881  9 chiral centres
+mg.compound:capsimycin       pubchem.compound:101057989  1 double bond
+mg.compound:cremimycin       pubchem.compound:6449106    2 double bonds
+mg.compound:fluostatin-f     pubchem.compound:71460594   3 chiral centres
+mg.compound:heronamide-b     pubchem.compound:102257462  1 double bond
+mg.compound:nocardicin-a     pubchem.compound:6419429    1 double bond
+mg.compound:syringolin-a     pubchem.compound:24978526   1 double bond
+mg.compound:versipelostatin  pubchem.compound:73348086   4 chiral centres
+(9 rows)
+```
+
+The query inside the brackets lists every compound that did join a PubChem
+record, and `NOT IN` keeps only the ones missing from that list.
+`regexp_extract` cuts a piece out of a text with a pattern: here, whatever
+follows "differs in 3D at" up to the next comma or semicolon. Brevione E's two
+records are mirror images (all 9 centres opposite). Read a row's full
+`grounds` to see why MIBiG's own structure couldn't settle it, and record a
+decision in `curation/resolution_decisions.csv` once a paper settles it
+([`curation/README.md`](../curation/README.md)).
 
 ---
 

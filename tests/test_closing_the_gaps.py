@@ -100,9 +100,11 @@ def made_up_staging(folder: Path) -> Path:
                     for a in ("anticancer", "antitumor", "antineoplastic")]
     pubchem_rows = [
         pubchem(1, "Alpha", "C1H2", "AAAAAAAAAAAAAA-AAAAAAAAAA-N", mibig_compound_ids="mg.compound:alpha"),
+        # (Phase 4c) record 2 gives one chiral centre, record 3 none: they agree in 3D
         pubchem(2, "(2S)-something", "C2H4", "BBBBBBBBBBBBBB-BBBBBBBBBB-N",
-                mibig_compound_ids="mg.compound:beta"),
-        pubchem(3, "Beta", "C2H4", "BBBBBBBBBBBBBB-CCCCCCCCCC-N", found_by_name="mg.compound:beta"),
+                mibig_compound_ids="mg.compound:beta", smiles="C[C@H](N)C(=O)O"),
+        pubchem(3, "Beta", "C2H4", "BBBBBBBBBBBBBB-CCCCCCCCCC-N", found_by_name="mg.compound:beta",
+                smiles="CC(N)C(=O)O"),
         pubchem(4, "a gamma look-alike", "C4H8", "DDDDDDDDDDDDDD-DDDDDDDDDD-N",
                 mibig_compound_ids="mg.compound:gamma"),
         pubchem(5, "Gamma", "C10H20", "EEEEEEEEEEEEEE-EEEEEEEEEE-N",
@@ -186,6 +188,7 @@ def test_the_name_under_another_record_of_the_same_structure_confirms_the_number
     row = run.row("mg.compound:beta", "pubchem.compound:2")
     assert row["decision"] == "merged"
     assert "files it under CID 3, the same molecule drawn another way" in row["grounds"]
+    assert "CID 3 describes no place in 3D, so nothing can disagree" in row["grounds"]
     assert row["grounds"].endswith("Confirmed by name, through the same structure.")
     other = run.row("mg.compound:beta", "pubchem.compound:3")
     assert (other["rule"], other["decision"]) == ("pubchem_name_search", "kept_apart")

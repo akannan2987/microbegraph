@@ -2151,6 +2151,89 @@ def follow_ups() -> str:
                "joins on the formula alone from 82 to 80, decisions by hand from 5 to 7.")
 
 
+def three_d_check() -> str:
+    """Phase 4c: the 3D check of same-structure joins, with echinomycin's real centres."""
+    aqua, orange = LAYER["metabolomics"], LAYER["proteomics"]
+    parts = [t(32, 46, "Checking the 3D detail of a shared skeleton", size=22, weight=700),
+             t(32, 70, "Two PubChem records can share a skeleton and still be different "
+               "compounds. The resolver compares them place by place before trusting clue 2.",
+               size=14, fill=INK2)]
+    parts.append(t(32, 108, "ECHINOMYCIN: ONE SKELETON, TWO DRAWINGS, THE 8 CHIRAL CENTRES BOTH DESCRIBE", size=12,
+                   weight=700, fill=MUTED))
+    given = "RRRSRRRS"          # CID 458034, a number MIBiG gives (the one clue 2 reached)
+    named = "SRRSRSRS"          # CID 6857732, the record PubChem titles "Echinomycin"
+    for cid, sub, labels, cy in (("CID 458034", "a number MIBiG gives", given, 146),
+                                 ("CID 6857732", "PubChem's \"Echinomycin\"", named, 230)):
+        parts.append(t(32, cy - 2, cid, size=15, weight=700))
+        parts.append(t(32, cy + 18, sub, size=12.5, fill=INK2))
+        for k, label in enumerate(labels):
+            cx = 290 + k * 62
+            parts.append(f'<circle cx="{cx}" cy="{cy}" r="20" fill="{SURFACE}" stroke="{aqua}" '
+                         f'stroke-width="2"/>')
+            parts.append(t(cx, cy + 6, label, size=16, weight=700, anchor="middle"))
+    for k, (a, b) in enumerate(zip(given, named, strict=True)):
+        cx = 290 + k * 62
+        parts.append(check_mark(cx, 188, 9) if a == b else cross_mark(cx, 188, 9))
+    parts.append(t(800, 136, "6 centres agree and 2 differ (the two", size=13, fill=INK2))
+    parts.append(t(800, 156, "alanines), so these are two stereoisomers.", size=13, fill=INK2))
+    parts.append(t(800, 186, "MIBiG's own structure matches CID 458034,", size=13, weight=600))
+    parts.append(t(800, 206, "so the rule would keep that number. A review", size=13, weight=600))
+    parts.append(t(800, 226, "gives L-alanine (S), as in CID 6857732,", size=13, weight=600))
+    parts.append(t(800, 246, "so a decision by hand joins 6857732.", size=13, weight=600))
+    # what the resolver does with every pair
+    parts.append(t(32, 300, "WHAT THE RESOLVER DOES WITH EACH PAIR (183 IN THE REAL DATA)", size=12,
+                   weight=700, fill=MUTED))
+    boxes = [(32, 316, "A pair for clue 2", "MIBiG's number and the name's",
+              "record share one skeleton"),
+             (322, 316, "Compare the 3D detail", "every chiral centre (R or S) and",
+              "double bond (E or Z) both describe"),
+             (322, 448, "Ask MIBiG's own structure", "the SMILES in MIBiG's entry,",
+              "compared with both records")]
+    for x, y, head, l1, l2 in boxes:
+        parts.append(rect(x, y, 250, 80, fill=SURFACE, stroke=BASE, rx=10, sw=1.5))
+        parts.append(t(x + 16, y + 26, head, size=14, weight=700))
+        parts.append(t(x + 16, y + 48, l1, size=12.5, fill=INK2))
+        parts.append(t(x + 16, y + 66, l2, size=12.5, fill=INK2))
+    parts.append(line(282, 356, 318, 356, color=INK2))
+    parts.append(line(572, 356, 608, 356, color=INK2))
+    parts.append(line(447, 396, 447, 444, color=INK2))
+    parts.append(t(458, 426, "65 differ", size=13, weight=700, halo=True))
+    outcomes = [(316, 80, aqua, True, "118 agree: clue 2 counts",
+                 "joined, unless another candidate is just as good (valclavam's two numbers tie)"),
+                (432, 56, aqua, True, "38 match MIBiG's number: it stands",
+                 "n-myristoyl-D-asparagine keeps 102500690 (R, the D form)"),
+                (498, 56, orange, True, "17 match the name's record: the compound moves there",
+                 "macbecin II moves to 5778325, \"Macbecin II\""),
+                (564, 56, MUTED, False, "10 can't be decided: neither record joins",
+                 "9 compounds wait for a person (recipe R24); kosinostatin's other number joined")]
+    for y, h, colour, good, head, example in outcomes:
+        parts.append(rect(612, y, 556, h, fill=SURFACE, stroke=colour, rx=10, sw=2))
+        mark = check_mark(636, y + h / 2, 9) if good else _waiting(636, y + h / 2)
+        parts.append(mark)
+        parts.append(t(656, y + h / 2 - 4, head, size=13.5, weight=700))
+        parts.append(t(656, y + h / 2 + 15, example, size=12.5, fill=INK2))
+    for y in (460, 526, 592):
+        parts.append(path(f"M572 488 C 592 488, 590 {y}, 608 {y}", color=INK2))
+    parts.append(t(32, 656, "Compounds with a PubChem record: 1,975 became 1,967. Ties for a person: "
+                   "35 became 34 (the check settled kosinostatin's). Echinomycin, decided by hand, "
+                   "isn't one of the 183.", size=12.5, fill=INK2))
+    parts.append(t(32, 678, "Counts from the build of 2026-10-13 after Phase 4c. Details in "
+                   "docs/06c-checking-3d-detail.md.", size=12.5, fill=MUTED))
+    return svg(1200, 702, "".join(parts), "Checking the 3D detail of a shared skeleton",
+               "Echinomycin's two PubChem records share a skeleton. The 8 chiral centres both "
+               "describe read R R R S R R R S in CID 458034, a number MIBiG gives, and S R R S R S "
+               "R S in CID "
+               "6857732, PubChem's Echinomycin: 6 agree and 2 differ, at the two alanines, so "
+               "they are two stereoisomers. MIBiG's own structure matches CID 458034, but a "
+               "review gives L-alanine (S), as in CID 6857732, so a decision by hand joins that "
+               "record. For each of the 183 pairs clue 2 looks at, the resolver compares the 3D "
+               "detail. 118 agree and clue 2 counts. 65 differ, and MIBiG's own structure "
+               "decides: 38 match MIBiG's number (n-myristoyl-D-asparagine keeps 102500690), 17 "
+               "match the record PubChem names (macbecin II moves to 5778325), and 10 can't be "
+               "decided, leaving 9 compounds for a person. Compounds with a PubChem record went "
+               "from 1,975 to 1,967, and ties for a person from 35 to 34.")
+
+
 FIGURES = {
     "logo_microbegraph.svg": logo,
     "cover_microbegraph.svg": cover,
@@ -2184,6 +2267,7 @@ FIGURES = {
     "clue_ladder.svg": clue_ladder,
     "review_row.svg": review_row,
     "follow_ups.svg": follow_ups,
+    "three_d_check.svg": three_d_check,
 }
 
 

@@ -53,6 +53,25 @@ THE CLUES, FROM STRONGEST TO WEAKEST (Phase 4, extended in Phase 4b)
                 when the record PubChem files the name under has none. The
                 name's own record is then the candidate that wins.
 
+                From Phase 4c the 3D detail is checked as well (stereo.py).
+                Two records that share the first block can still be
+                stereoisomers: the same atoms and bonds arranged differently
+                in space, which makes them different compounds. Clue 2 counts
+                only when the two records describe every place they both
+                describe (chiral centres, and double bonds that can be E or Z)
+                the same way. When they disagree, MIBiG's own structure (the
+                SMILES in its entry) decides: the record whose 3D detail it
+                matches is the compound, whether that's MIBiG's number or the
+                record PubChem files the name under. When MIBiG's structure
+                can't tell (there is none, it gives no 3D detail, it has
+                another skeleton, it matches neither or both, or MIBiG's
+                entries disagree), neither record is joined, and the ledger
+                says a person should decide. A decision in the review file
+                still comes first: echinomycin has one, because MIBiG's
+                structure there matches the record its number points at and
+                the literature gives the other record's 3D detail
+                (docs/06c-checking-3d-detail.md, Step 5).
+
     3. name search  (Phase 4b) MIBiG gives no number that passes 1 or 2, but
                 PubChem's name search finds the name under exactly one
                 number whose formula agrees with MIBiG's.
@@ -99,9 +118,10 @@ THE RULES IN THE LEDGER
 from __future__ import annotations
 
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 
+from microbegraph.resolution import stereo
 from microbegraph.resolution.groups import Groups, rank_key
 from microbegraph.resolution.ledger import Ledger
 from microbegraph.resolution.names import compare_formulas, name_key, split_list
@@ -150,8 +170,122 @@ ISOTOPE_ATOM = re.compile(r"\[\d+[A-Z][a-z]?")
 
 def _isotope_label(pool: Pool, pubchem_id: str) -> str:
     """The first isotope-labelled atom in a PubChem record's SMILES ("" if none)."""
-    found = ISOTOPE_ATOM.search(str(pool.props(pubchem_id, "pubchem").get("smiles") or ""))
+    found = ISOTOPE_ATOM.search(_smiles(pool, pubchem_id))
     return found.group(0)[1:] if found else ""
+
+
+def _smiles(pool: Pool, pubchem_id: str) -> str:
+    """A PubChem record's SMILES, with its 3D marks ("" if it has none)."""
+    return str(pool.props(pubchem_id, "pubchem").get("smiles") or "")
+
+
+def _places(centres: int, bonds: int) -> str:
+    """'2 chiral centres', '1 double bond', '1 chiral centre and 3 double bonds'."""
+    parts = []
+    if centres:
+        parts.append(f"{centres} chiral centre{'s' if centres != 1 else ''}")
+    if bonds:
+        parts.append(f"{bonds} double bond{'s' if bonds != 1 else ''}")
+    return " and ".join(parts)
+
+
+def _more(n: int) -> str:
+    return f"{n} more place{'s' if n != 1 else ''}"
+
+
+def _agreement(check: stereo.Comparison, c: Candidate, twin: Candidate) -> str:
+    """How two records' 3D detail agrees, in words (Phase 4c)."""
+    if check.same == 0:
+        if not check.only_first and not check.only_second:
+            return "neither describes any place in 3D"
+        if not check.only_first:
+            return f"CID {c.cid} describes no place in 3D, so nothing can disagree"
+        if not check.only_second:
+            return f"CID {twin.cid} describes no place in 3D, so nothing can disagree"
+        return (f"they describe different places in 3D ({check.only_first} and "
+                f"{check.only_second}), so nothing can disagree")
+    shared = check.same
+    text = (f"their 3D detail agrees at the {shared} place{'s' if shared != 1 else ''} "
+            f"both describe")
+    if check.only_first and check.only_second:
+        return (f"{text}, and each describes places the other leaves open "
+                f"(CID {c.cid} {check.only_first}, CID {twin.cid} {check.only_second})")
+    if check.only_first:
+        return f"{text}, and CID {c.cid} describes {_more(check.only_first)}"
+    if check.only_second:
+        return f"{text}, and CID {twin.cid} describes {_more(check.only_second)}"
+    return text
+
+
+# Words for a pair the 3D check leaves for a person. _decide removes them when
+# another candidate was joined after all (kosinostatin's second number), so
+# the ledger never asks a person to decide something already decided.
+PERSON = ", so a person should decide between them"
+
+NOT_COMPARED = {
+    "unreadable": "one of the two records has no SMILES, or RDKit can't read it",
+    "other skeleton": "their atoms can't be matched one to one",
+    "too symmetric": "the molecule has too many symmetric ways to match its atoms",
+}
+
+
+def _gap(check: stereo.Comparison) -> str:
+    """'differs in 3D at 2 chiral centres', or why the 3D detail couldn't be compared."""
+    if check.status == "differ":
+        return f"differs in 3D at {_places(check.differing_centres, check.differing_bonds)}"
+    return f"can't be compared in 3D ({NOT_COMPARED[check.status]})"
+
+
+def _mibig_side(pool: Pool, mibig_id: str, given_id: str, twin_id: str) -> tuple[str, str]:
+    """
+    Which of two records that disagree in 3D MIBiG's own structure matches
+    (Phase 4c): ("given", ""), ("twin", ""), or ("", the reason it can't tell).
+    Every structure MIBiG's entries give for the compound is asked; they must
+    all point the same way.
+    """
+    props = pool.props(mibig_id, "mibig")
+    structures = [item.partition(": ")[2] for item in split_list(props.get("smiles_by_entry"))]
+    if not structures and props.get("smiles"):
+        structures = [str(props["smiles"])]
+    if not structures:
+        return "", "MIBiG gives no structure of its own"
+    skeleton = _skeleton(pool, given_id)
+    sides: set[str] = set()
+    found: set[str] = set()
+    for smiles in structures:
+        key = stereo.skeleton_key(smiles)
+        if not key:
+            found.add("unreadable")
+        elif key != skeleton:
+            found.add("other skeleton")
+        elif not stereo.described(smiles):
+            found.add("flat")
+        else:
+            given = stereo.compare(smiles, _smiles(pool, given_id))
+            twin = stereo.compare(smiles, _smiles(pool, twin_id))
+            if {given.status, twin.status} - {"agree", "differ"}:
+                found.add("not compared")
+                continue
+            sides.add({(True, False): "given", (False, True): "twin",
+                       (True, True): "both", (False, False): "neither"}[
+                given.agrees, twin.agrees])
+    decisive = sides - {"both"}
+    if decisive in ({"given"}, {"twin"}):
+        return decisive.pop(), ""
+    if len(decisive) > 1:
+        return "", "MIBiG's entries give structures that disagree with each other"
+    if decisive == {"neither"}:
+        return "", "MIBiG's own structure differs from both"
+    if sides == {"both"}:
+        return "", ("MIBiG's own structure agrees with both (it leaves open the places "
+                    "where they differ)")
+    for kind, reason in (("other skeleton", "MIBiG's own structure has another skeleton"),
+                         ("flat", "MIBiG's own structure gives no 3D detail"),
+                         ("unreadable", "RDKit can't read MIBiG's own structure"),
+                         ("not compared", "MIBiG's own structure can't be compared in 3D")):
+        if kind in found:
+            return "", reason
+    return "", "MIBiG's own structure can't tell them apart"
 
 
 @dataclass
@@ -170,6 +304,9 @@ class Candidate:
     others: list[str] = field(default_factory=list)    # other MIBiG compounds giving it
     level: int = NONE
     why: str = ""
+    how: str = ""                     # the ledger's closing words, when not the usual ones
+    three_d: str = ""                 # Phase 4c: agree, kept, moved, undecided, not compared
+    twin_id: str = ""                 # Phase 4c: the name's record that clue 2 compared it with
 
     @property
     def cid(self) -> str:
@@ -230,6 +367,7 @@ def _judge(pool: Pool, mibig_id: str, candidates: list[Candidate],
     name = pool.name(mibig_id, "mibig")
     found_elsewhere = [c for c in candidates if c.found and c.named]
     several_given = sum(1 for c in candidates if c.given) > 1
+    verdicts: dict[str, list[tuple[str, str]]] = defaultdict(list)   # Phase 4c, see below
     for c in candidates:
         title = pool.name(c.pubchem_id, "pubchem")
         if c.given and c.named:
@@ -252,11 +390,7 @@ def _judge(pool: Pool, mibig_id: str, candidates: list[Candidate],
                          f"{c.formula_text}")
                 continue
             if twin is not None:
-                c.level = SAME_STRUCTURE
-                c.why = (f"PubChem doesn't list the name '{name}' under CID {c.cid} (its title "
-                         f"is '{title}'), but files it under CID {twin.cid}, the same molecule "
-                         f"drawn another way: both InChIKeys start "
-                         f"{_skeleton(pool, c.pubchem_id)}; {c.formula_text}")
+                _judge_same_structure(pool, mibig_id, c, twin, title, verdicts)
                 continue
             elsewhere = [f for f in found_elsewhere if f.pubchem_id != c.pubchem_id]
             disputed = len(set(c.formulas)) > 1
@@ -295,6 +429,77 @@ def _judge(pool: Pool, mibig_id: str, candidates: list[Candidate],
         else:
             c.why = (f"PubChem's name search finds '{name}' under CID {c.cid} ('{title}'), "
                      f"but {c.formula_text}")
+    # Phase 4c: a record the name search found, judged against a number MIBiG
+    # gives that differs from it in 3D. Done after the loop, because the loop
+    # may reach the found record before the number. Two cases are left alone:
+    # a record MIBiG gives too (its own clues judge it, clue 1 first), and a
+    # record another number MIBiG gives agrees with in 3D (that number is
+    # the same molecule, and clue 2 joins it as usual).
+    agreeing = {c.twin_id for c in candidates if c.three_d == "agree"}
+    for c in candidates:
+        if c.pubchem_id not in verdicts or c.given or c.pubchem_id in agreeing:
+            continue
+        title = pool.name(c.pubchem_id, "pubchem")
+        kinds = [kind for kind, _ in verdicts[c.pubchem_id]]
+        kind, text = next(v for v in verdicts[c.pubchem_id]
+                          if v[0] == ("undecided" if "undecided" in kinds else
+                                      "moved" if "moved" in kinds else "kept"))
+        lead = f"PubChem's name search finds '{name}' under CID {c.cid} ('{title}')"
+        if kind == "moved":
+            c.level = SAME_STRUCTURE
+            c.how = "Confirmed by name and by MIBiG's own 3D structure."
+            c.why = f"{lead}, and MIBiG's own structure matches its 3D detail; {text}; {c.formula_text}"
+        elif kind == "undecided":
+            c.level = NONE
+            c.why = f"{lead}, but {text}{PERSON}"
+        else:
+            c.why = f"{lead}, but {text}; {c.formula_text}"
+
+
+def _judge_same_structure(pool: Pool, mibig_id: str, c: Candidate, twin: Candidate, title: str,
+                          verdicts: dict[str, list[tuple[str, str]]]) -> None:
+    """
+    Clue 2 with the 3D check (Phase 4c). c is a number MIBiG gives; twin is
+    the record PubChem files the name under, with the same skeleton. Sets c's
+    level and words, and leaves a verdict for twin (applied after the loop).
+    """
+    name = pool.name(mibig_id, "mibig")
+    skeleton = _skeleton(pool, c.pubchem_id)
+    c.twin_id = twin.pubchem_id
+    check = stereo.compare(_smiles(pool, c.pubchem_id), _smiles(pool, twin.pubchem_id))
+    opening = (f"PubChem doesn't list the name '{name}' under CID {c.cid} (its title is "
+               f"'{title}')")
+    if check.agrees:
+        c.level = SAME_STRUCTURE
+        c.three_d = "agree"
+        c.why = (f"{opening}, but files it under CID {twin.cid}, the same molecule drawn "
+                 f"another way: both InChIKeys start {skeleton}, and "
+                 f"{_agreement(check, c, twin)}; {c.formula_text}")
+        return
+    gap = _gap(check)
+    record = (f"CID {twin.cid}, a record with the same skeleton (both InChIKeys start "
+              f"{skeleton}) that {gap}")
+    side, reason = (_mibig_side(pool, mibig_id, c.pubchem_id, twin.pubchem_id)
+                    if check.status == "differ" else ("", ""))
+    number = f"CID {c.cid}, the number MIBiG gives, has the same skeleton and {gap}"
+    if side == "given":
+        c.level = SAME_STRUCTURE
+        c.three_d = "kept"
+        c.how = "Confirmed through the same skeleton and MIBiG's own 3D structure."
+        c.why = (f"{opening}, but files it under {record}; MIBiG's own structure matches "
+                 f"CID {c.cid}, so the number MIBiG gives stands; {c.formula_text}")
+        verdicts[twin.pubchem_id].append(
+            ("kept", f"{number}, and MIBiG's own structure matches CID {c.cid}"))
+    elif side == "twin":
+        c.three_d = "moved"
+        c.why = (f"{opening}, and files it under {record}; MIBiG's own structure matches "
+                 f"CID {twin.cid}, so this record is another stereoisomer; {c.formula_text}")
+        verdicts[twin.pubchem_id].append(("moved", number))
+    else:
+        c.three_d = "undecided" if check.status == "differ" else "not compared"
+        because = f", and {reason}" if reason else ""
+        c.why = f"{opening}, and files it under {record}{because}{PERSON}; {c.formula_text}"
+        verdicts[twin.pubchem_id].append(("undecided", f"{number}{because}"))
 
 
 def _rule_for(c: Candidate, several_given: bool) -> str:
@@ -306,9 +511,15 @@ def _rule_for(c: Candidate, several_given: bool) -> str:
 
 
 def join_pubchem(pool: Pool, groups: Groups, ledger: Ledger, notes: dict[str, list[str]],
-                 renames: dict[str, dict[str, str]], reviewed: Reviewed | None = None) -> None:
-    """Apply the PubChem rules to every MIBiG compound (see the module notes)."""
+                 renames: dict[str, dict[str, str]],
+                 reviewed: Reviewed | None = None) -> dict[str, object]:
+    """
+    Apply the PubChem rules to every MIBiG compound (see the module notes).
+    Returns what the 3D check of clue 2 found (Phase 4c), for the summary.
+    """
     reviewed = reviewed or Reviewed([])
+    outcomes: Counter[str] = Counter()
+    for_a_person: list[str] = []
     claims: dict[str, list[str]] = {}               # pubchem id -> MIBiG compounds giving it
     found_by: dict[str, list[str]] = defaultdict(list)
     for pubchem_id in pool.ids("pubchem.compound"):
@@ -341,7 +552,11 @@ def join_pubchem(pool: Pool, groups: Groups, ledger: Ledger, notes: dict[str, li
             _unconfirmed(pool, mibig_id, settled, notes, renames)
             continue
         _judge(pool, mibig_id, candidates, name_search_ran and mibig_id not in not_asked)
-        _decide(pool, groups, ledger, notes, renames, mibig_id, candidates)
+        chosen = _decide(pool, groups, ledger, notes, renames, mibig_id, candidates)
+        checked = [c.three_d for c in candidates if c.three_d]
+        outcomes.update(checked)
+        if chosen is None and {"undecided", "not compared"} & set(checked):
+            for_a_person.append(mibig_id)     # the 3D check left it without a record
 
     unknown = set(map(str, pool.summaries["pubchem"].get("cids_not_in_pubchem", [])))
     for mibig_id in pool.ids("mg.compound"):
@@ -356,12 +571,26 @@ def join_pubchem(pool: Pool, groups: Groups, ledger: Ledger, notes: dict[str, li
                                    f"compound {cid}")
             if str(props.get("pubchem_cid", "")) == cid:
                 renames[mibig_id]["pubchem_cid"] = "pubchem_cid_not_confirmed"
+    return {
+        "pairs_checked": sum(outcomes.values()),
+        "agree": outcomes["agree"],
+        "differ": outcomes["kept"] + outcomes["moved"] + outcomes["undecided"],
+        "not_compared": outcomes["not compared"],
+        "mibig_structure_keeps_the_number": outcomes["kept"],
+        "mibig_structure_moves_to_the_name": outcomes["moved"],
+        "mibig_structure_cannot_decide": outcomes["undecided"],
+        "compounds_left_for_a_person": len(for_a_person),
+        "for_a_person": sorted(for_a_person),
+    }
 
 
 def _decide(pool: Pool, groups: Groups, ledger: Ledger, notes: dict[str, list[str]],
             renames: dict[str, dict[str, str]], mibig_id: str,
-            candidates: list[Candidate]) -> None:
-    """Join the one candidate with the strongest clue, if exactly one has it; record the rest."""
+            candidates: list[Candidate]) -> Candidate | None:
+    """
+    Join the one candidate with the strongest clue, if exactly one has it;
+    record the rest. Returns the candidate joined (None if none was).
+    """
     several_given = sum(1 for c in candidates if c.given) > 1
     best = min(c.level for c in candidates)
     top = [c for c in candidates if c.level == best] if best != NONE else []
@@ -376,9 +605,9 @@ def _decide(pool: Pool, groups: Groups, ledger: Ledger, notes: dict[str, list[st
         lead = _lead(c, name, candidates)
         if c is chosen:
             groups.join(mibig_id, c.pubchem_id)
-            how = {NAME: "Confirmed by name.", SAME_STRUCTURE: "Confirmed by name, through the "
-                   "same structure.", NAME_SEARCH: "Confirmed by name and formula.",
-                   FORMULA_ONLY: "Confirmed by the formula alone."}[c.level]
+            how = c.how or {NAME: "Confirmed by name.", SAME_STRUCTURE: "Confirmed by name, "
+                            "through the same structure.", NAME_SEARCH: "Confirmed by name and "
+                            "formula.", FORMULA_ONLY: "Confirmed by the formula alone."}[c.level]
             extra = (" PubChem's formula is kept, MIBiG's stays as mibig_formula."
                      if c.formula == "differs" else "")
             ledger.add(rule, "merged", mibig_id, "Compound", f"{lead}{c.why}. {how}{extra}",
@@ -393,7 +622,8 @@ def _decide(pool: Pool, groups: Groups, ledger: Ledger, notes: dict[str, list[st
         else:
             reason = " Nothing else confirms it, so the two stay apart." if chosen is None else (
                 f" CID {chosen.cid} is better supported, so this one stays apart.")
-        ledger.add(rule, "kept_apart", mibig_id, "Compound", f"{lead}{c.why}.{reason}",
+        why = c.why.replace(PERSON, "") if chosen is not None else c.why
+        ledger.add(rule, "kept_apart", mibig_id, "Compound", f"{lead}{why}.{reason}",
                    compared_with=c.pubchem_id, sources="mibig|pubchem")
         if c.given:
             notes[mibig_id].append(f"{name}: PubChem CID {c.cid} not joined, not confirmed "
@@ -401,6 +631,7 @@ def _decide(pool: Pool, groups: Groups, ledger: Ledger, notes: dict[str, list[st
     joined = chosen.cid if chosen is not None else ""
     if str(pool.props(mibig_id, "mibig").get("pubchem_cid", "")) not in ("", joined):
         renames[mibig_id]["pubchem_cid"] = "pubchem_cid_not_confirmed"
+    return chosen
 
 
 def _lead(c: Candidate, name: str, candidates: list[Candidate]) -> str:

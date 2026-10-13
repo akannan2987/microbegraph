@@ -1,4 +1,4 @@
-[← Handbook](../docs/HANDBOOK.md) · [Phase 2 guide](../docs/04-more-sources-secrets.md) · [Phase 4b guide](../docs/06b-closing-the-gaps.md) · [Glossary](../docs/GLOSSARY.md)
+[← Handbook](../docs/HANDBOOK.md) · [Phase 2 guide](../docs/04-more-sources-secrets.md) · [Phase 4b guide](../docs/06b-closing-the-gaps.md) · [Phase 4c guide](../docs/06c-checking-3d-detail.md) · [Glossary](../docs/GLOSSARY.md)
 
 # The curated files
 
@@ -127,8 +127,12 @@ or two they can't join that are really one. The resolver applies every decision
 before the rules that join compounds and proteins, and the ledger records it
 under the rule
 `reviewed_by_hand`, so nobody mistakes a person's decision for a rule's. The
-whole story, with the seven real cases, is in
+whole story, with the first seven real decisions, is in
 [`docs/06b-closing-the-gaps.md`, Step 7](../docs/06b-closing-the-gaps.md#11-step-7-the-review-file-decisions-made-by-a-person).
+The eighth, echinomycin, came with Phase 4c: the 3D check kept the number
+MIBiG gives, because MIBiG's own structure matches it, and a review in the
+literature showed the other record is right
+([`docs/06c-checking-3d-detail.md`, Step 5](../docs/06c-checking-3d-detail.md#9-step-5-clue-2-with-the-3d-check)).
 
 | Column | What goes in it | Example |
 |---|---|---|
@@ -143,6 +147,16 @@ whole story, with the seven real cases, is in
 one node, by any rule or any chain of joins. `join` makes them one node at once;
 it is refused if the node would hold two PubChem compounds or two UniProt
 entries, because those databases say their own records are different things.
+
+**Waiting for a decision.** Recipe R24 in the query cookbook lists the
+compounds the 3D check of Phase 4c left for a person: each has two PubChem
+records with one skeleton that differ in 3D, and MIBiG's own structure can't
+say which is right. A paper that reports the compound's 3D structure settles
+it, with one `join` row naming the record that matches
+([`docs/06c-checking-3d-detail.md`](../docs/06c-checking-3d-detail.md)). The
+38 compounds whose number rests on MIBiG's own structure alone (recipe R23)
+are worth the same reading, since that structure can be a copy of the
+number's record, as echinomycin's was.
 
 ### Adding a decision, step by step
 
@@ -219,7 +233,7 @@ disease). When in doubt, leave the two words apart.
    word no source uses yet is named, and its row waits:
 
    ```
-   [resolve] curation/: 4 of 4 activity synonyms applied, 7 decisions by hand
+   [resolve] curation/: 4 of 4 activity synonyms applied, 8 decisions by hand
    ```
 
 4. **Check the result** with recipe R22, run the tests, and commit the row on

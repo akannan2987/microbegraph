@@ -18,6 +18,87 @@ and start a new, empty *Unreleased* above it. The
 
 ## Unreleased (toward 1.0.0)
 
+### Phase 4c: the 3D check of same-structure joins
+
+- **Added** `src/microbegraph/resolution/stereo.py`, which compares the 3D
+  detail of two SMILES place by place with RDKit. The atoms are matched by
+  which heavy atom connects to which and how many hydrogens each carbon
+  carries (so the tautomers clue 2 meets, charge styles and isotope labels
+  still match), every
+  way of matching is tried when a described place sits on a symmetric spot (up
+  to 10,000), and every chiral centre and double bond both drawings describe is
+  compared by its arrangement through the match, never by its name (R/S and
+  E/Z can change between tautomers). A place only one drawing describes never
+  counts as a difference.
+- **Changed** the same-structure clue (`src/microbegraph/resolution/compounds.py`):
+  it counts only when the two records' 3D detail agrees. When it differs,
+  MIBiG's own structure decides: the record it matches is joined, whether that
+  is MIBiG's number ("Confirmed through the same skeleton and MIBiG's own 3D
+  structure.") or the record PubChem files the name under ("Confirmed by name
+  and by MIBiG's own 3D structure."). When it can't tell, neither record joins
+  and both ledger rows say a person should decide (unless another number MIBiG
+  gives joined). Every clue 2 sentence now says how the 3D detail compares.
+- **Added** an eighth decision by hand (`curation/resolution_decisions.csv`):
+  echinomycin joins 6857732, the record PubChem titles "Echinomycin". Its two
+  records differ at the two alanines, and MIBiG's own structure matches
+  458034, the one of MIBiG's two numbers that reached clue 2, but a review
+  (Dawson, Malkinson, Paumier and Searcey, *Natural Product Reports*, 2007,
+  doi:10.1039/b516347c) gives L-alanine, as 6857732 draws it.
+- **Changed** the resolver's report and summary: three new lines about the 3D
+  check, `same_structure_3d_check` in `resolve_summary.json`, and the compounds
+  left for a person under `still_open.same_structure_3d_for_a_person`.
+- **Added** RDKit to `requirements.txt`, pinned exactly to `rdkit==2025.9.3`
+  (the newest version with ready-made installs for Intel Macs, and the same
+  version on every computer so the counts agree), to `requirements.lock.txt`
+  and to `check-setup.py`.
+- **Added** 37 tests (398 in all): 35 in `tests/test_3d_check.py`, and the two
+  new recipes, which `tests/test_query.py` runs like every other; Phase 4b's
+  made-up clue 2 records got SMILES. A survey script,
+  `tests/fixtures/survey_3d_detail.py`, repeats the look at the real pairs and
+  checks the comparison a second way (InChI's stereo layers). The Phase 4c
+  guide (`docs/06c-checking-3d-detail.md`), cookbook recipes R23 and R24, a
+  picture (`three_d_check.svg`), three new cases on the resolution cases page
+  (echinomycin, macbecin II, nocardicin A), glossary entries (R and S, E and Z,
+  enantiomers, diastereomers, epimer, tautomers, alpha carbon, D and L,
+  place, InChI, RDKit, canonical numbering), and the Handbook's version 1.10
+  with Stage 7c.
+- **Measured** (the same downloads as the Phase 4b follow-ups, resolved on
+  2026-10-13):
+  - *The survey, on Phase 4b's ledger:* 184 pairs (the 180 joins clue 2 made,
+    and 4 inside the kosinostatin and valclavam ties). 118 agree and 66 differ
+    (10 with every shared place the other way round, 34 at chiral centres only,
+    16 at double bonds only, 6 at both; 37 at a single place). The second
+    method gives the same verdict on every pair.
+  - *The check, in the resolver:* 183 pairs (echinomycin is decided by hand
+    now), 118 agree and 65 differ. MIBiG's own structure keeps the number in
+    38, moves 17 compounds to the record PubChem names (abyssomicin C,
+    azolemycin D, BE-14106, belactosin A, bicyclomycin, cyclizidine,
+    cystargolide A, eurocidin E, FD-891, heronamide A, C and D, macbecin II,
+    oxepinamide F, pneumocandin A0, saprolmycin E, spiruchostatin A), and can't
+    decide 10.
+  - *Resolver:* PubChem joins by MIBiG's own numbers 991 (refused 139), by the
+    name search 944 (refused 374), where MIBiG gives more than one number 19
+    (refused 37), by hand 3 (refused 5); 857 entries left out; a ledger of
+    25,789 rows. The graph keeps 48,234 nodes and 57,014 arrows. 1,967 of
+    MIBiG's 3,842 compounds share a node with a PubChem record (1,975 before).
+  - *Moved:* 9 compounds lost their PubChem record and wait for a person
+    (brasilinolide A, brevione E, capsimycin, cremimycin, fluostatin F,
+    heronamide B, nocardicin A, syringolin A, versipelostatin); kosinostatin's
+    tie is settled, joining 102302126; echinomycin moves from 458034 to
+    6857732.
+- **Known limits:** 38 numbers rest on MIBiG's own structure alone, which can
+  copy its number's record, as echinomycin's did. MIBiG's structure is asked
+  only when two PubChem records disagree, so 5 agreeing pairs where it matches
+  neither record (chromomycin A3, curacin A, ikarugamycin, pleuromutilin,
+  pneumocandin B0), 2 where one of MIBiG's entries is another molecule
+  (2-methylisoborneol, bryostatin) and two flat joins it disagrees with
+  (bottromycin A2, indolmycin) are untouched. RDKit and PubChem compute a different second
+  InChIKey block for 4 records of 3 compounds (eurocidin D and E, and both
+  hitachimycin records), which changes no decision.
+- **Planned:** a person checks the 38 against the literature, and MIBiG's own
+  structure is compared with the record of every PubChem join, as a list for a
+  person, both before release 1.0.
+
 ### Phase 4b follow-ups: every PubChem number, isotope tracers, a clearer ledger, maps no arrow reaches
 
 - **Changed** the MIBiG adapter to list every PubChem number an entry gives.
@@ -75,7 +156,7 @@ and start a new, empty *Unreleased* above it. The
   today's data); valclavam's two numbers tie, and corallopyronin's and glidobactin's can't be confirmed, each
   for a person to read.
 - **Planned:** a check of those 137 joins, chiral centre by chiral centre,
-  before Phase 5.
+  before Phase 5 (done in Phase 4c, above).
 
 ### Phase 4b: closing the gaps, with GenBank, PubChem names and a review file
 

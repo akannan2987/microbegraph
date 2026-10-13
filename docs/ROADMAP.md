@@ -34,9 +34,9 @@ attached tells a reader more than a list of promises does.
 
 ## The shape of the plan
 
-There are nineteen numbered phases (1-19) plus four sub-phases (3b, 4b, and the
-optional 8b and 9b), so twenty-three pieces of work in total, grouped into three
-releases. The
+There are nineteen numbered phases (1-19) plus five sub-phases (3b, 4b, 4c, and
+the optional 8b and 9b), so twenty-four pieces of work in total, grouped into
+three releases. The
 design work you have already read (architecture, setup, ontology, this roadmap)
 is Phase 0.
 
@@ -481,12 +481,12 @@ while checking the run, settled before Phase 5
   is the flat drawing). Most will be one molecule drawn more or less fully;
   some may be stereoisomers, which the first block can't tell apart. One of
   them moved with the follow-ups: echinomycin went from 6857732,
-  "Echinomycin", to 458034, the second number its entry gives. To settle
-  before Phase 5: compare the two records' chiral centres one by one (from
-  their SMILES, or from the InChI strings PubChem gives on request, which
-  would mean asking rounds 1 and 3 again), let clue 2 count only when the
-  details agree wherever both give one, and list the rest for a person. About
-  3 to 4 hours, possibly with a chemistry library (RDKit) as a new tool.
+  "Echinomycin", to 458034, the second number its entry gives. **Done in
+  [Phase 4c](#phase-4c-the-3d-check-of-same-structure-joins-)**, from the
+  SMILES already in the staging tables, with RDKit: 66 pairs really differed,
+  and MIBiG's own structure settled 56 of them. Echinomycin itself was settled
+  by hand: MIBiG's structure matches 458034, and the literature gives the 3D
+  detail of 6857732.
 * **A second, independent witness for formula-only joins.** The 80 joins that
   rest on the formula alone have names PubChem's file doesn't know, so the name
   search can neither confirm nor refute them. They need another source that
@@ -497,7 +497,8 @@ while checking the run, settled before Phase 5
   terms are checked.
 * **Compounds for a person to read:** 33 whose name PubChem files under several
   equally good records (cercosporin, macbecin, tirandamycin...), and 2 whose own
-  numbers tie (kosinostatin, from two entries, and valclavam, from one); 131 the clues refused (99 because a
+  numbers tie (kosinostatin, from two entries, and valclavam, from one; Phase
+  4c's 3D check settled kosinostatin); 131 the clues refused (99 because a
   formula disagrees, as for butirosin, where MIBiG gives the sulfate salt's
   number and formula; corallopyronin and glidobactin since the follow-ups,
   whose entries give two numbers no name confirms); and the 11 nodes that
@@ -514,6 +515,110 @@ while checking the run, settled before Phase 5
 **Effort:** ~6-8 hours, plus one unattended PubChem run, mostly the 931 MB
 download; the follow-ups took about 3 hours more and one PubChem run of 54
 requests.
+
+---
+
+## Phase 4c. The 3D check of same-structure joins ✅
+
+**Status:** built, run and tested on 2026-10-13. Guide:
+[`06c-checking-3d-detail.md`](06c-checking-3d-detail.md); new recipes R23 and
+R24 in [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md).
+
+**Why it exists:** Phase 4b's second clue treats two PubChem records whose
+InChIKeys start alike as one molecule. The first block leaves out how the atoms
+sit in space, so two different compounds (stereoisomers) can share it, and in
+137 of the clue's 180 joins the two records describe the 3D arrangement
+differently. A compound joined to the wrong stereoisomer carries that
+molecule's facts under its own name, which every later phase would build on.
+
+**What was built:**
+
+* **`resolution/stereo.py`:** reads two SMILES with RDKit, matches their atoms
+  one to one by which heavy atom connects to which and how many hydrogens each
+  carbon carries (so the tautomers clue 2 meets, charge styles and isotope
+  labels still match), tries every way of matching when a described place
+  sits on a symmetric spot, and compares how every chiral centre and double
+  bond both describe is arranged, through the match. It compares the arrangement itself rather than
+  the names R/S and E/Z, which can change between tautomers. A place only one
+  drawing describes can't make them disagree.
+* **Clue 2 with the check:** it counts only when nothing differs. When the two
+  records differ, MIBiG's own structure decides: the record its 3D detail
+  matches is the compound, whether that's MIBiG's number or the record PubChem
+  names. When it can't tell, neither record is joined and the ledger says a
+  person should decide. The ledger names the places that differ and what
+  MIBiG's structure matched.
+* **The report and the summary:** the resolver prints three lines about the
+  check, and `resolve_summary.json` gains `same_structure_3d_check` and the list
+  of compounds left for a person.
+* **A survey script,** `tests/fixtures/survey_3d_detail.py`, that repeats the
+  look at the real pairs and checks the comparison a second way (InChI's stereo
+  layers, which share RDKit's reading of the SMILES but use different code).
+* **Echinomycin, by hand:** the compound that started the phase is one the
+  check gets wrong. MIBiG's own structure matches 458034, the one of MIBiG's
+  two numbers that reached clue 2, but a review (Dawson et al., *Natural
+  Product Reports*, 2007) gives L-alanine, as in 6857732, the record PubChem
+  titles "Echinomycin". MIBiG's SMILES most likely came from its number's
+  record. An eighth decision in the review file joins 6857732.
+
+**What looking first changed:** the survey showed that the check matters (66
+of the 184 pairs clue 2 looked at after Phase 4b are two different compounds),
+that atoms have to be matched by their connections rather than their bonds
+exactly (6 pairs are tautomers, one writes a phosphorus group two ways, one
+carries a deuterium label), and that MIBiG's own structure can settle 56 of the
+66. Without that last finding the only safe rule would have been to leave all
+66 for a person.
+
+**New concepts:** stereoisomers, enantiomers, diastereomers and epimers; the CIP
+names R and S, and E and Z; how a SMILES writes 3D; tautomers; comparing two
+descriptions where a blank agrees with anything; symmetry and canonical
+numbering; a third witness, why its answer can still be wrong, and handing a
+question to a person.
+
+**New tools:** **RDKit**, the standard free chemistry library for Python (BSD
+licence). Reading SMILES and keeping track of chiral centres is subtle, and a
+home-made reader would be wrong in ways nobody would notice. It is pinned to
+exactly **2025.9.3**: newer versions have no ready-made install for Intel Macs,
+where pip would quietly fall back to 2025.9.3 anyway, and the resolver's counts
+depend on RDKit's reading, so every computer uses the same version.
+
+**Checkpoint (met on 2026-10-13):** 183 pairs checked, 118 agree and 65
+differ; MIBiG's structure keeps the number in 38, moves 17 compounds to the
+record PubChem names and leaves 9 compounds for a person; echinomycin joins
+6857732 by hand; the survey's second method gives the same counts; 48,234
+nodes and 57,014 arrows; the twelve rules pass; DuckDB and NetworkX agree; the
+ledger has 25,789 rows; 398 tests pass.
+
+**Handed on:**
+
+* **9 compounds for a person** (recipe R24): brasilinolide A, brevione E,
+  capsimycin, cremimycin, fluostatin F, heronamide B, nocardicin A,
+  syringolin A and versipelostatin. Each decision goes in the review file, with
+  its source.
+* **38 numbers kept on MIBiG's structure alone** (recipe R23 counts them).
+  Echinomycin showed that MIBiG's SMILES can copy the record its number points
+  at, so "MIBiG's structure matches MIBiG's number" is weak evidence on its
+  own. A person should check each of the 38 against the literature, the way
+  echinomycin was checked, and record every one that turns out the other way
+  in the review file. Before release 1.0.
+* **MIBiG's own structure against every join's record.** The check asks
+  MIBiG's structure only when two PubChem records disagree. In 5 of the 118
+  agreeing pairs it matches neither record (chromomycin A3 and ikarugamycin have
+  another skeleton in MIBiG; pleuromutilin and pneumocandin B0 differ from both
+  at one centre; two of curacin A's three entries do too), and in
+  2-methylisoborneol and bryostatin one of MIBiG's entries is another
+  molecule altogether. Two compounds are joined to a flat record while
+  MIBiG's structure disagrees with the record PubChem names: indolmycin (the mirror image) and bottromycin A2 (one of its
+  three entries differs at one centre). Comparing MIBiG's structure with the
+  record of every PubChem join (about 2,000) would find all such cases. To do
+  before release 1.0, as a check that lists what it finds for a person rather
+  than a rule that moves joins.
+* **RDKit and PubChem computing different second InChIKey blocks** for 4
+  records of 3 compounds (eurocidin D, eurocidin E and both hitachimycin
+  records). First blocks always match and both records of a pair are read by
+  RDKit, so no decision depends on it; worth watching when MIBiG 5.0 brings new
+  compounds.
+
+**Effort:** ~3-4 hours.
 
 ---
 
@@ -1286,7 +1391,7 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | | A tutorial guide per phase, with checkpoints and troubleshooting | ✅ Phases 0-1, then each phase |
 | | The glossary, every term in plain language | ✅ Phase 0, grows each phase |
 | | Teaching diagrams and interactive explorers, regenerated by script | ✅ Phase 1, grows each phase |
-| | Query cookbook: tested SQL, then Cypher, recipes | ✅ Phase 4 (19 SQL and 5 graph recipes, all run by the tests), ✅ 3 more in Phase 4b, Cypher in Phase 11 |
+| | Query cookbook: tested SQL, then Cypher, recipes | ✅ Phase 4 (19 SQL and 5 graph recipes, all run by the tests), ✅ 3 more in Phase 4b, ✅ 2 more in Phase 4c, Cypher in Phase 11 |
 | **Trust** | Evidence level, source, record and date on every arrow | ✅ Phase 0 design, Phase 1 code |
 | | Checksums and an append-only provenance log for every download | ✅ Phase 1 |
 | | The twelve rules enforced in code, then as dbt tests | ✅ Phase 1, Phase 10 |
@@ -1294,7 +1399,9 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | | Decisions only a person can make, recorded with a reason and a source | ✅ Phase 4b (`curation/resolution_decisions.csv`) |
 | | When two records of one source disagree, every value kept with the record that gave it | ✅ Phase 4b (every PubChem number a single entry gives too, with the follow-ups) |
 | | The same-structure clue never confirms a laboratory tracer (a record built with an unusual isotope) | ✅ Phase 4b follow-ups |
-| | A record joined only when its 3D detail agrees with the record that confirms it | Before Phase 5 (Phase 4b, "Handed on") |
+| | A record joined only when its 3D detail agrees with the record that confirms it | ✅ Phase 4c (when two records differ, MIBiG's own structure decides, or a person) |
+| | A source's own structure checked against the record every join chose | Before release 1.0 (Phase 4c, "Handed on") |
+| | Every number kept on a source's own structure alone checked against the literature by a person | Before release 1.0 (Phase 4c, "Handed on": 38 compounds; echinomycin done) |
 | | No node left in the graph without an arrow, and a ledger row for each one taken out | ✅ Phase 4b follow-ups (KEGG maps) |
 | | Null-model statistics and a second-language cross-check | Phase 6 |
 | | Predictions stored as `inferred`, never mixed with evidence | Phase 7 |
@@ -1392,6 +1499,7 @@ so far, and what the plan does about each:
 | **GitHub's `ubuntu-latest`** moves to Ubuntu 26 from 19 October 2026 | GitHub's notice, after Phase 3 | Nothing unless an Ubuntu job fails; then pin `ubuntu-24.04` in `.github/workflows/ci.yml` and say so in the docs that describe CI |
 | **PubChem's request limits** (at most 5 requests a second and 400 a minute) | Phase 4b: a survey asking four names a second was refused after about 400 names, a run at one a second after 372, and the refusals (HTTP 429) went on for hours, for number lookups too: still refusing 20 minutes later, and a whole run went through about four and a half hours later | The name search reads PubChem's names file instead, so a full fetch sends PubChem 54 requests and one download (52 before the follow-ups). A refusal stops a run cleanly and the next run carries everything over. Never retry a 429 in a loop |
 | **PubChem's names file** (`CID-Synonym-filtered.gz`, 931 MB, last changed by PubChem on 27 September 2026) | Phase 4b, downloaded on 2026-10-12 | PubChem regenerates it; the locker keeps the copy downloaded first, and the probe shows the size and date of PubChem's copy today. To use a newer one, move the old file out of `data/raw/pubchem/` and fetch again on a later day: the search then runs again on every name |
+| **RDKit's ready-made installs** stopped covering Intel Macs after 2025.9.3 (the newest on PyPI in October 2026 is 2026.9.1) | Phase 4c, when adding RDKit | Stay pinned at `rdkit==2025.9.3` on every computer, so all of them print the same counts. Move the pin only as a change of its own, with the resolver's counts compared before and after, once every computer that builds the project can install the new version |
 
 Running `python -m microbegraph.fetch --probe` at the start of each phase is the
 habit that keeps this table current.
@@ -1406,12 +1514,12 @@ weeks:
 | Release | Phases | Hours | Calendar |
 |---|---|---|---|
 | 0, design and setup | 0 | ~5-6 | ~1 week |
-| 1.0, the science | 1-9 (with 3b and 4b) | ~84-105 | ~19-23 weeks |
+| 1.0, the science | 1-9 (with 3b, 4b and 4c) | ~87-109 | ~19-24 weeks |
 | 1.0, the same app in Shiny *(optional)* | 8b | ~8-10 | ~2 weeks |
 | 1.0, one container *(optional)* | 9b | ~4-5 | ~1 week |
 | 2.0, the platform | 10-13 | ~34-42 | ~8-9 weeks |
 | 3.0, the product | 14-19 | ~55-66 | ~12-15 weeks |
-| **Total** | **0-19, 3b and 4b (+8b, 9b)** | **~190-234** | **~42-52 weeks** |
+| **Total** | **0-19, 3b, 4b and 4c (+8b, 9b)** | **~193-238** | **~43-53 weeks** |
 
 *The per-phase hours live in [`phases.csv`](phases.csv); the weeks assume about
 4.5 hours a week.*

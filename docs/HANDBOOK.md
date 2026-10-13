@@ -4,16 +4,16 @@
 
 ![MicrobeGraph: from a microbe's genes to a crop's disease, with the evidence for every arrow](img/cover_microbegraph.svg)
 
-**Handbook version:** 1.9 · **Last updated:** 2026-10-13 · **Repository state it
+**Handbook version:** 1.10 · **Last updated:** 2026-10-13 · **Repository state it
 describes:** Phase 0 (design and setup), Phase 1 (MIBiG ingestion), Phase 2
 (PubChem, NCBI Taxonomy, KEGG and the cited bridge), Phase 3 (the proteomics
 layer: MIBiG's gene records and UniProt), Phase 3b (every cluster's proteins,
 from MIBiG's protein file), Phase 4 (entity resolution with its ledger, the
 graph in DuckDB and NetworkX, and the query cookbook) and Phase 4b (closing the
 gaps: MIBiG's GenBank file, PubChem's name search in PubChem's names file, a
-review file, and the four follow-ups after its real run) built, run and
-tested; one more check from Phase 4b (same-structure joins with different 3D
-detail), then Phase 5 (graph analytics) next.
+review file, and the four follow-ups after its real run) and Phase 4c (the 3D
+check of same-structure joins, with RDKit) built, run and tested; Phase 5
+(graph analytics) next.
 
 **Read this document first, and come back to it whenever you lose your place.**
 It follows the whole journey in order: understanding the project, setting up a
@@ -113,6 +113,7 @@ for the same plan.
 | 6b | Every cluster's proteins: MIBiG's protein file | 3b | 4-5 h | ✅ | [`05b-all-cluster-proteins.md`](05b-all-cluster-proteins.md) |
 | 7 | Entity resolution and the graph build | 4 | 10-12 h | ✅ | [`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md), [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md) |
 | 7b | Closing the gaps: names, GenBank and a review file | 4b | 6-8 h | ✅ | [`06b-closing-the-gaps.md`](06b-closing-the-gaps.md) |
+| 7c | The 3D check of same-structure joins | 4c | 3-4 h | ✅ | [`06c-checking-3d-detail.md`](06c-checking-3d-detail.md) |
 | 8 | Graph analytics | 5 | 8-10 h | ⏳ next | `07-graph-analytics.md` |
 | 9 | Statistical validation in R | 6 | 6-8 h | ⬜ | `08-statistical-validation-r.md` |
 | 10 | Graph machine learning | 7 | 12-14 h | ⬜ | `09-graph-machine-learning.md` |
@@ -597,7 +598,7 @@ asking the database questions with tested recipes.
 
 **Open:** [`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md);
 [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md) for the 19 SQL and 5 graph recipes (22 SQL
-recipes since Stage 7b); the rules in [`02-ontology-and-data-model.md`, section 9](02-ontology-and-data-model.md#9-validation-rules-the-loader-enforces);
+recipes since Stage 7b, 24 since Stage 7c); the rules in [`02-ontology-and-data-model.md`, section 9](02-ontology-and-data-model.md#9-validation-rules-the-loader-enforces);
 [`tests/fixtures/README.md`](../tests/fixtures/README.md) for the real slice the
 tests use.
 **Checkpoint:** `pytest` passes; `python -m microbegraph.build_graph` ends with
@@ -681,10 +682,11 @@ bulk download instead of asking a web service; human-in-the-loop review and
 overrides; isolated nodes; circular imports.
 
 **Open:** [`06b-closing-the-gaps.md`](06b-closing-the-gaps.md); recipes R19 to
-R22 in [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md#7-decisions-by-hand-and-disagreements-r20-to-r22);
+R22 in [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md#7-decisions-by-hand-and-disagreements-r20-to-r24);
 [`curation/README.md`](../curation/README.md) for adding a row to either
 curated file; [`interactive/resolution_cases.html`](interactive/resolution_cases.html)
-for seven real cases, clue by clue, in your browser.
+for real cases, clue by clue, in your browser (the first seven are this
+stage's).
 **Checkpoint:** `pytest` passes; `mibig_summary.json` lists no gene record
 without a protein number and no removal not found; recipe R20 lists the seven
 decisions by hand; `build_graph` ends with `every count matches`; the
@@ -703,8 +705,76 @@ ties; the ledger has 25,775 rows. The sanity checks against Stage 7 are in
 [`06b-closing-the-gaps.md`, Step 10](06b-closing-the-gaps.md#14-step-10-run-it-for-real).
 If PubChem refuses your computer, wait a few hours and run the same command:
 the adapter says so in plain words, keeps what arrived, and nothing breaks.
+Stage 7c's 3D check moves a few of these numbers (1,967 compounds with a
+PubChem record afterwards, eight decisions by hand, ledger 25,789).
 **Commit message:** `feat: close resolution gaps with GenBank, PubChem names and a review file`.
 **Estimated time:** 6-8 hours, plus one unattended PubChem run, mostly the 931 MB download.
+
+---
+
+## Stage 7c. The 3D check of same-structure joins (Phase 4c)
+
+![Echinomycin's two PubChem records share a skeleton but differ at 2 of the 8 chiral centres both describe, the two alanines; MIBiG's own structure matches CID 458034, but the literature gives L-alanine as in CID 6857732, so a decision by hand joins that record. For each of the 183 pairs clue 2 looks at, the resolver compares the 3D detail: 118 agree, and for the 65 that differ MIBiG's own structure keeps the number (38), moves the compound to the record PubChem names (17) or can't decide (10, leaving 9 compounds for a person)](img/three_d_check.svg)
+
+**What.** Follow [`06c-checking-3d-detail.md`](06c-checking-3d-detail.md).
+Stage 7b's second clue confirms the PubChem number MIBiG gives when PubChem
+files MIBiG's name under another record whose InChIKey starts alike, which
+means the same atoms connected the same way. That says nothing about how the
+atoms sit in space, and in 137 of its 180 joins the two records describe that
+differently. This stage
+installs **RDKit**, a free chemistry library, and adds a module,
+`resolution/stereo.py`, that compares two drawings **place by place**: every
+**chiral centre** (named R or S) and every **double bond** (E or Z) both
+describe. Clue 2 now counts only when nothing differs. When the two records
+differ, **MIBiG's own structure** (the SMILES in its entry) decides which one
+is the compound; when it can't, neither record joins and the ledger asks a
+person. Echinomycin, the compound that started the stage, is settled by hand:
+MIBiG's structure matches the record its number points at, and a review in the
+literature gives the other record's 3D detail.
+
+```bash
+pip install -r requirements.txt                 # RDKit 2025.9.3, about 30 MB
+python tests/fixtures/survey_3d_detail.py       # look first: the pairs, compared two ways
+python -m microbegraph.resolve                  # now with the 3D check
+python -m microbegraph.build_graph              # every count must match
+python -m microbegraph.query --recipe 24        # the compounds left for a person
+pytest                                          # 398 promises
+```
+
+**Why.** Paths through the graph are only as good as its joins. A compound
+joined to the wrong stereoisomer carries that molecule's synonyms, database
+numbers and pathways under its own name, and nothing downstream would notice.
+Nothing new is fetched for the check: MIBiG's SMILES have been in the staging
+tables since Stage 4, and PubChem's since Stage 5.
+
+**New ideas in this stage:** stereoisomers, enantiomers, diastereomers and
+epimers; the CIP names R and S, and E and Z; how a SMILES writes 3D (`@`, `@@`,
+`/`, `\`); tautomers; RDKit; comparing two descriptions where a blank agrees
+with anything; symmetry and canonical numbering; a third witness, why its answer
+can still be wrong, and handing a question to a person; pinning one package to
+an exact version.
+
+**Open:** [`06c-checking-3d-detail.md`](06c-checking-3d-detail.md); recipes R23
+and R24 in [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md#7-decisions-by-hand-and-disagreements-r20-to-r24);
+the last three cases in [`interactive/resolution_cases.html`](interactive/resolution_cases.html)
+(echinomycin, macbecin II and nocardicin A).
+**Checkpoint:** `python -c "import rdkit; print(rdkit.__version__)"` prints
+`2025.09.3`; `pytest` passes; the resolver prints three lines about the 3D
+check; recipe R24 lists the compounds left for a person and R20 eight decisions
+by hand; `build_graph` ends with `every count matches`; the **Actions** tab is
+green.
+**What you should get:** on the run of 2026-10-13, the check looked at 183
+pairs (the 180 joins and 4 inside two ties, less echinomycin, now decided by
+hand): 118 agree and 65 differ. MIBiG's own structure kept the number in 38,
+moved 17 compounds to the record PubChem names (macbecin II among them) and
+couldn't decide 10, which leaves 9 compounds without a PubChem record for a
+person; kosinostatin's tie is settled on the way, and echinomycin joins
+6857732. The graph keeps its 48,234 nodes and 57,014 arrows; 1,967 of MIBiG's
+3,842 compounds have a PubChem record (1,975 before), and the ledger has 25,789
+rows. The sanity checks are in
+[`06c-checking-3d-detail.md`, Step 6](06c-checking-3d-detail.md#10-step-6-run-it-on-your-data).
+**Commit message:** `feat: check the 3D detail of same-structure joins`.
+**Estimated time:** 3-4 hours.
 
 ---
 
@@ -718,15 +788,12 @@ communities, then draw the first interactive network views.
 *answering*. Every path comes with its evidence chain, and a path is only as strong
 as its weakest arrow.
 
-**Before you start:** one check from Stage 7b comes first
-([`ROADMAP.md`, Phase 4b, "Handed on"](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file-)).
-The "same structure" clue joins two PubChem records that share the first block
-of their InChIKey, and in 137 of its 180 joins the two records give different
-3D detail. Most are one molecule drawn more or less fully, but some may be
-stereoisomers (the same atoms, connected the same way, arranged differently in
-space), so the check compares the two records' chiral centres before Stage 8
-walks paths through them. Stage 7b's four other follow-ups were settled on
-2026-10-13.
+**Before you start:** Stage 7c ran the last check Stage 7b handed on, so every
+same-structure join now agrees in 3D or is backed by MIBiG's own structure
+(38 of them by that alone, which a person still has to check against the
+literature), and the 9 compounds it couldn't settle stand alone until a person
+decides (recipe R24). Paths in this stage walk through the graph as it stands
+after Stage 7c.
 
 **Open:** `07-graph-analytics.md`. If the weakest-link idea is new to you, try
 [`interactive/evidence_chain.html`](interactive/evidence_chain.html) first.
@@ -1006,9 +1073,11 @@ ritual from [Stage 2](#stage-2-version-control-and-the-end-of-phase-ritual).
 | PubChem "is refusing requests from this computer for now (HTTP 429 ...)", "stopped answering after N of M names" or "stopped answering in round 3" | Wait a few hours, then run the same command; what arrived is kept. [`06b-closing-the-gaps.md`, section 18](06b-closing-the-gaps.md#18-what-could-go-wrong) |
 | PubChem's names file: no space left while it downloads, "isn't a number, a tab and a name", or an "unfinished fetch folder" warning after a fetch you stopped by hand | [`06b-closing-the-gaps.md`, section 18](06b-closing-the-gaps.md#18-what-could-go-wrong) |
 | The resolver says `... 5 of them maps no arrow reaches`, or the PubChem fetch searches the names file again although it hasn't changed | Both are expected; [`06b-closing-the-gaps.md`, section 18](06b-closing-the-gaps.md#18-what-could-go-wrong) says why |
+| `No module named 'rdkit'`, pip can't find `rdkit==2025.9.3`, or `[FAIL]  package: rdkit` | [`06c-checking-3d-detail.md`, section 15](06c-checking-3d-detail.md#15-what-could-go-wrong) (usually `.venv` not active, or a Python outside 3.11 to 3.13) |
+| The resolver's 3D check prints other numbers than Stage 7c, says some pairs "couldn't be compared in 3D", or a compound lost its PubChem record | [`06c-checking-3d-detail.md`, section 15](06c-checking-3d-detail.md#15-what-could-go-wrong); recipe R24 lists the compounds left for a person |
 | The review file or the activity synonyms are refused ("has N problem(s)", "names records the graph doesn't have", "can't be joined") | [`curation/README.md`](../curation/README.md); [`06b-closing-the-gaps.md`, section 18](06b-closing-the-gaps.md#18-what-could-go-wrong) |
 | A query fails, finds nothing, or says the database doesn't exist | [`QUERY_COOKBOOK.md`, section 10](QUERY_COOKBOOK.md#10-what-could-go-wrong) |
-| Why two records were (or weren't) joined | The ledger: [`QUERY_COOKBOOK.md`, recipes R5 to R8](QUERY_COOKBOOK.md#4-following-the-resolvers-decisions-r5-to-r8), and R20 for decisions made by hand |
+| Why two records were (or weren't) joined | The ledger: [`QUERY_COOKBOOK.md`, recipes R5 to R8](QUERY_COOKBOOK.md#4-following-the-resolvers-decisions-r5-to-r8), R20 for decisions made by hand, and R23 and R24 for the 3D check |
 | The probe names a newer MIBiG release | Expected; [`ROADMAP.md`, *Watching the sources*](ROADMAP.md#watching-the-sources) says what the plan does about it |
 | A test fails | The test's name says which promise broke; the phase guide's *What could go wrong* table |
 | `$'\r': command not found` from the safety gate (Windows) | [`01-setup.md`, T14](01-setup.md#t14-bash-check-public-safesh-fails-with-r-command-not-found-windows) |
@@ -1042,9 +1111,10 @@ ritual from [Stage 2](#stage-2-version-control-and-the-end-of-phase-ritual).
 | [`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md) | Phase 4: entity resolution, the ledger, a Pathogen as a kind of Organism, DuckDB and NetworkX | Stage 7 |
 | [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md) | Tested recipes for asking the database questions, SQL in ten minutes, and graph recipes in Python | Stage 7, and whenever you have a question for the graph |
 | [`06b-closing-the-gaps.md`](06b-closing-the-gaps.md) | Phase 4b: GenBank records, keeping every value with its source, PubChem's name search and its rate limits, four clues for a compound, decisions by hand, and the follow-ups after the real run | Stage 7b |
+| [`06c-checking-3d-detail.md`](06c-checking-3d-detail.md) | Phase 4c: stereoisomers, how a SMILES writes 3D, R/S and E/Z, RDKit, comparing two drawings place by place, and a third witness when two sources disagree | Stage 7c |
 | `07-...` to `21-...` | One guide per later phase | As each stage arrives |
 | [`curation/README.md`](../curation/README.md) | The three hand-written files (the bridge, the review file and the activity synonyms): their columns, the confidence scale, how to add a row | Stages 5 and 7b, and whenever you add a finding or a decision |
-| [`tests/fixtures/README.md`](../tests/fixtures/README.md) | Where every test record came from, with fingerprints | Stages 5-7, and when a source changes its format |
+| [`tests/fixtures/README.md`](../tests/fixtures/README.md) | Where every test record came from, with fingerprints, and the scripts that look at the real data before each phase | Stages 5-7c, and when a source changes its format |
 | [`ROADMAP.md`](ROADMAP.md) | The plan, the reasons for every tool, the product checklist, the source changes being watched | Stage 0, per release, and when a probe names something new |
 | [`GIT-WORKFLOW.md`](GIT-WORKFLOW.md) | Commit messages, the branch flow, fixing git mistakes | Stage 2, and when stuck |
 | [`PRIOR-ART.md`](PRIOR-ART.md) | Related work and what this project does not claim | Stage 0 |
@@ -1087,6 +1157,7 @@ mentions it in that same commit, and add a change-log line.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.10 | 2026-10-13 | Phase 4c built and run: Stage 7c added, with a new picture (the eight centres echinomycin's two records both describe, and what the resolver does with each pair). Clue 2 now compares the two records' chiral centres and double bonds with RDKit, pinned to 2025.9.3 because newer versions have no Intel-Mac install, and counts only when they agree; when they differ, MIBiG's own structure decides. On the real data: 183 pairs, 118 agree, 65 differ; 38 keep MIBiG's number, 17 move to the record PubChem names, 9 compounds wait for a person, kosinostatin's tie is settled, and echinomycin is settled by hand against the literature (1,967 compounds with a PubChem record, eight decisions by hand, ledger 25,789, 398 tests). Stage 8's "before you start" now points at the finished check; Stage 7b notes which of its numbers Stage 7c moves; two troubleshooting rows for RDKit and the 3D check; the document map lists the Phase 4c guide; the resolution cases page has ten cases; the cookbook has 24 SQL recipes |
 | 1.9 | 2026-10-13 | The four follow-ups from Stage 7b, run on the real data: every PubChem number a MIBiG entry lists is a candidate (17 entries list two; round 1 asks about 1,209 numbers, 54 requests in all); clue 2 no longer confirms a record built with an unusual isotope, so ferrichrome joins its own record instead of "[55Fe] Ferrichrome"; the ledger names whose name search found a record nobody joined; KEGG maps no arrow reaches are left out with a ledger row (53 maps became 48). Two ties the first change revealed are settled in the review file (epoxomicin, mureidomycin B), and three compounds now wait for a person (valclavam, corallopyronin, glidobactin). Stage 7b's numbers are the new real ones (48,234 nodes, 57,014 arrows, 1,975 MIBiG compounds with a PubChem record, 80 joins on the formula alone, ledger 25,775, 361 tests), with a new picture of the follow-ups; Stage 8 starts with one remaining check, same-structure joins with different 3D detail (137 of 180); a troubleshooting row for the maps line and the names file being searched again; the resolution cases page has a seventh case |
 | 1.8 | 2026-10-12 | PubChem's name search ran, in PubChem's names file: the web name search was refused after 372 of 1,655 names, so the fetch now downloads `CID-Synonym-filtered.gz` (931 MB) once and searches it on your computer, and round 3 was answered in full on the fourth run that day. Stage 7b's numbers are the real ones now (48,239 nodes, 57,014 arrows, 1,978 MIBiG compounds with a PubChem record, 82 joins on the formula alone, 356 tests); the "still to run" step is gone; Stage 8 starts with the small follow-ups (ferrichrome's record, every PubChem number an entry lists, two small fixes); a troubleshooting row for the names file; the gaps picture, the four-clues picture and the resolution cases page show the real outcomes |
 | 1.7 | 2026-10-12 | Phase 4b built and run: Stage 7b rewritten around the new guide, with three of the four new pictures (the gaps and what closed them, a GenBank feature part by part, and the four clues for a compound; the fourth, a decision by hand, is in the guide and `curation/README.md`) and a new interactive page of real resolution cases; Stage 8 is next, after one waiting step, PubChem's name search, which PubChem refused on the day (HTTP 429) and which is now the first thing to run before Stage 8; the survey before the code is marked optional on a rebuild and asks PubChem one name a second; new troubleshooting rows for the GenBank file, PubChem's refusals and the two curated files; the document map lists the Phase 4b guide and describes `curation/README.md` as covering all three hand-written files; the cookbook has 22 SQL recipes |

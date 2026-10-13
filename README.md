@@ -271,14 +271,14 @@ graph carries its source and how strong its evidence is, so real and curated
 facts can't be mixed up. More in [About the data](#about-the-data-honesty-notes).*
 
 This is the shape of the graph. The counts in the first row are from the build
-after Phase 4b and its follow-ups (PubChem asked on 2026-10-12, 23:07 UTC); `python -m microbegraph.build_graph` prints them
+after Phase 4c (PubChem asked on 2026-10-12, 23:07 UTC, resolved on 2026-10-13); `python -m microbegraph.build_graph` prints them
 every time, and they move a little as the live sources update.
 
 | Fact | Value |
 |---|---|
-| The graph today | **48,234 nodes and 57,014 arrows**, merged from 71,915 identifiers in six sources, with every merge and refusal in a ledger of 25,775 decisions, seven of them made by hand with a source (Phases 4 and 4b) |
+| The graph today | **48,234 nodes and 57,014 arrows**, merged from 71,915 identifiers in six sources, with every merge and refusal in a ledger of 25,789 decisions, eight of them made by hand with a source (Phases 4, 4b and 4c) |
 | Primary real source | **MIBiG 4.0**: thousands of manually curated biosynthetic gene clusters, each linking an organism to the compound it produces, and for some, the cluster's genes with each one's protein and job ([Zenodo, CC-BY](https://doi.org/10.5281/zenodo.14169073)); plus MIBiG's protein file, every protein of every cluster ([download server](https://dl.secondarymetabolites.org/mibig/)) |
-| Chemistry source | **PubChem** (NIH): formula, weights, structure, synonyms, and KEGG and ChEBI numbers for each compound MIBiG gives a PubChem number, or whose name PubChem's names file finds |
+| Chemistry source | **PubChem** (NIH): formula, weights, structure, synonyms, and KEGG and ChEBI numbers for each compound MIBiG gives a PubChem number, or whose name PubChem's names file finds; when two records share a skeleton, their 3D detail is compared with RDKit before they count as one (Phase 4c) |
 | Taxonomy source | **NCBI Taxonomy** (E-utilities): the lineage of every organism and pathogen, so "all *Bacillus*" is one query |
 | Protein source | **UniProt**: what each of the clusters' proteins is, found through its protein number; with the enzymes, the graph has three molecular layers |
 | Pathway source | **KEGG**: compound → pathway membership (academic use only, so kept out of anything published) |
@@ -288,7 +288,7 @@ every time, and they move a little as the live sources update.
 | Molecular layers | 3: genomics (gene clusters) → proteomics (enzymes) → metabolomics (compounds), joined into one walkable structure |
 | Evidence on every edge | `source`, `source_record_id`, `retrieved_at`, `evidence_level`, `confidence`; no anonymous facts |
 | Stored twice, on purpose | DuckDB (SQL tables: counting, filtering, joining) **and** NetworkX (a walkable graph: paths, hubs, communities) |
-| Reproducibility | every fetch logged with a timestamp; raw responses kept untouched; one command rebuilds the whole graph from them; dependencies bounded in `requirements.txt` and pinned exactly in `requirements.lock.txt` |
+| Reproducibility | every fetch logged with a timestamp; raw responses kept untouched; one command rebuilds the whole graph from them; dependencies bounded in `requirements.txt` (RDKit pinned to one version, so every computer counts alike) and pinned exactly in `requirements.lock.txt` |
 
 ---
 
@@ -413,6 +413,21 @@ means, matching the build log below. Nothing is shown before it exists.*
   ([`06b-closing-the-gaps.md`](docs/06b-closing-the-gaps.md)).
 
   ![The gaps Phase 4 left and what closed each one](docs/img/gaps_closed.svg)
+- **Phase 4c. The 3D check:** ✅ Phase 4b's second clue treated two PubChem
+  records whose InChIKeys start alike as one molecule, which says nothing about
+  how the atoms sit in space. A new module compares the two records' chiral
+  centres and double bonds with RDKit, place by place, and the clue now counts
+  only when they agree. Of the 183 pairs it looks at, 118 agree and 65 are two
+  different stereoisomers. For those, MIBiG's own structure decides: it keeps
+  MIBiG's number in 38, moves 17 compounds to the record PubChem names
+  (macbecin II among them), and leaves 9 compounds without a PubChem record
+  until a person decides. Echinomycin, where MIBiG's structure matches its
+  number but the literature gives the other record's 3D detail, is settled by
+  hand. 1,967 of MIBiG's 3,842 compounds have a PubChem record; the graph keeps
+  its 48,234 nodes and 57,014 arrows; 398 offline tests
+  ([`06c-checking-3d-detail.md`](docs/06c-checking-3d-detail.md)).
+
+  ![Checking the 3D detail of a shared skeleton](docs/img/three_d_check.svg)
 - **Phases 5-9 (Release 1.0, the science):** *(pending)* graph analytics,
   statistical validation in R, graph machine learning, the app, GraphRAG.
 - **Phases 10-13 (Release 2.0, the platform):** *(pending)* dbt, PostgreSQL +
@@ -425,8 +440,8 @@ means, matching the build log below. Nothing is shown before it exists.*
 
 ## Build log
 
-The plan has nineteen phases across three releases, plus four sub-phases (3b,
-4b, and the optional 8b and 9b) and the design work in Phase 0. **Each release is complete
+The plan has nineteen phases across three releases, plus five sub-phases (3b,
+4b, 4c, and the optional 8b and 9b) and the design work in Phase 0. **Each release is complete
 and publishable on its own.** [`ROADMAP.md`](docs/ROADMAP.md) explains why each
 tool is there, and says openly which one is the weakest fit.
 
@@ -455,6 +470,7 @@ tool is there, and says openly which one is the weakest fit.
 | 3b | [Every cluster's proteins: MIBiG's protein file](docs/05b-all-cluster-proteins.md) | FASTA, a file pinned by its own fingerprint, curators' corrections, ID mapping at scale | ✅ |
 | 4 | [Entity resolution & building the graph](docs/06-entity-resolution-graph-build.md) | DuckDB, NetworkX, the resolution ledger, SQL, a tested [query cookbook](docs/QUERY_COOKBOOK.md) | ✅ |
 | 4b | [Closing the gaps: names, GenBank and a review file](docs/06b-closing-the-gaps.md) | MIBiG's GenBank file, PubChem's name search, every value kept with its entry, decisions by hand | ✅ |
+| 4c | [The 3D check of same-structure joins](docs/06c-checking-3d-detail.md) | RDKit, how a SMILES writes 3D, R/S and E/Z, a third witness | ✅ |
 | 5 | Graph analytics: paths, hubs, communities | `plotly`, `pyvis` | ⬜ |
 | 6 | Statistical validation in R | R, `igraph`, `renv`, permutation tests | ⬜ |
 | 7 | Graph machine learning | `scikit-learn`, node2vec, honest evaluation | ⬜ |
@@ -508,7 +524,8 @@ Read them in this order:
 | 05b | [Every cluster's proteins](docs/05b-all-cluster-proteins.md) | Protein sequences and the FASTA format; pinning a file by your own fingerprint; curators' corrections; matching names without guessing; ID mapping at scale |
 | 06 | [Entity resolution and the graph build](docs/06-entity-resolution-graph-build.md) | Deciding when two records are one thing, and writing down why; formulas and isomers; union-find; a database, SQL, keys and views; one source of truth in two shapes |
 | 06b | [Closing the gaps](docs/06b-closing-the-gaps.md) | GenBank records and gene names; keeping every value with its source; asking a public service politely, and HTTP 429; four clues for a compound; a person's decisions in a pipeline run by rules |
-|  | [Query cookbook](docs/QUERY_COOKBOOK.md) | SQL in ten minutes, then 22 tested SQL recipes and 5 graph recipes for asking the graph questions |
+| 06c | [Checking 3D detail](docs/06c-checking-3d-detail.md) | Stereoisomers; how a SMILES writes 3D; R/S and E/Z; comparing two drawings place by place; symmetry; a third witness when two sources disagree |
+|  | [Query cookbook](docs/QUERY_COOKBOOK.md) | SQL in ten minutes, then 24 tested SQL recipes and 5 graph recipes for asking the graph questions |
 |  | [Roadmap](docs/ROADMAP.md) | The nineteen phases and three releases, the reason for each tool, and what "finished" means |
 |  | [Prior art](docs/PRIOR-ART.md) | What already exists, how this differs, and what it does not claim |
 |  | [Git workflow](docs/GIT-WORKFLOW.md) | The commit message convention, the branch flow, and what to do when something goes wrong |
@@ -561,6 +578,7 @@ without an internet connection, and they're made by
 | [One gene, part by part](docs/img/genbank_record.svg) | a CDS feature from MIBiG's GenBank file: where the gene sits, every name it goes by, its protein's number | Phase 4b, Handbook |
 | [Four clues for a compound](docs/img/clue_ladder.svg) | the clues that confirm a PubChem number, strongest first, and when the formula stops counting | Phase 4b, Handbook |
 | [A decision by hand](docs/img/review_row.svg) | a real row of the review file, column by column, and where it lands in the ledger | Phase 4b, curation |
+| [Checking the 3D detail](docs/img/three_d_check.svg) | the eight chiral centres echinomycin's two records both describe, and what the resolver does with each pair that shares a skeleton, with the real counts | Phase 4c, results, Handbook |
 | [Four follow-ups](docs/img/follow_ups.svg) | what changed after the real run, before and after: every PubChem number an entry lists, ferrichrome's tracer record, a clearer ledger sentence, maps no arrow reaches | Phase 4b, Handbook |
 
 | Interactive page (download, then open) | What you can do |
@@ -568,7 +586,7 @@ without an internet connection, and they're made by
 | [`ontology_explorer.html`](docs/interactive/ontology_explorer.html) | hover any dot or arrow of the rulebook to see what it means and where it comes from |
 | [`evidence_chain.html`](docs/interactive/evidence_chain.html) | follow one real chain, filter it by evidence level, and see the weakest link |
 | [`roadmap_timeline.html`](docs/interactive/roadmap_timeline.html) | every phase on one timeline, with hours, status and what each adds |
-| [`resolution_cases.html`](docs/interactive/resolution_cases.html) | seven real cases the resolver had to decide, clue by clue, with what it decided and why |
+| [`resolution_cases.html`](docs/interactive/resolution_cases.html) | ten real cases the resolver had to decide, clue by clue, with what it decided and why (three of them from the 3D check) |
 
 ---
 
@@ -693,7 +711,7 @@ boundary clause by clause.*
   and are never presented as database facts.
 - **A few identity decisions are made by hand, and each one says so.** Which
   records describe the same molecule or protein is decided by rules, written
-  into a ledger with their grounds. Where a rule can't decide correctly (five
+  into a ledger with their grounds. Where a rule can't decide correctly (six
   cases so far, such as MIBiG's "desosamine" entry that carries the structure of
   methymycin, the molecule it is part of), a person decides, in
   [`curation/resolution_decisions.csv`](curation/resolution_decisions.csv), with
@@ -792,7 +810,7 @@ microbegraph/
 │   ├── 00-architecture.md           ← how it all fits together                    ✅
 │   ├── 01-setup.md                  ← blank laptop → working workshop             ✅
 │   ├── 02-ontology-and-data-model.md← the rulebook: nodes, edges, evidence        ✅
-│   ├── ROADMAP.md               ← 19 phases + 4 sub-phases, every tool justified ✅
+│   ├── ROADMAP.md               ← 19 phases + 5 sub-phases, every tool justified ✅
 │   ├── PRIOR-ART.md             ← related work + what this does NOT claim     ✅
 │   ├── GIT-WORKFLOW.md          ← commit messages + the branch flow           ✅
 │   ├── R-SETUP.md               ← R, RStudio, renv alongside Python           ✅
@@ -805,6 +823,7 @@ microbegraph/
 │   ├── 06-entity-resolution-graph-build.md ← Phase 4: the resolver, the ledger,
 │   │                              DuckDB and NetworkX                         ✅
 │   ├── 06b-closing-the-gaps.md  ← Phase 4b: GenBank, PubChem names, review file ✅
+│   ├── 06c-checking-3d-detail.md ← Phase 4c: the 3D check, with RDKit          ✅
 │   ├── 07..11                   ← Release 1.0: analytics, R validation,
 │   │                              graph ML, app, GraphRAG                     ⬜
 │   ├── 12..15                   ← Release 2.0: dbt, Postgres+AGE+pgvector,
@@ -846,6 +865,7 @@ microbegraph/
 │   │   ├── pool.py, groups.py, names.py, ledger.py ← reading, grouping, comparing, recording ✅
 │   │   ├── organisms.py, compounds.py, proteins.py ← the rules, kind by kind     ✅
 │   │   ├── reviewed.py, activities.py ← decisions by hand, activity synonyms (4b) ✅
+│   │   ├── stereo.py                ← compares 3D detail place by place (4c)     ✅
 │   │   └── combine.py               ← one node per group; arrows re-pointed       ✅
 │   ├── build_graph.py               ← nodes/edges → DuckDB → NetworkX, compared   ✅
 │   ├── query.py                     ← ask the database: cookbook recipes or your SQL ✅
@@ -901,6 +921,7 @@ microbegraph/
 │   ├── fixtures/capture_uniprot_samples.py ← surveys gene records, captures UniProt ✅
 │   ├── fixtures/capture_mibig_protein_samples.py ← downloads and surveys the protein file ✅
 │   ├── fixtures/capture_resolution_samples.py ← surveys duplicates; cuts the real slice ✅
+│   ├── fixtures/survey_3d_detail.py ← compares same-skeleton pairs two ways (4c) ✅
 │   ├── fixtures/resolve/            ← a real slice of all six sources' tables (Phase 4) ✅
 │   ├── fixtures/mibig/              ← four test records in the MIBiG 4.0 layout, and
 │   │                                  a sample of the protein file (Phase 3b)       ✅

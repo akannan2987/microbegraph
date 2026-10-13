@@ -26,6 +26,9 @@ WHAT HAPPENS, IN ORDER
     4. apply the decisions a person made                    resolution/reviewed.py
        (curation/resolution_decisions.csv, Phase 4b)
     5. join MIBiG's compounds to PubChem's, where confirmed resolution/compounds.py
+       (from Phase 4c, two records with one skeleton        resolution/stereo.py
+       must agree in 3D, or MIBiG's own structure
+       decides)
     6. join protein numbers to UniProt, identical
        sequences, and gene records by gene name            resolution/proteins.py
     7. one node per group, arrows re-pointed, and KEGG     resolution/combine.py
@@ -137,7 +140,7 @@ def resolve(staging_dir: Path = STAGING_DIR, out_dir: Path = PROCESSED_DIR,
     folded = fold_activities(pool, ledger, synonyms)
     moves.update(folded)
     reviewed = apply_decisions(pool, groups, ledger, decisions)
-    join_pubchem(pool, groups, ledger, notes, renames, reviewed)
+    three_d = join_pubchem(pool, groups, ledger, notes, renames, reviewed)
     join_same_npatlas(pool, groups, ledger, reviewed)
     facts = ProteinFacts(pool, moves)
     join_uniprot(pool, groups, ledger, facts, notes, reviewed)
@@ -182,6 +185,10 @@ def resolve(staging_dir: Path = STAGING_DIR, out_dir: Path = PROCESSED_DIR,
                                           if s.old_id not in folded],
         "decisions_by_hand": len(decisions),
     }
+    # Phase 4c: the 3D check of clue 2 (resolution/stereo.py); the compounds it
+    # leaves for a person are also listed under still_open.
+    summary["same_structure_3d_check"] = {k: v for k, v in three_d.items() if k != "for_a_person"}
+    summary["still_open"]["same_structure_3d_for_a_person"] = three_d["for_a_person"]
 
     paths = {name: out_dir / path.name for name, path in (
         ("nodes", NODES_FILE), ("edges", EDGES_FILE), ("ledger", LEDGER_FILE),
@@ -277,6 +284,7 @@ def main(argv: list[str] | None = None) -> int:
           f"{curation['decisions_by_hand']} decisions by hand")
     for word in curation["activity_synonyms_not_applied"]:
         print(f"  note: no source uses the activity '{word}' yet, so its synonym row waits")
+    print(three_d_report(result.summary))
     written = ", ".join(p.name for p in (result.nodes_path, result.edges_path,
                                           result.ledger_path, result.summary_path))
     print("[resolve] the twelve rules pass on the merged tables")
@@ -311,6 +319,25 @@ def report(summary: dict[str, Any]) -> str:
     for edge_type, n in summary["edges_by_type"].items():
         out.write(f"    {edge_type:<14}{n:>7,}\n")
     return out.getvalue().rstrip("\n")
+
+
+def three_d_report(summary: dict[str, Any]) -> str:
+    """The lines about the 3D check of same-structure joins (Phase 4c)."""
+    check = summary["same_structure_3d_check"]
+    lines = [f"[resolve] 3D check of same-structure joins: {check['pairs_checked']:,} pairs, "
+             f"{check['agree']:,} agree, {check['differ']:,} differ"]
+    if check["differ"]:
+        lines.append(f"  MIBiG's own structure keeps the number "
+                     f"{check['mibig_structure_keeps_the_number']:,}, moves to the name's record "
+                     f"{check['mibig_structure_moves_to_the_name']:,}, can't decide "
+                     f"{check['mibig_structure_cannot_decide']:,}")
+    if check["not_compared"]:
+        lines.append(f"  {check['not_compared']:,} couldn't be compared in 3D")
+    if check["compounds_left_for_a_person"]:
+        n = check["compounds_left_for_a_person"]
+        lines.append(f"  {n:,} compound{'s are' if n != 1 else ' is'} left without a PubChem "
+                     f"record, for a person to decide")
+    return "\n".join(lines)
 
 
 def read_ledger(path: Path = LEDGER_FILE) -> list[dict[str, str]]:

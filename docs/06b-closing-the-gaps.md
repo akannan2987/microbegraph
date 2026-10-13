@@ -1,4 +1,4 @@
-[← Handbook](HANDBOOK.md) · [README](../README.md) · [Glossary](GLOSSARY.md) · [Roadmap](ROADMAP.md) · [Query cookbook](QUERY_COOKBOOK.md) · [Phase 4 guide](06-entity-resolution-graph-build.md)
+[← Handbook](HANDBOOK.md) · [README](../README.md) · [Glossary](GLOSSARY.md) · [Roadmap](ROADMAP.md) · [Query cookbook](QUERY_COOKBOOK.md) · [Phase 4 guide](06-entity-resolution-graph-build.md) · [Phase 4c guide](06c-checking-3d-detail.md)
 
 # 06b. Closing the gaps: GenBank, PubChem names and a review file (Phase 4b)
 
@@ -1411,7 +1411,7 @@ different PubChem record or none, and two more needed a person:
 |---|---|---|---|
 | ferrichrome | 644246, "[55Fe] Ferrichrome" (clue 2) | 121489511, "Ferrichrome" (clue 3) | The tracer check |
 | psymberin | 11456257, "Irciniastatin A" (clue 2) | 11692946, "Psymberin, (+)-" (clue 1) | Its entry also gives 11692946, which lists the name |
-| echinomycin | 6857732, "Echinomycin" (clue 3) | 458034 (clue 2, through 6857732) | Its entry also gives 458034, and a number MIBiG gives wins over one only the search found. The two records give different 3D detail, so this join is one of those the wider question at the end of this part is about |
+| echinomycin | 6857732, "Echinomycin" (clue 3) | 458034 (clue 2, through 6857732) | Its entry also gives 458034, and a number MIBiG gives wins over one only the search found. The two records give different 3D detail, so this join is one of those the wider question at the end of this part is about. Phase 4c checked it: the records differ at the two alanines, and MIBiG's own structure matches 458034, but the literature gives the alanines of 6857732, so a decision by hand now joins 6857732 |
 | valclavam | 126919 (clue 2) | none | Its entry also gives 441132; both reach clue 2 through 118701744, "Valclavam", so they tie |
 | corallopyronin | 136192878 (formula alone) | none | Its entry gives two numbers with different first InChIKey blocks (two forms of the molecule that differ in where one hydrogen sits), and a formula can't choose between them |
 | glidobactin | 6439229, "Glidobactin A" (formula alone) | none | Its entry also gives 6505332. With two numbers the formula alone doesn't count, and neither record lists "glidobactin" |
@@ -1462,7 +1462,12 @@ drawing. Most will be one molecule drawn more or less completely, but some may
 be two stereoisomers, which clue 2 can't tell apart. Telling them apart means
 comparing the 3D details themselves, chiral centre by chiral centre, and
 [the roadmap](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file-)
-plans that check before Phase 5.
+planned that check before Phase 5. Phase 4c made it
+([`06c-checking-3d-detail.md`](06c-checking-3d-detail.md)): 65 of these 137
+joins are two different stereoisomers (a 66th differing pair was inside
+kosinostatin's tie), and MIBiG's own structure settles most of them.
+Echinomycin itself is one it settles the wrong way, and it is now decided by
+hand.
 
 ---
 
@@ -1520,7 +1525,7 @@ because of a decision by hand. What does change:
 | MIBiG compounds with no PubChem record | 1,867 of 3,842 stand alone: 1,402 with no number and no formula, 299 with a formula but no record found by name (297 names PubChem's file doesn't have, and 2 it files under more than 10 records), and the 166 in the next two rows | They stay `mg.compound:` nodes. Without a formula, a name match could never be confirmed; NPAtlas is the next place to look |
 | Ties between equally good records | 35 compounds: 33 whose name PubChem files under several equally good records (cercosporin, macbecin, tirandamycin...), and 2 whose own PubChem numbers tie: kosinostatin (two entries, two numbers) and valclavam (one entry, two numbers) | Choosing one would be a guess, so each stays apart, with every record named in the ledger. A person can settle each one in the review file, as epoxomicin and mureidomycin B were (Step 7) |
 | Compounds the clues refused | 131. In 99 a formula disagrees, as for butirosin (MIBiG gives its sulfate salt's number and formula) and epothilone (MIBiG gives epothilone B's number and formula under the general name); in 25 MIBiG gives a number but no formula to check it with (3-decalonectrin, recipe R8). Corallopyronin and glidobactin are two of the other 7: each entry gives two numbers, and no name confirms either | Each is a short read for a person, and the review file is the place to record it |
-| Same-structure joins with different 3D detail | 137 of the 180 joins clue 2 makes (echinomycin's among them) | Clue 2 trusts the first InChIKey block, which can't tell two stereoisomers apart. [The roadmap](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file-) plans a check that compares the 3D details before Phase 5 |
+| Same-structure joins with different 3D detail | 137 of the 180 joins clue 2 makes (echinomycin's among them) | Clue 2 trusts the first InChIKey block, which can't tell two stereoisomers apart. Checked in Phase 4c, which compares the 3D details and lets MIBiG's own structure decide when they differ ([`06c-checking-3d-detail.md`](06c-checking-3d-detail.md)) |
 | Two MIBiG names on one PubChem record | 11 nodes gained a second MIBiG name (16 nodes now hold two) | Most are long-known synonyms (natamycin and pimaricin, netropsin and congocidine). Dixiamycin A and B are now one node too, because PubChem files both names under one record, and pyrrolomycin, a general name, joined pyrrolomycin A's record on the formula alone; whether they should is a person's call |
 | Protein numbers with tied UniProt entries | 40 (42 in Phase 4: CBF82293.1 is settled by hand, and NP_001140431.1 was one of the maize proteins the curators removed) | Each needs a person's reading; the review file is the place |
 | Gene names for proteins without a gene record | 19,759 of the 46,987 CDS in the GenBank file carry a `/gene`, most for proteins MIBiG has no gene record for | Not used yet; [the roadmap](ROADMAP.md#phase-5-graph-analytics) adds them as protein labels in Phase 5, where readable names matter for the network pictures |
@@ -1680,8 +1685,8 @@ git switch develop
 
 ---
 
-**Next:** the check of same-structure joins with different 3D detail
-([the roadmap](ROADMAP.md#phase-4b-closing-the-gaps-names-genbank-and-a-review-file-),
-"Handed on"), then Phase 5, `07-graph-analytics.md`: evidence paths from any
+**Next:** the check of same-structure joins with different 3D detail,
+[`06c-checking-3d-detail.md`](06c-checking-3d-detail.md) (Phase 4c), then
+Phase 5, `07-graph-analytics.md`: evidence paths from any
 crop back to candidate microbes, hubs, bridges and communities. The plan is in
 the [Handbook, Stage 8](HANDBOOK.md#stage-8-graph-analytics-phase-5).
