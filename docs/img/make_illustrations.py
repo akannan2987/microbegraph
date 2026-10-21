@@ -291,8 +291,10 @@ def logo() -> str:
         + icon("Compound", 80, 62, 26)
         + f'<circle cx="108" cy="98" r="17" fill="{SURFACE}" stroke="{LAYER["phenotype"]}" stroke-width="3"/>'
         + icon("Crop", 108, 98, 22)
-        + t(160, 86, "Microbe", size=34, weight=400)
-        + t(287, 86, "Graph", size=34, weight=700)
+        # One <text> with the second word in a <tspan>, so "Graph" always starts
+        # right after "Microbe", whatever width the reader's font gives it.
+        + (f'<text x="160" y="86" font-family="{FONT}" font-size="34" fill="{INK}">'
+           f'Microbe<tspan font-weight="700">Graph</tspan></text>')
         + t(162, 112, "microbes · molecules · crops, with evidence", size=13, fill=INK2)
     )
     return svg(470, 160, body, "MicrobeGraph logo",
@@ -2234,6 +2236,175 @@ def three_d_check() -> str:
                "from 1,975 to 1,967, and ties for a person from 35 to 34.")
 
 
+# =============================================================================
+# Phase 5: graph analytics
+# =============================================================================
+def graph_analytics() -> str:
+    """Phase 5: the three questions, with the real numbers from the build after Phase 5."""
+    blue, aqua, yellow = LAYER["genomics"], LAYER["metabolomics"], LAYER["phenotype"]
+    parts = [t(32, 46, "Three questions for the finished graph", size=22, weight=700),
+             t(32, 70, "Which microbes might help a crop, which nodes matter, and which groups "
+               "the graph falls into. Every answer comes with its evidence.", size=14, fill=INK2)]
+    # 1. paths
+    parts.append(t(32, 110, "1. EVIDENCE PATHS: FOLLOW THE TYPED ROUTE, NOT THE SHORTEST ONE",
+                   size=12, weight=700, fill=MUTED))
+    chain = [("Organism", "FZB42"), ("GeneCluster", "BGC0000433"), ("Compound", "surfactin"),
+             ("Pathogen", "Botrytis cinerea"), ("Crop", "jujube")]
+    verbs = ["HARBORS", "PRODUCES", "INHIBITS", "INFECTS"]
+    xs = [80 + i * 150 for i in range(5)]
+    for i, (kind, name) in enumerate(chain):
+        parts.append(node_badge(kind, xs[i], 160, r=26, label=name))
+        if i < 4:
+            parts.append(line(xs[i] + 30, 160, xs[i + 1] - 32, 160, color=INK2))
+            parts.append(t((xs[i] + xs[i + 1]) / 2, 150, verbs[i], size=10.5, weight=600,
+                           anchor="middle", family=MONO, fill=INK2, halo=True))
+    parts.append(check_mark(720, 160, 10))
+    parts.append(t(740, 156, "Each step may only take", size=13, weight=600))
+    parts.append(t(740, 175, "the next arrow type.", size=13, weight=600))
+    parts.append(cross_mark(48, 236, 10))
+    parts.append(t(68, 241, "jujube - Botrytis cinerea - surfactin - antibacterial - coelimycin P1 "
+                   "- its cluster - Streptomyces coelicolor A3(2)", size=13, family=MONO))
+    parts.append(t(68, 262, "Six real arrows, ignoring their direction, through a label that 936 "
+                   "compounds share: 592 microbes are this close to jujube.", size=12.5, fill=INK2))
+    parts.append(rect(912, 96, 256, 112, fill=PLANE, stroke=HAIR, rx=10, sw=1))
+    for k, (big, small) in enumerate((("10 paths, 9 leads", "to 5 crops along the route"),
+                                       ("weakest link: a paper", "on every path (curated_literature)"))):
+        parts.append(t(926, 126 + k * 48, big, size=15, weight=700))
+        parts.append(t(926, 145 + k * 48, small, size=12, fill=INK2))
+    # 2. hubs and bridges
+    parts.append(t(32, 310, "2. HUBS AND BRIDGES: TWO MEANINGS OF IMPORTANT", size=12, weight=700,
+                   fill=MUTED))
+    hx, hy = 150, 420
+    for k in range(10):
+        a = math.pi * 2 * k / 10
+        x, y = hx + 70 * math.cos(a), hy + 62 * math.sin(a)
+        parts.append(line(hx, hy, x, y, color=BASE, sw=1.5, arrow=False))
+        parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="7" fill="{SURFACE}" stroke="{aqua}" '
+                     f'stroke-width="2"/>')
+    parts.append(f'<circle cx="{hx}" cy="{hy}" r="22" fill="{SURFACE}" stroke="{aqua}" '
+                 f'stroke-width="3"/>' + icon("Activity", hx, hy, 30))
+    parts.append(t(hx, 512, "hub: many arrows", size=13, weight=700, anchor="middle"))
+    parts.append(t(hx, 530, "antibacterial, 936", size=12, fill=INK2, anchor="middle"))
+    left = [(300, 380), (330, 450), (370, 400)]
+    right = [(510, 390), (540, 455), (480, 440)]
+    bx, by = 425, 425
+    for group in (left, right):
+        for i, (x1, y1) in enumerate(group):
+            for x2, y2 in group[i + 1:]:
+                parts.append(line(x1, y1, x2, y2, color=BASE, sw=1.5, arrow=False))
+    parts.append(line(370, 400, bx, by, color=INK2, sw=2, arrow=False))
+    parts.append(line(bx, by, 480, 440, color=INK2, sw=2, arrow=False))
+    for x, y in left + right:
+        parts.append(f'<circle cx="{x}" cy="{y}" r="9" fill="{SURFACE}" stroke="{blue}" '
+                     f'stroke-width="2"/>')
+    parts.append(f'<circle cx="{bx}" cy="{by}" r="16" fill="{SURFACE}" stroke="{aqua}" '
+                 f'stroke-width="3"/>' + icon("Compound", bx, by, 22))
+    parts.append(t(bx, 512, "bridge: on the routes between", size=13, weight=700, anchor="middle"))
+    parts.append(t(bx, 530, "carotenoid, made by 17 microbes", size=12, fill=INK2, anchor="middle"))
+    parts.append(t(32, 562, "On the whole graph the labels win both. Bridges are looked for",
+                   size=12.5, fill=INK2))
+    parts.append(t(32, 580, "on the production layer only (HARBORS, PRODUCES, INHIBITS, INFECTS).",
+                   size=12.5, fill=INK2))
+    # 3. communities
+    parts.append(t(640, 310, "3. COMMUNITIES: GROUPS THAT LINK MOSTLY TO EACH OTHER", size=12,
+                   weight=700, fill=MUTED))
+    blobs = [(740, 420, 80, 58, blue, 7), (900, 400, 70, 52, aqua, 6), (1060, 430, 78, 56,
+                                                                        yellow, 6)]
+    for cx, cy, rx, ry, colour, n in blobs:
+        parts.append(f'<ellipse cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" fill="{PLANE}" '
+                     f'stroke="{colour}" stroke-width="2" stroke-dasharray="5 4"/>')
+        pts = [(cx + rx * 0.55 * math.cos(2 * math.pi * k / n),
+                cy + ry * 0.5 * math.sin(2 * math.pi * k / n)) for k in range(n)]
+        for i, (x1, y1) in enumerate(pts):
+            for x2, y2 in pts[i + 1:i + 3]:
+                parts.append(line(x1, y1, x2, y2, color=BASE, sw=1.2, arrow=False))
+        for x, y in pts:
+            parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="6" fill="{SURFACE}" '
+                         f'stroke="{colour}" stroke-width="2"/>')
+    parts.append(line(820, 420, 830, 410, color=INK2, sw=1.5, arrow=False))
+    parts.append(line(970, 410, 982, 420, color=INK2, sw=1.5, arrow=False))
+    parts.append(t(900, 512, "63 communities without the proteins", size=13, weight=700,
+                   anchor="middle"))
+    parts.append(t(900, 530, "modularity 0.778 (Louvain, seed 42)", size=12, fill=INK2,
+                   anchor="middle"))
+    parts.append(t(640, 562, "Groups read as themes: Streptomyces, siderophores, antivirals,",
+                   size=12.5, fill=INK2))
+    parts.append(t(640, 580, "and a Pseudomonas group that holds cotton.", size=12.5, fill=INK2))
+    parts.append(t(32, 618, "Counts from the survey script and python -m microbegraph.analyze on the "
+                   "build after Phase 5, NetworkX 3.6.1. Details in docs/07-graph-analytics.md.",
+                   size=12.5, fill=MUTED))
+    return svg(1200, 642, "".join(parts), "Three questions for the finished graph",
+               "Evidence paths follow the typed route organism, cluster, compound, pathogen, "
+               "crop, as in FZB42, BGC0000433, surfactin, Botrytis cinerea, jujube. The shortest "
+               "route ignoring directions runs through the label antibacterial instead, and puts "
+               "592 microbes within six steps of jujube. The route finds 10 paths and 9 leads to "
+               "5 crops, and every weakest link is a paper. Hubs have many arrows (antibacterial, "
+               "936); bridges sit on the routes between groups (carotenoid, made by 17 microbes, "
+               "on the production layer). Without the proteins the graph splits into 63 "
+               "communities with modularity 0.778.")
+
+
+def single_points() -> str:
+    """Phase 5: what each crop's leads rest on, from the full run after Phase 5."""
+    blue = LAYER["genomics"]
+    parts = [t(32, 46, "What each crop's leads rest on", size=22, weight=700),
+             t(32, 70, "A lead is one microbe, one compound, one pathogen and one crop. A fact "
+               "every path of a lead uses is a single point of failure.", size=14, fill=INK2)]
+    rows = [("cotton", [("Pseudomonas protegens Pf-5", "pyoluteorin", False),
+                        ("Pseudomonas sp. M18", "pyoluteorin", False),
+                        ("Pseudomonas chlororaphis", "pyrrolnitrin", False)], 2, 2),
+            ("jujube", [("Bacillus velezensis FZB42", "surfactin", True)], 1, 1),
+            ("maize", [("Bacillus velezensis FZB42", "bacillomycin D", True)], 1, 1),
+            ("melon", [("Bacillus velezensis FZB42", "fengycin", True),
+                       ("Bacillus subtilis", "iturin", False)], 2, 1),
+            ("wheat", [("Bacillus velezensis FZB42", "bacillomycin D", True),
+                       ("Pseudomonas fluorescens", "2,4-diacetylphloroglucinol (2 clusters)",
+                        False)], 2, 2)]
+    parts.append(t(32, 108, "CROP", size=12, weight=700, fill=MUTED))
+    parts.append(t(140, 108, "LEADS (MICROBE AND COMPOUND)", size=12, weight=700, fill=MUTED))
+    parts.append(t(1000, 108, "COMPOUNDS", size=12, weight=700, fill=MUTED, anchor="middle"))
+    parts.append(t(1110, 108, "PAPERS", size=12, weight=700, fill=MUTED, anchor="middle"))
+    y = 124
+    for crop, leads, compounds, papers in rows:
+        h = 34 * len(leads) + 10
+        parts.append(rect(24, y, 1152, h, fill=PLANE if crop in ("jujube", "maize") else SURFACE,
+                          stroke=HAIR, rx=8, sw=1))
+        parts.append(icon("Crop", 46, y + 22, 22))
+        parts.append(t(64, y + 27, crop, size=14, weight=700))
+        for k, (microbe, compound, fzb) in enumerate(leads):
+            ly = y + 10 + 34 * k
+            colour = blue if fzb else BASE
+            parts.append(rect(140, ly, 820, 26, fill=SURFACE, stroke=colour, rx=13,
+                              sw=2.5 if fzb else 1.2))
+            parts.append(icon("Organism", 158, ly + 13, 18))
+            parts.append(t(174, ly + 18, microbe, size=13, weight=700 if fzb else 400))
+            parts.append(icon("Compound", 452, ly + 13, 18))
+            parts.append(t(468, ly + 18, compound, size=13))
+        parts.append(t(1000, y + 27, str(compounds), size=16, weight=700, anchor="middle"))
+        parts.append(t(1110, y + 27, str(papers), size=16, weight=700, anchor="middle"))
+        y += h + 8
+    parts.append(rect(24, y + 4, 1152, 70, fill=SURFACE, stroke=blue, rx=10, sw=2))
+    parts.append(t(44, y + 32, "Without Bacillus velezensis FZB42 (thick outline), 4 of the 9 "
+                   "leads are lost, and jujube and maize (shaded) have none.", size=14,
+                   weight=700))
+    parts.append(t(44, y + 56, "Each pathogen rests on one or two compounds and one paper; the "
+                   "papers are the curated bridge's, from this project's own reading.", size=13,
+                   fill=INK2))
+    parts.append(t(32, y + 104, "From python -m microbegraph.analyze on the build after Phase 5 "
+                   "(the downloads of Phase 4c). Details in docs/07-graph-analytics.md.",
+                   size=12.5, fill=MUTED))
+    return svg(1200, int(y + 126), "".join(parts), "What each crop's leads rest on",
+               "Cotton has 3 leads (Pseudomonas protegens Pf-5 and Pseudomonas sp. M18 with "
+               "pyoluteorin, Pseudomonas chlororaphis with pyrrolnitrin), 2 compounds and 2 "
+               "papers. Jujube has 1 lead (FZB42, surfactin), maize 1 (FZB42, bacillomycin D), "
+               "each resting on one compound and one paper. Melon has 2 leads (FZB42 with "
+               "fengycin, Bacillus subtilis with iturin), 2 compounds and 1 paper. Wheat has 2 "
+               "leads (FZB42 with bacillomycin D, Pseudomonas fluorescens with "
+               "2,4-diacetylphloroglucinol from two clusters), 2 compounds and 2 papers. Without "
+               "Bacillus velezensis FZB42, 4 of the 9 leads are lost and jujube and maize have "
+               "none.")
+
+
 FIGURES = {
     "logo_microbegraph.svg": logo,
     "cover_microbegraph.svg": cover,
@@ -2268,6 +2439,8 @@ FIGURES = {
     "review_row.svg": review_row,
     "follow_ups.svg": follow_ups,
     "three_d_check.svg": three_d_check,
+    "graph_analytics.svg": graph_analytics,
+    "single_points.svg": single_points,
 }
 
 

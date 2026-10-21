@@ -776,7 +776,11 @@ class _GraphBuilder:
             # Phase 4b: the GenBank file
             "genbank_cds": sum(len(c) for c in self.genbank.values()),
             "genes_found_by_genbank": 0, "removals_found_by_genbank": 0,
+            # Phase 5: proteins given a gene name by the GenBank file (for labels)
+            "proteins_with_genbank_gene": 0,
         }
+        # Phase 5: entry -> {protein number: its first /gene}, built when first asked
+        self._genbank_genes: dict[str, dict[str, str]] = {}
         # slug -> the exact (case-folded) name that first claimed it
         self._slug_owner: dict[str, str] = {}
         # Phase 4b: every value each single-value property was given, and by
@@ -990,6 +994,9 @@ class _GraphBuilder:
             "sequence_length": record.length,
             "sequence_md5": record.md5,
             "found_in": "protein_file",
+            # Phase 5: the gene name the GenBank file gives this protein, kept
+            # apart from gene_name (the resolver matches on that one).
+            "genbank_gene": self._genbank_gene(accession, record.protein_id),
         }
         # A gene record's own product (and name) came first and stays: MIBiG's
         # curators wrote it, while the file's is the sequence record's.
@@ -1001,6 +1008,19 @@ class _GraphBuilder:
         self._add_edge(cluster_id, node_id, "ENCODES", "database_assertion",
                        accession, confidence, entry_refs)
 
+    def _genbank_gene(self, accession: str, protein_id: str) -> str:
+        """
+        Phase 5: the first /gene of the CDS in this entry's GenBank record that
+        carries this protein number ("" if there is none, or it has no /gene).
+        """
+        if accession not in self._genbank_genes:
+            genes: dict[str, str] = {}
+            for cds in self.genbank.get(accession, []):
+                if cds.protein_id and cds.gene:
+                    genes.setdefault(cds.protein_id, cds.gene)
+            self._genbank_genes[accession] = genes
+        return self._genbank_genes[accession].get(protein_id, "")
+
     def finish(self) -> None:
         """After the last entry: the counts that need every entry read first."""
         self.counts["protein_file_records_not_active"] = sum(
@@ -1008,6 +1028,9 @@ class _GraphBuilder:
             if accession not in self._entries_read)
         self.counts["entries_with_proteins"] = len({source for source, _, kind in self.edges
                                                     if kind == "ENCODES"})
+        self.counts["proteins_with_genbank_gene"] = sum(
+            1 for node in self.nodes.values()
+            if node["node_type"] == "Protein" and node["properties"].get("genbank_gene"))
 
     def _add_gene(self, gene: dict[str, Any], accession: str, cluster_id: str,
                   compound_ids: list[str], confidence: float, entry_refs: list[str],

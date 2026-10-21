@@ -18,6 +18,103 @@ and start a new, empty *Unreleased* above it. The
 
 ## Unreleased (toward 1.0.0)
 
+### Phase 5: graph analytics, with evidence paths, hubs, bridges and communities
+
+- **Added** `python -m microbegraph.analyze` (`src/microbegraph/analyze.py`)
+  and the package `src/microbegraph/analytics/`. With no option it runs
+  everything, prints a summary and writes `crop_paths.csv`,
+  `single_points.csv`, `node_measures.csv`, `communities.csv`,
+  `analytics_summary.json` and three pages (with `plotly.min.js`) to
+  `data/processed/analytics/`, beside the database and never inside it. One
+  question at a time: `--paths [CROP]`, `--hubs`, `--bridges [--whole-graph]`,
+  `--communities`, `--around NODE`.
+- **Added** evidence paths (`analytics/evidence_paths.py`): from a crop
+  backwards along one typed route, Organism `HARBORS` GeneCluster `PRODUCES`
+  Compound `INHIBITS` Pathogen `INFECTS` Crop (a Pathogen counts as an
+  Organism), ranked by the weakest evidence level, then the number of arrows an
+  experiment backs, then the lowest confidence among the weakest arrows, then
+  names. Paths with the same microbe, compound, pathogen and crop form one
+  lead. Arrows at the level `inferred` stay out unless asked for
+  (`--include-inferred`), as `NOT_EVIDENCE` in `ontology.py` says. Every fact
+  (node or paper) some lead rests on entirely is listed with the leads lost if
+  it were wrong; a paper counts only where an arrow rests on it alone.
+- **Added** hubs and bridges (`analytics/centrality.py`): degree on the whole
+  graph, exact betweenness on the production layer (`HARBORS`, `PRODUCES`,
+  `INHIBITS`, `INFECTS`, directions set aside), and a whole-graph estimate from
+  300 starting nodes (seed 42) for comparison.
+- **Added** communities (`analytics/communities.py`): NetworkX's Louvain method
+  on the graph without proteins, seed 42, with modularity; groups numbered by
+  size.
+- **Added** readable labels (`analytics/labels.py`): a protein shows its gene
+  and then its product, "srfAA (surfactin synthetase A)", the gene taken from
+  MIBiG's curators, else MIBiG's GenBank file, else UniProt; merged gene names
+  show only their first.
+- **Changed** the MIBiG adapter: each CDS keeps its first `/gene` on its own
+  (`CodingSequence.gene` in `sources/mibig_genbank.py`), and every protein from
+  the protein file gets it as `genbank_gene`, a property of its own that the
+  resolver never reads. The tidy counts `proteins_with_genbank_gene`. The
+  `proteins` view has a `genbank_gene` column. No node, arrow or ledger row
+  changes.
+- **Added** pages (`analytics/pictures.py`) that open without an internet
+  connection: the crop paths in five columns, the communities as bubbles and
+  one node's neighbours with pyvis (vis-network carried inside each page, the
+  template's two unused styling links removed), hubs against bridges with
+  plotly (one `plotly.min.js` beside it). Same colours and shapes as the
+  diagrams, and no meaning on colour alone.
+- **Added** 41 tests (439 in all): 32 in `tests/test_graph_analytics.py`, and
+  the five new recipes, which `tests/test_query.py` runs like every other.
+  `tests/test_mibig_protein_file.py` expects YciC's `genbank_gene`; the
+  resolver slice's `mibig_nodes.csv` carries `genbank_gene` on 243 proteins,
+  taken from the re-tidied table for the same rows. A survey script,
+  `tests/fixtures/survey_graph_shape.py`, repeats the look at the graph. The
+  Phase 5 guide (`docs/07-graph-analytics.md`), cookbook recipes R25 and N6 to
+  N9 (the graph recipes, writing a recipe and what could go wrong are now the
+  cookbook's sections 9, 10 and 11), two pictures
+  (`graph_analytics.svg`, `single_points.svg`), a teaching page
+  (`interactive/hubs_bridges_groups.html`), glossary entries (bridge, community,
+  hub, lead, Louvain method, metapath, modularity, plotly, production layer,
+  pyvis, random seed, single point of failure, typed route), and the
+  Handbook's version 1.11 with Stage 8.
+- **Fixed** the logo: "Microbe" and "Graph" are one line of text now, so the
+  second word starts right after the first whatever the font.
+- **Measured** (the same downloads as Phase 4c; MIBiG re-tidied on 2026-10-18):
+  - *The survey:* 2 pieces (48,215 nodes and 19); the busiest nodes
+    antibacterial 936, cytotoxic 627, *Streptomyces* 399; ignoring directions,
+    592 microbes with a cluster are six steps or fewer from jujube, through
+    labels such as antibacterial.
+  - *Evidence paths:* 10 paths, 9 leads, 6 microbes, 5 crops; every weakest link
+    `curated_literature`. *Bacillus velezensis* FZB42 carries 4 of the 9 leads;
+    without it jujube and maize have none. Each pathogen rests on one paper.
+  - *Bridges:* the production layer has 7,750 nodes, 6,733 arrows and 1,183
+    pieces; top "*Streptomyces* sp." (0.00355), *Allostigmatella aurantiaca*
+    Sg a15 (0.00307), carotenoid (0.00301). The whole-graph estimate puts
+    antibacterial first (0.538).
+  - *Communities:* 63 without proteins, modularity 0.778 (156 and 0.942 without
+    the labels too); a copy with its arrows rewired at random, every node
+    keeping its number of arrows, scores 0.700; NetworkX 3.6.1.
+  - *Gene names:* `proteins_with_genbank_gene` 18,595 in MIBiG's tables; 18,289
+    nodes carry one, 15,812 of them with no gene name from MIBiG's curators
+    (6,668 with none from UniProt either). 1,877 of the 4,901 "hypothetical
+    protein" or alike now show a gene name, 323 from the GenBank file alone.
+    Recipe R25: 3,908 gene names from MIBiG's gene records, 15,812 from the
+    GenBank file, 4,850 from UniProt only, 14,784 none.
+  - *Unchanged:* 48,234 nodes, 57,014 arrows, a ledger of 25,789 rows, every
+    resolver count.
+- **Known limits:** the disease side is 7 `INHIBITS` and 7 `INFECTS` arrows, so
+  every lead rests on this project's reading of one paper; on a layer of 1,183
+  pieces, routes never cross between pieces, so betweenness favours the biggest
+  piece (578 nodes); communities can shift with another seed or NetworkX
+  version; modularity alone says little about chance, since a rewired copy
+  scores 0.700 against the real 0.778 (an optimiser finds high modularity in
+  random graphs too, as Guimerà, Sales-Pardo and Amaral showed in 2004);
+  UniProt's own confidence (`reviewed`, `protein_existence`,
+  `annotation_score`) isn't used yet; 19 proteins carry a gene name with the
+  GenBank file's `_rename` suffix.
+- **Planned:** Phase 6 tests the communities and bridges against randomly
+  rewired graphs and recomputes `node_measures.csv` from R; a second
+  independent paper for each row of the curated bridge (which backs both its
+  `INHIBITS` and its `INFECTS` arrow), before release 1.0.
+
 ### Phase 4c: the 3D check of same-structure joins
 
 - **Added** `src/microbegraph/resolution/stereo.py`, which compares the 3D

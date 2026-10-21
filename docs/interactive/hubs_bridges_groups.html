@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MicrobeGraph hubs, bridges and groups</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --plane: #f3f2ee; --ink: #0b0b0b; --ink2: #52514e;
+  --muted: #898781; --hair: #e1e0d9; --base: #c3c2b7; --focus: #2a78d6;
+  --genomics: #2a78d6;
+  --proteomics: #eb6834;
+  --metabolomics: #1baf7a;
+  --phenotype: #eda100;
+  --context: #898781;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --plane: #242422; --ink: #f0efec; --ink2: #c3c2b7;
+    --muted: #898781; --hair: #2c2c2a; --base: #383835; --focus: #3987e5;
+    --genomics: #3987e5;
+    --proteomics: #d95926;
+    --metabolomics: #199e70;
+    --phenotype: #c98500;
+    --context: #898781;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --plane: #242422; --ink: #f0efec; --ink2: #c3c2b7;
+  --muted: #898781; --hair: #2c2c2a; --base: #383835; --focus: #3987e5;
+    --genomics: #3987e5;
+    --proteomics: #d95926;
+    --metabolomics: #199e70;
+    --phenotype: #c98500;
+    --context: #898781;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink);
+       font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 24px; margin: 0 0 4px; }
+.lede { color: var(--ink2); margin: 0 0 16px; max-width: 70ch; }
+.card { background: var(--surface); border: 1px solid var(--hair); border-radius: 14px; padding: 16px; }
+.figure { overflow-x: auto; }
+svg { display: block; width: 100%; height: auto; min-width: 720px; }
+svg text { fill: var(--ink); }
+.mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+.muted { color: var(--muted); }
+.panel { margin-top: 12px; min-height: 120px; }
+.panel h2 { font-size: 18px; margin: 0 0 4px; }
+.panel p { margin: 4px 0; }
+.hot { cursor: pointer; }
+.hot:focus { outline: none; }
+.hot:focus-visible .ring, .hot:focus-visible .hit { stroke: var(--focus); stroke-width: 4; }
+.dim { opacity: .18; transition: opacity .15s; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--hair); vertical-align: top; }
+th { color: var(--ink2); font-weight: 600; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+details { margin-top: 16px; }
+summary { cursor: pointer; color: var(--ink2); font-weight: 600; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--hair);
+        border-radius: 999px; padding: 2px 10px; margin: 2px 4px 2px 0; font-size: 13px;
+        background: var(--surface); }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0 0 12px; }
+.controls label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+.tooltip { position: fixed; pointer-events: none; background: var(--surface); color: var(--ink);
+           border: 1px solid var(--hair); border-radius: 10px; padding: 10px 12px; font-size: 13px;
+           max-width: 320px; box-shadow: 0 6px 24px rgba(0,0,0,.12); display: none; z-index: 5; }
+footer { margin-top: 20px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Hubs, bridges and groups</h1>
+<p class="lede">A made-up network of four microbes, six compounds, one activity label, a mould and a
+crop, small enough to check by hand. Pick a question below and the numbers above each node change.
+Solid lines are "makes", "inhibits" and "infects"; dashed lines are "has the activity". The numbers
+come from the same functions <span class="mono">python -m microbegraph.analyze</span> uses on the
+real graph.</p>
+<div class="controls" role="radiogroup" aria-label="Question"><label><input type="radio" name="mode" value="degree" checked> Hubs: arrows per node (degree)</label><label><input type="radio" name="mode" value="between_all"> Bridges, every arrow counted</label><label><input type="radio" name="mode" value="between_production"> Bridges, without the label&#x27;s arrows</label><label><input type="radio" name="mode" value="group"> Communities (Louvain)</label><label><input type="radio" name="mode" value="remove"> Take a node away</label></div>
+<div class="card figure"><svg viewBox="0 0 1180 480" role="group" aria-label="A small network"><line class="arrow" data-from="m1" data-to="c1" x1="290" y1="370" x2="290" y2="150" stroke="var(--base)" stroke-width="2.5"/><line class="arrow" data-from="m1" data-to="c2" x1="290" y1="370" x2="450" y2="260" stroke="var(--base)" stroke-width="2.5"/><line class="arrow" data-from="m2" data-to="c2" x1="480" y1="420" x2="450" y2="260" stroke="var(--base)" stroke-width="2.5"/><line class="arrow" data-from="m2" data-to="c3" x1="480" y1="420" x2="640" y2="420" stroke="var(--base)" stroke-width="2.5"/><line class="arrow" data-from="m3" data-to="c3" x1="800" y1="420" x2="640" y2="420" stroke="var(--base)" stroke-width="2.5"/><line class="arrow" data-from="m3" data-to="c5" x1="800" y1="420" x2="800" y2="260" stroke="var(--base)" stroke-width="2.5"/><line class="arrow" data-from="m4" data-to="c4" x1="990" y1="400" x2="960" y2="150" stroke="var(--base)" stroke-width="2.5"/><line class="arrow" data-from="m4" data-to="c5" x1="990" y1="400" x2="800" y2="260" stroke="var(--base)" stroke-width="2.5"/><line class="arrow" data-from="m4" data-to="c6" x1="990" y1="400" x2="1110" y2="260" stroke="var(--base)" stroke-width="2.5"/><line class="arrow" data-from="c1" data-to="L" x1="290" y1="150" x2="620" y2="90" stroke="var(--base)" stroke-width="2.5" stroke-dasharray="6 5"/><line class="arrow" data-from="c2" data-to="L" x1="450" y1="260" x2="620" y2="90" stroke="var(--base)" stroke-width="2.5" stroke-dasharray="6 5"/><line class="arrow" data-from="c4" data-to="L" x1="960" y1="150" x2="620" y2="90" stroke="var(--base)" stroke-width="2.5" stroke-dasharray="6 5"/><line class="arrow" data-from="c5" data-to="L" x1="800" y1="260" x2="620" y2="90" stroke="var(--base)" stroke-width="2.5" stroke-dasharray="6 5"/><line class="arrow" data-from="c6" data-to="L" x1="1110" y1="260" x2="620" y2="90" stroke="var(--base)" stroke-width="2.5" stroke-dasharray="6 5"/><line class="arrow" data-from="c1" data-to="p1" x1="290" y1="150" x2="110" y2="150" stroke="var(--base)" stroke-width="2.5"/><line class="arrow" data-from="p1" data-to="k1" x1="110" y1="150" x2="110" y2="370" stroke="var(--base)" stroke-width="2.5"/><g class="hot node" tabindex="0" role="button" data-id="k1" aria-label="a crop, Crop"><circle class="ring" cx="110" cy="370" r="34" fill="none" stroke="transparent" stroke-width="6"/><circle cx="110" cy="370" r="26" fill="var(--surface)" stroke="var(--phenotype)" stroke-width="3"/><g transform="translate(93.1,353.1) scale(0.704)"><path d="M24 45 V22" stroke="#eda100" stroke-width="3" stroke-linecap="round"/><path d="M24 26 C10 26 6 16 6 8 C16 8 24 13 24 26 z" fill="#eda100"/><path d="M24 31 C38 31 42 21 42 13 C32 13 24 18 24 31 z" fill="#eda100" opacity=".8"/></g><text x="110" y="420" text-anchor="middle" font-size="13.5" font-weight="600" paint-order="stroke" stroke="var(--surface)" stroke-width="5">a crop</text><text class="value" x="110" y="330" text-anchor="middle" font-size="13" font-weight="700" paint-order="stroke" stroke="var(--surface)" stroke-width="5"></text></g><g class="hot node" tabindex="0" role="button" data-id="p1" aria-label="a mould, Pathogen"><circle class="ring" cx="110" cy="150" r="34" fill="none" stroke="transparent" stroke-width="6"/><circle cx="110" cy="150" r="26" fill="var(--surface)" stroke="var(--phenotype)" stroke-width="3"/><g transform="translate(93.1,133.1) scale(0.704)"><line x1="35.0" y1="24.0" x2="42.0" y2="24.0" stroke="#eda100" stroke-width="2.5" stroke-linecap="round"/><circle cx="43.0" cy="24.0" r="2.2" fill="#eda100"/><line x1="32.9" y1="30.5" x2="38.6" y2="34.6" stroke="#eda100" stroke-width="2.5" stroke-linecap="round"/><circle cx="39.4" cy="35.2" r="2.2" fill="#eda100"/><line x1="27.4" y1="34.5" x2="29.6" y2="41.1" stroke="#eda100" stroke-width="2.5" stroke-linecap="round"/><circle cx="29.9" cy="42.1" r="2.2" fill="#eda100"/><line x1="20.6" y1="34.5" x2="18.4" y2="41.1" stroke="#eda100" stroke-width="2.5" stroke-linecap="round"/><circle cx="18.1" cy="42.1" r="2.2" fill="#eda100"/><line x1="15.1" y1="30.5" x2="9.4" y2="34.6" stroke="#eda100" stroke-width="2.5" stroke-linecap="round"/><circle cx="8.6" cy="35.2" r="2.2" fill="#eda100"/><line x1="13.0" y1="24.0" x2="6.0" y2="24.0" stroke="#eda100" stroke-width="2.5" stroke-linecap="round"/><circle cx="5.0" cy="24.0" r="2.2" fill="#eda100"/><line x1="15.1" y1="17.5" x2="9.4" y2="13.4" stroke="#eda100" stroke-width="2.5" stroke-linecap="round"/><circle cx="8.6" cy="12.8" r="2.2" fill="#eda100"/><line x1="20.6" y1="13.5" x2="18.4" y2="6.9" stroke="#eda100" stroke-width="2.5" stroke-linecap="round"/><circle cx="18.1" cy="5.9" r="2.2" fill="#eda100"/><line x1="27.4" y1="13.5" x2="29.6" y2="6.9" stroke="#eda100" stroke-width="2.5" stroke-linecap="round"/><circle cx="29.9" cy="5.9" r="2.2" fill="#eda100"/><line x1="32.9" y1="17.5" x2="38.6" y2="13.4" stroke="#eda100" stroke-width="2.5" stroke-linecap="round"/><circle cx="39.4" cy="12.8" r="2.2" fill="#eda100"/><circle cx="24" cy="24" r="11" fill="#eda100"/></g><text x="110" y="200" text-anchor="middle" font-size="13.5" font-weight="600" paint-order="stroke" stroke="var(--surface)" stroke-width="5">a mould</text><text class="value" x="110" y="110" text-anchor="middle" font-size="13" font-weight="700" paint-order="stroke" stroke="var(--surface)" stroke-width="5"></text></g><g class="hot node" tabindex="0" role="button" data-id="c1" aria-label="compound 1, Compound"><circle class="ring" cx="290" cy="150" r="34" fill="none" stroke="transparent" stroke-width="6"/><circle cx="290" cy="150" r="26" fill="var(--surface)" stroke="var(--metabolomics)" stroke-width="3"/><g transform="translate(273.1,133.1) scale(0.704)"><polygon points="32.1,33.0 20.0,40.0 7.9,33.0 7.9,19.0 20.0,12.0 32.1,19.0" fill="none" stroke="#1baf7a" stroke-width="3.5" stroke-linejoin="round"/><circle cx="20" cy="26" r="6" fill="none" stroke="#1baf7a" stroke-width="2"/><line x1="32" y1="19" x2="42" y2="13" stroke="#1baf7a" stroke-width="3" stroke-linecap="round"/><circle cx="43" cy="12" r="4" fill="#1baf7a"/></g><text x="290" y="200" text-anchor="middle" font-size="13.5" font-weight="600" paint-order="stroke" stroke="var(--surface)" stroke-width="5">compound 1</text><text class="value" x="290" y="110" text-anchor="middle" font-size="13" font-weight="700" paint-order="stroke" stroke="var(--surface)" stroke-width="5"></text></g><g class="hot node" tabindex="0" role="button" data-id="m1" aria-label="microbe A, Organism"><circle class="ring" cx="290" cy="370" r="34" fill="none" stroke="transparent" stroke-width="6"/><circle cx="290" cy="370" r="26" fill="var(--surface)" stroke="var(--genomics)" stroke-width="3"/><g transform="translate(273.1,353.1) scale(0.704)"><rect x="4" y="14" width="32" height="20" rx="10" fill="#2a78d6"/><path d="M36 24 c3 -6 6 6 9 0" stroke="#2a78d6" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="13" cy="21" r="2.5" fill="#fcfcfb" opacity=".8"/><circle cx="22" cy="27" r="2" fill="#fcfcfb" opacity=".8"/></g><text x="290" y="420" text-anchor="middle" font-size="13.5" font-weight="600" paint-order="stroke" stroke="var(--surface)" stroke-width="5">microbe A</text><text class="value" x="290" y="330" text-anchor="middle" font-size="13" font-weight="700" paint-order="stroke" stroke="var(--surface)" stroke-width="5"></text></g><g class="hot node" tabindex="0" role="button" data-id="c2" aria-label="compound 2, Compound"><circle class="ring" cx="450" cy="260" r="34" fill="none" stroke="transparent" stroke-width="6"/><circle cx="450" cy="260" r="26" fill="var(--surface)" stroke="var(--metabolomics)" stroke-width="3"/><g transform="translate(433.1,243.1) scale(0.704)"><polygon points="32.1,33.0 20.0,40.0 7.9,33.0 7.9,19.0 20.0,12.0 32.1,19.0" fill="none" stroke="#1baf7a" stroke-width="3.5" stroke-linejoin="round"/><circle cx="20" cy="26" r="6" fill="none" stroke="#1baf7a" stroke-width="2"/><line x1="32" y1="19" x2="42" y2="13" stroke="#1baf7a" stroke-width="3" stroke-linecap="round"/><circle cx="43" cy="12" r="4" fill="#1baf7a"/></g><text x="450" y="310" text-anchor="middle" font-size="13.5" font-weight="600" paint-order="stroke" stroke="var(--surface)" stroke-width="5">compound 2</text><text class="value" x="450" y="220" text-anchor="middle" font-size="13" font-weight="700" paint-order="stroke" stroke="var(--surface)" stroke-width="5"></text></g><g class="hot node" tabindex="0" role="button" data-id="m2" aria-label="microbe B, Organism"><circle class="ring" cx="480" cy="420" r="34" fill="none" stroke="transparent" stroke-width="6"/><circle cx="480" cy="420" r="26" fill="var(--surface)" stroke="var(--genomics)" stroke-width="3"/><g transform="translate(463.1,403.1) scale(0.704)"><rect x="4" y="14" width="32" height="20" rx="10" fill="#2a78d6"/><path d="M36 24 c3 -6 6 6 9 0" stroke="#2a78d6" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="13" cy="21" r="2.5" fill="#fcfcfb" opacity=".8"/><circle cx="22" cy="27" r="2" fill="#fcfcfb" opacity=".8"/></g><text x="480" y="470" text-anchor="middle" font-size="13.5" font-weight="600" paint-order="stroke" stroke="var(--surface)" stroke-width="5">microbe B</text><text class="value" x="480" y="380" text-anchor="middle" font-size="13" font-weight="700" paint-order="stroke" stroke="var(--surface)" stroke-width="5"></text></g><g class="hot node" tabindex="0" role="button" data-id="c3" aria-label="compound 3, Compound"><circle class="ring" cx="640" cy="420" r="34" fill="none" stroke="transparent" stroke-width="6"/><circle cx="640" cy="420" r="26" fill="var(--surface)" stroke="var(--metabolomics)" stroke-width="3"/><g transform="translate(623.1,403.1) scale(0.704)"><polygon points="32.1,33.0 20.0,40.0 7.9,33.0 7.9,19.0 20.0,12.0 32.1,19.0" fill="none" stroke="#1baf7a" stroke-width="3.5" stroke-linejoin="round"/><circle cx="20" cy="26" r="6" fill="none" stroke="#1baf7a" stroke-width="2"/><line x1="32" y1="19" x2="42" y2="13" stroke="#1baf7a" stroke-width="3" stroke-linecap="round"/><circle cx="43" cy="12" r="4" fill="#1baf7a"/></g><text x="640" y="470" text-anchor="middle" font-size="13.5" font-weight="600" paint-order="stroke" stroke="var(--surface)" stroke-width="5">compound 3</text><text class="value" x="640" y="380" text-anchor="middle" font-size="13" font-weight="700" paint-order="stroke" stroke="var(--surface)" stroke-width="5"></text></g><g class="hot node" tabindex="0" role="button" data-id="m3" aria-label="microbe C, Organism"><circle class="ring" cx="800" cy="420" r="34" fill="none" stroke="transparent" stroke-width="6"/><circle cx="800" cy="420" r="26" fill="var(--surface)" stroke="var(--genomics)" stroke-width="3"/><g transform="translate(783.1,403.1) scale(0.704)"><rect x="4" y="14" width="32" height="20" rx="10" fill="#2a78d6"/><path d="M36 24 c3 -6 6 6 9 0" stroke="#2a78d6" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="13" cy="21" r="2.5" fill="#fcfcfb" opacity=".8"/><circle cx="22" cy="27" r="2" fill="#fcfcfb" opacity=".8"/></g><text x="800" y="470" text-anchor="middle" font-size="13.5" font-weight="600" paint-order="stroke" stroke="var(--surface)" stroke-width="5">microbe C</text><text class="value" x="800" y="380" text-anchor="middle" font-size="13" font-weight="700" paint-order="stroke" stroke="var(--surface)" stroke-width="5"></text></g><g class="hot node" tabindex="0" role="button" data-id="c5" aria-label="compound 5, Compound"><circle class="ring" cx="800" cy="260" r="34" fill="none" stroke="transparent" stroke-width="6"/><circle cx="800" cy="260" r="26" fill="var(--surface)" stroke="var(--metabolomics)" stroke-width="3"/><g transform="translate(783.1,243.1) scale(0.704)"><polygon points="32.1,33.0 20.0,40.0 7.9,33.0 7.9,19.0 20.0,12.0 32.1,19.0" fill="none" stroke="#1baf7a" stroke-width="3.5" stroke-linejoin="round"/><circle cx="20" cy="26" r="6" fill="none" stroke="#1baf7a" stroke-width="2"/><line x1="32" y1="19" x2="42" y2="13" stroke="#1baf7a" stroke-width="3" stroke-linecap="round"/><circle cx="43" cy="12" r="4" fill="#1baf7a"/></g><text x="800" y="310" text-anchor="middle" font-size="13.5" font-weight="600" paint-order="stroke" stroke="var(--surface)" stroke-width="5">compound 5</text><text class="value" x="800" y="220" text-anchor="middle" font-size="13" font-weight="700" paint-order="stroke" stroke="var(--surface)" stroke-width="5"></text></g><g class="hot node" tabindex="0" role="button" data-id="m4" aria-label="microbe D, Organism"><circle class="ring" cx="990" cy="400" r="34" fill="none" stroke="transparent" stroke-width="6"/><circle cx="990" cy="400" r="26" fill="var(--surface)" stroke="var(--genomics)" stroke-width="3"/><g transform="translate(973.1,383.1) scale(0.704)"><rect x="4" y="14" width="32" height="20" rx="10" fill="#2a78d6"/><path d="M36 24 c3 -6 6 6 9 0" stroke="#2a78d6" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="13" cy="21" r="2.5" fill="#fcfcfb" opacity=".8"/><circle cx="22" cy="27" r="2" fill="#fcfcfb" opacity=".8"/></g><text x="990" y="450" text-anchor="middle" font-size="13.5" font-weight="600" paint-order="stroke" stroke="var(--surface)" stroke-width="5">microbe D</text><text class="value" x="990" y="360" text-anchor="middle" font-size="13" font-weight="700" paint-order="stroke" stroke="var(--surface)" stroke-width="5"></text></g><g class="hot node" tabindex="0" role="button" data-id="c4" aria-label="compound 4, Compound"><circle class="ring" cx="960" cy="150" r="34" fill="none" stroke="transparent" stroke-width="6"/><circle cx="960" cy="150" r="26" fill="var(--surface)" stroke="var(--metabolomics)" stroke-width="3"/><g transform="translate(943.1,133.1) scale(0.704)"><polygon points="32.1,33.0 20.0,40.0 7.9,33.0 7.9,19.0 20.0,12.0 32.1,19.0" fill="none" stroke="#1baf7a" stroke-width="3.5" stroke-linejoin="round"/><circle cx="20" cy="26" r="6" fill="none" stroke="#1baf7a" stroke-width="2"/><line x1="32" y1="19" x2="42" y2="13" stroke="#1baf7a" stroke-width="3" stroke-linecap="round"/><circle cx="43" cy="12" r="4" fill="#1baf7a"/></g><text x="960" y="200" text-anchor="middle" font-size="13.5" font-weight="600" paint-order="stroke" stroke="var(--surface)" stroke-width="5">compound 4</text><text class="value" x="960" y="110" text-anchor="middle" font-size="13" font-weight="700" paint-order="stroke" stroke="var(--surface)" stroke-width="5"></text></g><g class="hot node" tabindex="0" role="button" data-id="c6" aria-label="compound 6, Compound"><circle class="ring" cx="1110" cy="260" r="34" fill="none" stroke="transparent" stroke-width="6"/><circle cx="1110" cy="260" r="26" fill="var(--surface)" stroke="var(--metabolomics)" stroke-width="3"/><g transform="translate(1093.1,243.1) scale(0.704)"><polygon points="32.1,33.0 20.0,40.0 7.9,33.0 7.9,19.0 20.0,12.0 32.1,19.0" fill="none" stroke="#1baf7a" stroke-width="3.5" stroke-linejoin="round"/><circle cx="20" cy="26" r="6" fill="none" stroke="#1baf7a" stroke-width="2"/><line x1="32" y1="19" x2="42" y2="13" stroke="#1baf7a" stroke-width="3" stroke-linecap="round"/><circle cx="43" cy="12" r="4" fill="#1baf7a"/></g><text x="1110" y="310" text-anchor="middle" font-size="13.5" font-weight="600" paint-order="stroke" stroke="var(--surface)" stroke-width="5">compound 6</text><text class="value" x="1110" y="220" text-anchor="middle" font-size="13" font-weight="700" paint-order="stroke" stroke="var(--surface)" stroke-width="5"></text></g><g class="hot node" tabindex="0" role="button" data-id="L" aria-label="antifungal, Activity"><circle class="ring" cx="620" cy="90" r="34" fill="none" stroke="transparent" stroke-width="6"/><circle cx="620" cy="90" r="26" fill="var(--surface)" stroke="var(--metabolomics)" stroke-width="3"/><g transform="translate(603.1,73.1) scale(0.704)"><path d="M27 3 L9 27 h13 l-4 18 L39 19 h-13 z" fill="#1baf7a"/></g><text x="620" y="140" text-anchor="middle" font-size="13.5" font-weight="600" paint-order="stroke" stroke="var(--surface)" stroke-width="5">antifungal</text><text class="value" x="620" y="50" text-anchor="middle" font-size="13" font-weight="700" paint-order="stroke" stroke="var(--surface)" stroke-width="5"></text></g></svg></div>
+<div class="card panel" id="panel" aria-live="polite"></div>
+<details><summary>The same numbers as a table</summary>
+<table><tr><th>node</th><th>type</th><th class="num">arrows</th><th class="num">betweenness, every
+arrow</th><th class="num">betweenness, without the label</th><th class="num">community</th></tr><tr><td>a crop</td><td>Crop</td><td class='num'>1</td><td class='num'>0.000</td><td class='num'>0.000</td><td class='num'>2</td></tr><tr><td>a mould</td><td>Pathogen</td><td class='num'>2</td><td class='num'>0.167</td><td class='num'>0.182</td><td class='num'>2</td></tr><tr><td>compound 1</td><td>Compound</td><td class='num'>3</td><td class='num'>0.346</td><td class='num'>0.327</td><td class='num'>2</td></tr><tr><td>microbe A</td><td>Organism</td><td class='num'>2</td><td class='num'>0.061</td><td class='num'>0.436</td><td class='num'>3</td></tr><tr><td>compound 2</td><td>Compound</td><td class='num'>3</td><td class='num'>0.236</td><td class='num'>0.509</td><td class='num'>3</td></tr><tr><td>microbe B</td><td>Organism</td><td class='num'>2</td><td class='num'>0.091</td><td class='num'>0.545</td><td class='num'>3</td></tr><tr><td>compound 3</td><td>Compound</td><td class='num'>2</td><td class='num'>0.039</td><td class='num'>0.545</td><td class='num'>4</td></tr><tr><td>microbe C</td><td>Organism</td><td class='num'>2</td><td class='num'>0.085</td><td class='num'>0.509</td><td class='num'>4</td></tr><tr><td>compound 5</td><td>Compound</td><td class='num'>3</td><td class='num'>0.220</td><td class='num'>0.436</td><td class='num'>4</td></tr><tr><td>microbe D</td><td>Organism</td><td class='num'>3</td><td class='num'>0.048</td><td class='num'>0.345</td><td class='num'>1</td></tr><tr><td>compound 4</td><td>Compound</td><td class='num'>2</td><td class='num'>0.034</td><td class='num'>0.000</td><td class='num'>1</td></tr><tr><td>compound 6</td><td>Compound</td><td class='num'>2</td><td class='num'>0.034</td><td class='num'>0.000</td><td class='num'>1</td></tr><tr><td>antifungal</td><td>Activity</td><td class='num'>5</td><td class='num'>0.549</td><td class='num'>0.000 (left out)</td><td class='num'>1</td></tr>
+</table><p class="muted">Betweenness is scaled from 0 to 1, as NetworkX does (normalized). The
+communities come from the Louvain method with seed 42; modularity 0.354.</p></details>
+<footer>Built by <span class="mono">docs/interactive/make_interactive.py</span> from the
+project's own files. MicrobeGraph · MIT licence.</footer>
+</main>
+<script>
+
+const NODES = [{"id": "k1", "type": "Crop", "name": "a crop"}, {"id": "p1", "type": "Pathogen", "name": "a mould"}, {"id": "c1", "type": "Compound", "name": "compound 1"}, {"id": "m1", "type": "Organism", "name": "microbe A"}, {"id": "c2", "type": "Compound", "name": "compound 2"}, {"id": "m2", "type": "Organism", "name": "microbe B"}, {"id": "c3", "type": "Compound", "name": "compound 3"}, {"id": "m3", "type": "Organism", "name": "microbe C"}, {"id": "c5", "type": "Compound", "name": "compound 5"}, {"id": "m4", "type": "Organism", "name": "microbe D"}, {"id": "c4", "type": "Compound", "name": "compound 4"}, {"id": "c6", "type": "Compound", "name": "compound 6"}, {"id": "L", "type": "Activity", "name": "antifungal"}];
+const ARROWS = [{"from": "m1", "to": "c1", "type": "makes"}, {"from": "m1", "to": "c2", "type": "makes"}, {"from": "m2", "to": "c2", "type": "makes"}, {"from": "m2", "to": "c3", "type": "makes"}, {"from": "m3", "to": "c3", "type": "makes"}, {"from": "m3", "to": "c5", "type": "makes"}, {"from": "m4", "to": "c4", "type": "makes"}, {"from": "m4", "to": "c5", "type": "makes"}, {"from": "m4", "to": "c6", "type": "makes"}, {"from": "c1", "to": "L", "type": "HAS_ACTIVITY"}, {"from": "c2", "to": "L", "type": "HAS_ACTIVITY"}, {"from": "c4", "to": "L", "type": "HAS_ACTIVITY"}, {"from": "c5", "to": "L", "type": "HAS_ACTIVITY"}, {"from": "c6", "to": "L", "type": "HAS_ACTIVITY"}, {"from": "c1", "to": "p1", "type": "INHIBITS"}, {"from": "p1", "to": "k1", "type": "INFECTS"}];
+const M = {"degree": {"k1": 1, "p1": 2, "c1": 3, "m1": 2, "c2": 3, "m2": 2, "c3": 2, "m3": 2, "c5": 3, "m4": 3, "c4": 2, "c6": 2, "L": 5}, "between_all": {"k1": 0.0, "p1": 0.16666666666666669, "c1": 0.34595959595959597, "m1": 0.06060606060606061, "c2": 0.23611111111111108, "m2": 0.09090909090909093, "c3": 0.03914141414141414, "m3": 0.08459595959595959, "c5": 0.21969696969696972, "m4": 0.047979797979797977, "c4": 0.03409090909090909, "c6": 0.03409090909090909, "L": 0.5492424242424243}, "between_production": {"k1": 0.0, "p1": 0.18181818181818182, "c1": 0.32727272727272727, "m1": 0.43636363636363634, "c2": 0.509090909090909, "m2": 0.5454545454545454, "c3": 0.5454545454545454, "m3": 0.509090909090909, "c5": 0.43636363636363634, "m4": 0.34545454545454546, "c4": 0.0, "c6": 0.0}, "group": {"L": 1, "c4": 1, "c6": 1, "m4": 1, "c1": 2, "k1": 2, "p1": 2, "c2": 3, "m1": 3, "m2": 3, "c3": 4, "c5": 4, "m3": 4}};
+const TEXT = {"degree": "<h2>Hubs</h2><p>Degree counts the arrows touching a node. The label <b>antifungal</b> has the most (5): every antifungal compound points at it. In the real graph the busiest node is the label antibacterial, with 936 compounds pointing at it.</p>", "between_all": "<h2>Bridges, every arrow counted</h2><p>Betweenness asks how often a node sits on the shortest route between two others. With the label's arrows counted, <b>antifungal</b> wins again: any two antifungal compounds are two steps apart through it. The same happens in the real graph, which is why Phase 5 looks for bridges without the labels.</p>", "between_production": "<h2>Bridges, without the label</h2><p>Take the label's arrows away and only who makes what, and what it does to the mould, is left. Now <b>compound 3</b> and <b>microbe B</b> come first: they are the only link between the producers on the left and on the right, so every route between the two sides runs through them.</p>", "group": "<h2>Communities</h2><p>The Louvain method moves each node into the group that raises a score called modularity, until no move helps. Here it finds 4 groups (modularity 0.354). Each node's group number is above it; nodes of a group share a ring colour.</p>", "remove": "<h2>Take a node away</h2><p>Click a node to take it away, and again to bring it back. The panel says which microbes still reach the crop along the route microbe, makes, compound, inhibits, pathogen, infects, crop. Try compound 1 (the only compound known to inhibit the mould), then the label.</p>"};
+const RING = ['var(--genomics)', 'var(--proteomics)', 'var(--metabolomics)', 'var(--phenotype)',
+              'var(--context)'];
+const panel = document.getElementById('panel');
+const removed = new Set();
+let mode = 'degree';
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function leads() {
+  const keep = id => !removed.has(id);
+  const out = [];
+  for (const m of NODES.filter(n => n.type === 'Organism' && keep(n.id))) {
+    for (const a of ARROWS.filter(a => a.from === m.id && a.type === 'makes' && keep(a.to))) {
+      for (const b of ARROWS.filter(b => b.from === a.to && b.type === 'INHIBITS' && keep(b.to))) {
+        if (ARROWS.some(c => c.from === b.to && c.type === 'INFECTS' && keep(c.to)))
+          out.push(NODES.find(n => n.id === m.id).name + ' via ' + NODES.find(n => n.id === a.to).name);
+      }
+    }
+  }
+  return out;
+}
+function draw() {
+  document.querySelectorAll('.node').forEach(g => {
+    const id = g.dataset.id, value = g.querySelector('.value'), ring = g.querySelector('.ring');
+    g.classList.toggle('dim', removed.has(id));
+    ring.setAttribute('stroke', 'transparent');
+    if (mode === 'degree') value.textContent = M.degree[id];
+    else if (mode === 'group') {
+      value.textContent = 'group ' + M.group[id];
+      ring.setAttribute('stroke', RING[(M.group[id] - 1) % RING.length]);
+    } else if (mode === 'remove') value.textContent = '';
+    else {
+      const v = M[mode][id];
+      value.textContent = v === undefined ? 'left out' : v.toFixed(3);
+    }
+  });
+  document.querySelectorAll('.arrow').forEach(l => {
+    const gone = removed.has(l.dataset.from) || removed.has(l.dataset.to)
+      || (mode === 'between_production' && (l.dataset.from === 'L' || l.dataset.to === 'L'));
+    l.classList.toggle('dim', gone);
+  });
+  let html = TEXT[mode];
+  if (mode === 'remove') {
+    const found = leads();
+    const gone = [...removed].map(id => NODES.find(n => n.id === id).name);
+    html += '<p><b>Taken away:</b> ' + (gone.length ? esc(gone.join(', ')) : 'nothing yet') + '</p>'
+      + '<p><b>Microbes that still reach the crop:</b> '
+      + (found.length ? esc(found.join('; ')) : 'none') + '</p>';
+  }
+  panel.innerHTML = html;
+}
+document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', () => {
+  mode = r.value; if (mode !== 'remove') removed.clear(); draw();
+}));
+document.querySelectorAll('.node').forEach(g => {
+  const toggle = () => {
+    if (mode !== 'remove') return;
+    const id = g.dataset.id;
+    if (removed.has(id)) removed.delete(id); else removed.add(id);
+    draw();
+  };
+  g.addEventListener('click', toggle);
+  g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+});
+draw();
+
+</script>
+</body>
+</html>

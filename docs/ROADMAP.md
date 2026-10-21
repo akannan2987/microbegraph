@@ -509,8 +509,9 @@ while checking the run, settled before Phase 5
 * **40 protein numbers with tied UniProt entries,** each for a person to read
   and settle in the review file, as CBF82293.1 was.
 * **Gene names as protein labels:** 19,759 of the GenBank file's CDS carry a
-  `/gene` name, most for proteins with no MIBiG gene record. Phase 5 uses them
-  as readable labels in the network pictures.
+  `/gene` name, most for proteins with no MIBiG gene record. Done in Phase 5:
+  each protein keeps its GenBank gene name as `genbank_gene` and the labels in
+  paths and pictures show it.
 
 **Effort:** ~6-8 hours, plus one unattended PubChem run, mostly the 931 MB
 download; the follow-ups took about 3 hours more and one PubChem run of 54
@@ -622,33 +623,97 @@ ledger has 25,789 rows; 398 tests pass.
 
 ---
 
-## Phase 5. Graph analytics
+## Phase 5. Graph analytics ✅
 
-**What gets built:** evidence-path finding, degree and betweenness centrality,
-community detection, and the first interactive network visualisations, with
-readable protein labels: the gene names MIBiG's GenBank file gives (Phase 4b
-reads them already) wherever a protein has no gene record.
+**Status:** built, run and tested on 2026-10-18. Guide:
+[`07-graph-analytics.md`](07-graph-analytics.md); new recipes R25 and N6 to N9
+in [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md).
 
-**First, from Phase 4b:** the check of same-structure joins with different 3D
-detail (see Phase 4b, "Handed on"). The other follow-ups were settled on
-2026-10-13.
+**Why it exists:** this is where the graph starts *answering* questions at
+scale. Phase 4's cookbook answered the jujube question as one SQL query
+(recipe R9) and one NetworkX path (recipe N3). Phase 5 turns that into a
+general tool: walk backwards from any crop to candidate microbes, rank the
+paths, and attach each path's evidence chain; then ask which nodes matter and
+which groups the graph falls into.
 
-**Why:** this is where the graph starts *answering* questions at scale. Phase
-4's cookbook already answers the jujube question as one SQL query (recipe R9)
-and one NetworkX path (recipe N3); Phase 5 turns that into a general tool: walk
-backwards from any crop to candidate microbes, rank the paths, and attach each
-path's evidence chain.
+**What was built:**
 
-**The interesting output:** betweenness centrality tends to find *bridges*,
-compounds that are the only known link between a group of microbes and a group of
-diseases. Bridges are where knowledge is thinnest and where one missing fact
-does the most damage, so finding them is useful in its own right.
+* **`python -m microbegraph.analyze`** and the package `analytics/`: one
+  question at a time on screen (`--paths`, `--hubs`, `--bridges`,
+  `--communities`, `--around NODE`), or everything at once, with CSV files, a
+  summary and pages in `data/processed/analytics/`, beside the database and
+  never inside it.
+* **Evidence paths along a typed route** (organism `HARBORS` cluster
+  `PRODUCES` compound `INHIBITS` pathogen `INFECTS` crop), ranked by the
+  weakest arrow, then by how many arrows an experiment backs, then by the
+  confidence of the weakest arrows, then by name. Paths with the same microbe,
+  compound, pathogen and crop form one lead. Arrows at the level `inferred`
+  stay out unless asked for (`--include-inferred`).
+* **Single points of failure:** every node and paper some lead rests on
+  entirely, with the leads lost if it were wrong and the crops left with none.
+  A paper counts only where an arrow rests on it alone.
+* **Hubs and bridges:** degree on the whole graph, exact betweenness on the
+  production layer (`HARBORS`, `PRODUCES`, `INHIBITS`, `INFECTS`), and a
+  whole-graph estimate from 300 starting nodes for comparison
+  (`--whole-graph`).
+* **Communities:** Louvain on the graph without proteins, seed 42, with
+  modularity.
+* **Readable protein labels:** the MIBiG adapter keeps each protein's GenBank
+  `/gene` as `genbank_gene`, a property the resolver never reads; 15,812
+  proteins had no gene name from MIBiG's curators.
+* **Pages that open offline:** the crop paths, the communities and one node's
+  neighbours with pyvis (vis-network carried inside each page), hubs against
+  bridges with plotly. A teaching page, `interactive/hubs_bridges_groups.html`,
+  shows every measure on a small made-up network.
+* **A survey script,** `tests/fixtures/survey_graph_shape.py`, that repeats the
+  look at the graph before the code.
 
-**New concepts:** shortest paths, centrality (and why "important" has several
-meanings), community detection, why a path is only as strong as its weakest
-evidence link.
+**What the look at the data changed:** the shortest path from jujube to most
+microbes runs through a general label ("antibacterial", 936 arrows), so paths
+follow the typed route; on the whole graph the labels are also the biggest
+"bridges", so bridges are looked for on the production layer; and proteins,
+36,910 of them with a single arrow, are left out of the communities.
 
-**New tools:** `plotly`, `pyvis`.
+**The interesting output:** the plan expected betweenness to find compounds
+that are the only known link between a group of microbes and a group of
+diseases. On today's data that question is answered more directly by the
+single points of failure: each pathogen rests on one or two compounds and one
+paper, and *Bacillus velezensis* FZB42 carries 4 of the 9 leads (without it,
+jujube and maize have none). On the production layer the bridges are microbes
+with many clusters ("*Streptomyces* sp.") and compounds made by several
+unrelated microbes (carotenoid, 17 producers).
+
+**Handed on:**
+
+* **Is the structure stronger than chance?** Modularity 0.778 and the bridges
+  are compared with randomly rewired copies of the graph in Phase 6 (the
+  survey's one rewired copy already scores 0.700), which
+  also recomputes `node_measures.csv` from R with `igraph` (including igraph's
+  own Louvain, to see how much the groups depend on the implementation).
+* **A second paper for each bridge row.** Every row of the curated bridge
+  cites one paper. Adding an independent cited source to each row of
+  `curation/compound_pathogen_crop.csv` (a row backs both its `INHIBITS` and
+  its `INFECTS` arrow, so the paper must show the compound against the pathogen
+  on that crop) is the cheapest way to strengthen them, and the single points
+  list says where to start: the papers behind maize, melon and jujube, each
+  the only one its crop's leads rest on.
+  Before release 1.0, as curation; Phase 17 then proposes more at scale.
+* **The protein route as a second way into a compound** (cluster `ENCODES`
+  protein `CATALYZES` compound): it finds no cluster `PRODUCES` doesn't on
+  today's data, so it is left out. Worth checking again when MIBiG 5.0 arrives.
+* **UniProt's own confidence** (`reviewed`, `protein_existence`,
+  `annotation_score` on 20,226 proteins) isn't used yet: as features in
+  Phase 7, and as filters in the app in Phase 8.
+* **Communities depend on the NetworkX version.** The summary file records it;
+  if a NetworkX upgrade moves the groups, the cookbook's N9 and the guide's
+  Step 6 need new numbers in the same change.
+
+**New concepts:** shortest paths and typed routes (metapaths), leads, degree
+and betweenness centrality, the production layer, single points of failure,
+community detection with Louvain, modularity, random seeds, results beside the
+database, pages that work offline.
+
+**New tools:** `plotly`, `pyvis` (both in `requirements.txt` since Phase 0).
 
 **Effort:** ~8-10 hours.
 
@@ -665,7 +730,8 @@ will show communities and hubs *even if the underlying relationships are random*
 because any network has some structure. Without a null model, "we found three
 communities" doesn't mean anything on its own. A permutation test rewires the
 graph thousands of times, keeping the degree distribution fixed, and asks whether
-the real clustering is stronger than the shuffled versions.
+the real clustering is stronger than the shuffled versions. Phase 5's survey
+rewired one copy: Louvain scored 0.700 on it, against 0.778 on the real graph.
 
 Asking *could this have happened by chance?* is what separates statistics from
 data analysis, and the answer is what lets the rest of the project stand up to
@@ -1391,7 +1457,7 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | | A tutorial guide per phase, with checkpoints and troubleshooting | ✅ Phases 0-1, then each phase |
 | | The glossary, every term in plain language | ✅ Phase 0, grows each phase |
 | | Teaching diagrams and interactive explorers, regenerated by script | ✅ Phase 1, grows each phase |
-| | Query cookbook: tested SQL, then Cypher, recipes | ✅ Phase 4 (19 SQL and 5 graph recipes, all run by the tests), ✅ 3 more in Phase 4b, ✅ 2 more in Phase 4c, Cypher in Phase 11 |
+| | Query cookbook: tested SQL, then Cypher, recipes | ✅ Phase 4 (19 SQL and 5 graph recipes, all run by the tests), ✅ 3 more in Phase 4b, ✅ 2 more in Phase 4c, ✅ 5 more in Phase 5 (R25, N6 to N9), Cypher in Phase 11 |
 | **Trust** | Evidence level, source, record and date on every arrow | ✅ Phase 0 design, Phase 1 code |
 | | Checksums and an append-only provenance log for every download | ✅ Phase 1 |
 | | The twelve rules enforced in code, then as dbt tests | ✅ Phase 1, Phase 10 |
@@ -1403,6 +1469,9 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | | A source's own structure checked against the record every join chose | Before release 1.0 (Phase 4c, "Handed on") |
 | | Every number kept on a source's own structure alone checked against the literature by a person | Before release 1.0 (Phase 4c, "Handed on": 38 compounds; echinomycin done) |
 | | No node left in the graph without an arrow, and a ledger row for each one taken out | ✅ Phase 4b follow-ups (KEGG maps) |
+| | Analysis results kept beside the database, never written into it, and the same on every run (sorted ties, fixed seeds) | ✅ Phase 5 |
+| | Paths never pass through a hypothesis (`inferred`) unless asked to | ✅ Phase 5 |
+| | A second independent paper for every row of the curated bridge (compound, pathogen, crop) | Before release 1.0 (Phase 5, "Handed on"); Phase 17 at scale |
 | | Null-model statistics and a second-language cross-check | Phase 6 |
 | | Predictions stored as `inferred`, never mixed with evidence | Phase 7 |
 | | Data sources and licences listed, attribution in the app | ✅ Phase 2, Phase 8 |
@@ -1414,6 +1483,9 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | **Science** | Three molecular layers joined: genes, proteins (enzymes), molecules | ✅ Phase 3 (entries with gene records), ✅ every cluster in Phase 3b |
 | | One node per real thing across all sources, with every alias kept | ✅ Phase 4 |
 | | An organism that is also a crop pathogen as one node, with both roles | ✅ Phase 4 |
+| | Evidence paths from any crop back to candidate microbes, ranked, with every arrow's evidence | ✅ Phase 5 |
+| | Hubs, bridges, communities and single points of failure | ✅ Phase 5 (validated against a null model in Phase 6) |
+| | A readable name for every protein that has a gene name anywhere | ✅ Phase 5 (MIBiG, then GenBank, then UniProt) |
 | **Engineering** | Installable package, bounded dependencies, lockfile | ✅ Phase 0-1 |
 | | One database file with the ontology as database rules, rebuilt on every change | ✅ Phase 4 |
 | | Automated tests on Windows, macOS, Linux and RHEL 8 at every push | ✅ Phase 1 |
@@ -1422,7 +1494,8 @@ MicrobeGraph includes and the phase that delivers it, so nothing is left for
 | | Containers: the app (optional), then the whole stack | Phase 9b, Phase 18 |
 | | Published multi-platform images, vulnerability scanning, dependency updates | Phase 19 |
 | | Test workflow kept on supported action versions | ✅ by hand since Phase 1, automatic from Phase 19 |
-| **Using it** | Public app (Streamlit), then the React product | Phase 9, Phase 15 |
+| **Using it** | Interactive network pages that open without an internet connection | ✅ Phase 5 |
+| | Public app (Streamlit), then the React product | Phase 9, Phase 15 |
 | | API with documentation, keys, rate limits, logging and a health endpoint | Phase 14 |
 | | AI access: GraphRAG answers, an MCP server | Phase 9, Phase 16 |
 | | Accessibility: keyboard use, never colour alone | Phase 8, Phase 15 |

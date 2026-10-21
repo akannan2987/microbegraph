@@ -47,6 +47,13 @@ WHAT IS KEPT OF EACH CDS
     The translation and the DNA are skipped (the protein file already has the
     sequences), which keeps reading the whole archive to a few seconds.
 
+    From Phase 5 the first /gene is also kept on its own. The MIBiG adapter
+    stores it on the protein as `genbank_gene`, a property of its own, so that
+    paths and pictures can show "dauE (aklaviketone reductase)" instead of a
+    product alone. It is never copied into `gene_name`: the resolver's
+    gene_name_in_uniprot rule matches on that, and a new name there would
+    change which proteins merge.
+
 MATCHING A CURATOR'S NAME (used by the MIBiG adapter)
     find_in_genbank(name, cds) looks the name up within one entry, ignoring
     capitals, against every name of every CDS. An NCBI gene name of the form
@@ -81,6 +88,7 @@ class CodingSequence:
     accession: str
     protein_id: str             # "" when the CDS has none
     names: tuple[str, ...]      # every /gene, /locus_tag... and GeneID:<n>, as written
+    gene: str = ""              # Phase 5: the first /gene alone ("" if none), for labels
 
 
 def read_cds(text: str, accession: str) -> list[CodingSequence]:
@@ -104,7 +112,9 @@ def read_cds(text: str, accession: str) -> list[CodingSequence]:
         names += [v.strip('"') for v in current.get("db_xref", [])
                   if v.strip('"').startswith("GeneID:")]
         number = (current.get("protein_id") or [""])[0].strip('"').strip()
-        found.append(CodingSequence(accession, number, tuple(dict.fromkeys(n for n in names if n))))
+        gene = (current.get("gene") or [""])[0].strip('"').strip()
+        found.append(CodingSequence(accession, number, tuple(dict.fromkeys(n for n in names if n)),
+                                    gene))
 
     for line in text.splitlines():
         if line.startswith("FEATURES"):

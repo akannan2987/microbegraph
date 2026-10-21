@@ -27,7 +27,9 @@ THE LAYOUT
         ├── edges.csv             the merged graph's arrows (Phase 4)
         ├── resolution_ledger.csv every merge and refusal, with its grounds
         ├── resolve_summary.json  the resolver's counts and lists
-        └── microbegraph.duckdb   the database the graph is built from
+        ├── microbegraph.duckdb   the database the graph is built from
+        └── analytics/            what the graph analytics found (Phase 5): CSV
+                                  files, a summary, and pages for your browser
 
     data/ is never committed to Git. The pipeline rebuilds it on demand,
     and that rebuild is also how you know the pipeline works.
@@ -57,6 +59,9 @@ EDGES_FILE: Path = PROCESSED_DIR / "edges.csv"
 LEDGER_FILE: Path = PROCESSED_DIR / "resolution_ledger.csv"
 RESOLVE_SUMMARY: Path = PROCESSED_DIR / "resolve_summary.json"
 DATABASE_FILE: Path = PROCESSED_DIR / "microbegraph.duckdb"
+
+# What python -m microbegraph.analyze writes (Phase 5), beside the database.
+ANALYTICS_DIR: Path = PROCESSED_DIR / "analytics"
 
 # Things that ARE in the repository (unlike data/, which never is).
 CURATION_DIR: Path = REPO_ROOT / "curation"

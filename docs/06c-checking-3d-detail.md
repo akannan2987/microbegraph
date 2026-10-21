@@ -1041,6 +1041,6 @@ minutes). The CI installs RDKit on all four systems from the same
 
 ---
 
-**Next:** Phase 5, `07-graph-analytics.md`: evidence paths from any crop back to
-candidate microbes, hubs, bridges and communities. The plan is in the
-[Handbook, Stage 8](HANDBOOK.md#stage-8-graph-analytics-phase-5).
+**Next:** Phase 5, [`07-graph-analytics.md`](07-graph-analytics.md): evidence
+paths from any crop back to candidate microbes, hubs, bridges and communities.
+The overview is in the [Handbook, Stage 8](HANDBOOK.md#stage-8-graph-analytics-phase-5).

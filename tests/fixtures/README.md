@@ -183,7 +183,7 @@ captured on **2026-10-12** by `capture_gap_samples.py`:
 | `pubchem/name_search_found.json` | `1233A`: PubChem files it under CID 54144091 | `84f618383365e9e9` |
 | `pubchem/name_search_not_found.json` | A name PubChem doesn't know: the real "No CID found" answer (HTTP 404) | `b4e8d861301a4d4b` |
 
-## `resolve/` (Phase 4, extended in Phase 4b)
+## `resolve/` (Phase 4, extended in Phases 4b and 5)
 
 A real slice of all six sources' staging tables, cut on **2026-10-12** by
 [`capture_resolution_samples.py`](capture_resolution_samples.py), last from the
@@ -205,6 +205,15 @@ purpose:
   records list only identifiers in the slice;
 * UniProt's `function` text is cut to its first sentence, because the resolver
   never reads it.
+
+**Since Phase 5,** 243 of the slice's MIBiG proteins in `mibig_nodes.csv` also
+carry `genbank_gene`, the gene name MIBiG's GenBank file gives them. It was
+added to the same rows, value for value, from the MIBiG table re-tidied in
+Phase 5, and written back with the project's own table writer; nothing else in
+the slice changed. (Cutting the whole slice again from today's tables would
+also bring in small changes from the Phase 4b follow-ups to the KEGG and
+PubChem files, which the resolver tests were written against, so the slice was
+extended rather than cut again.)
 
 The slice is cut around these 34 clusters, each there for a case the resolver
 must handle (the last 12 since Phase 4b):
@@ -239,13 +248,15 @@ PubChem record that gets left out, two sources stating one arrow) are added as
 made-up rows inside the test that needs them, and the test says so.
 
 The 20 files' SHA-256, taken together in path order, is
-`50e4eb195eda3a62a4110d4321fe806020c49185b68b768ff83b295c1ef8a47f`. To check it:
+`039a1f709833ebf2442214f9270c654498b8c8b3c1e8b58243182cd935340b0f` (it was
+`50e4eb19...c1ef8a47f` before Phase 5 added `genbank_gene`). To check it:
 
 ```bash
 python -c "import hashlib, pathlib; h = hashlib.sha256(); [h.update(p.read_bytes()) for p in sorted(pathlib.Path('tests/fixtures/resolve').rglob('*')) if p.is_file()]; print(h.hexdigest())"
 ```
 
-Cutting the slice again from the same staging tables gives the same bytes.
+Cutting the slice again from the tables it was cut from gives the same bytes,
+apart from the `genbank_gene` values Phase 5 added.
 
 ## The 3D check (Phase 4c)
 
@@ -264,6 +275,25 @@ It captures nothing: it reads the ledger and two staging tables on your
 computer, compares every same-skeleton pair in two ways (both start from
 RDKit's reading of the SMILES, then use different code) and prints what it
 found. It imports `stereo.py`, so that file has to be in place first.
+
+## The graph analytics (Phase 5)
+
+`tests/test_graph_analytics.py` resolves and builds the slice above once and
+runs the analytics on it (its three crops are jujube, maize and wheat). The
+ranking rules and a few awkward cases need paths the slice doesn't have, so
+those tests build small graphs inside the test, with made-up identifiers
+(`o:a`, `c:1`, `k:crop`) that belong to nothing real. The GenBank gene names are
+checked on surfactin's real record in `mibig/genbank/BGC0000433.gbk` (srfAA's
+and yciC's `/gene`).
+
+`survey_graph_shape.py`, beside the capture scripts, is the look at the graph
+that came before the Phase 5 code ([`docs/07-graph-analytics.md`, Step 2](../../docs/07-graph-analytics.md#6-step-2-look-at-the-graph-first)).
+It captures nothing: it reads the database read-only and MIBiG's GenBank file
+on your computer, and prints the graph's shape, the shortest route from jujube,
+the typed route's paths, betweenness two ways, communities with and without the
+labels and in one randomly rewired copy (seed 1), and what the proteins are
+called. It imports the new analytics
+package, so Phase 5's files have to be in place first.
 
 ## Refreshing the samples
 

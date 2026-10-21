@@ -4,16 +4,17 @@
 
 ![MicrobeGraph: from a microbe's genes to a crop's disease, with the evidence for every arrow](img/cover_microbegraph.svg)
 
-**Handbook version:** 1.10 · **Last updated:** 2026-10-13 · **Repository state it
+**Handbook version:** 1.11 · **Last updated:** 2026-10-18 · **Repository state it
 describes:** Phase 0 (design and setup), Phase 1 (MIBiG ingestion), Phase 2
 (PubChem, NCBI Taxonomy, KEGG and the cited bridge), Phase 3 (the proteomics
 layer: MIBiG's gene records and UniProt), Phase 3b (every cluster's proteins,
 from MIBiG's protein file), Phase 4 (entity resolution with its ledger, the
 graph in DuckDB and NetworkX, and the query cookbook) and Phase 4b (closing the
 gaps: MIBiG's GenBank file, PubChem's name search in PubChem's names file, a
-review file, and the four follow-ups after its real run) and Phase 4c (the 3D
-check of same-structure joins, with RDKit) built, run and tested; Phase 5
-(graph analytics) next.
+review file, and the four follow-ups after its real run), Phase 4c (the 3D
+check of same-structure joins, with RDKit) and Phase 5 (graph analytics:
+evidence paths, hubs, bridges and communities) built, run and tested; Phase 6
+(statistical validation in R) next.
 
 **Read this document first, and come back to it whenever you lose your place.**
 It follows the whole journey in order: understanding the project, setting up a
@@ -114,8 +115,8 @@ for the same plan.
 | 7 | Entity resolution and the graph build | 4 | 10-12 h | ✅ | [`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md), [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md) |
 | 7b | Closing the gaps: names, GenBank and a review file | 4b | 6-8 h | ✅ | [`06b-closing-the-gaps.md`](06b-closing-the-gaps.md) |
 | 7c | The 3D check of same-structure joins | 4c | 3-4 h | ✅ | [`06c-checking-3d-detail.md`](06c-checking-3d-detail.md) |
-| 8 | Graph analytics | 5 | 8-10 h | ⏳ next | `07-graph-analytics.md` |
-| 9 | Statistical validation in R | 6 | 6-8 h | ⬜ | `08-statistical-validation-r.md` |
+| 8 | Graph analytics | 5 | 8-10 h | ✅ | [`07-graph-analytics.md`](07-graph-analytics.md), [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md) |
+| 9 | Statistical validation in R | 6 | 6-8 h | ⏳ next | `08-statistical-validation-r.md` |
 | 10 | Graph machine learning | 7 | 12-14 h | ⬜ | `09-graph-machine-learning.md` |
 | 11 | The Streamlit app (+ 11b, the same app in Shiny, optional) | 8, 8b | 10-12 h (+8-10 h) | ⬜ | `10-app-streamlit.md`, `10b-app-shiny.md` |
 | 12 | Deployment, GraphRAG and **release 1.0** (+ 12b, one container, optional) | 9, 9b | 10-12 h (+4-5 h) | ⬜ | `11-deployment-graphrag.md`, `11b-one-container.md` |
@@ -510,9 +511,9 @@ pytest                                                     # 213 promises, check
 ![One protein from MIBiG's protein file, part by part](img/fasta_header.svg)
 
 **Why.** A graph where four clusters in five have no proteins can't answer "which
-enzymes do these clusters share?" fairly. The analytics in Stage 8 and the
-machine learning in Stage 10 both lean on the protein layer, so it's complete
-before them. The stage also teaches how to trust a file nobody gave you a
+enzymes do these clusters share?" fairly. The analytics in Stage 8 count and
+label the proteins, and the machine learning in Stage 10 leans on them, so the
+layer is complete before them. The stage also teaches how to trust a file nobody gave you a
 fingerprint for, and how to line up two lists that name the same things
 differently without guessing.
 
@@ -598,7 +599,7 @@ asking the database questions with tested recipes.
 
 **Open:** [`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md);
 [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md) for the 19 SQL and 5 graph recipes (22 SQL
-recipes since Stage 7b, 24 since Stage 7c); the rules in [`02-ontology-and-data-model.md`, section 9](02-ontology-and-data-model.md#9-validation-rules-the-loader-enforces);
+recipes since Stage 7b, 24 since Stage 7c, 25 SQL and 9 graph recipes since Stage 8); the rules in [`02-ontology-and-data-model.md`, section 9](02-ontology-and-data-model.md#9-validation-rules-the-loader-enforces);
 [`tests/fixtures/README.md`](../tests/fixtures/README.md) for the real slice the
 tests use.
 **Checkpoint:** `pytest` passes; `python -m microbegraph.build_graph` ends with
@@ -780,26 +781,73 @@ rows. The sanity checks are in
 
 ## Stage 8. Graph analytics (Phase 5)
 
-**What.** Find evidence paths (the jujube question, walked backwards, for any
-crop: Stage 7's recipe R9 is the first version), hubs (centrality), bridges and
-communities, then draw the first interactive network views.
+![Three questions for the finished graph: evidence paths follow the typed route organism, cluster, compound, pathogen, crop, not the shortest route through a label; hubs have many arrows (antibacterial, 936) and bridges sit on the routes between groups (carotenoid, made by 17 microbes); without proteins the graph splits into 63 communities, modularity 0.778](img/graph_analytics.svg)
 
-**Why.** Until now you have been building the graph; from here on it starts
-*answering*. Every path comes with its evidence chain, and a path is only as strong
-as its weakest arrow.
+**What.** Follow [`07-graph-analytics.md`](07-graph-analytics.md). Until now
+every stage built the graph; this one asks it questions, with one new command,
+`python -m microbegraph.analyze`. It walks back from any crop to candidate
+microbes along a **typed route** (organism, cluster, compound, pathogen, crop),
+ranks the **evidence paths** by their weakest arrow and then by how much an
+experiment backs them, and lists the **single points of failure**: facts that
+some lead rests on entirely, so that the lead would go if one were wrong (for
+a few, a crop would have no lead left). It finds **hubs** (degree) and
+**bridges** (betweenness on the production layer), and **communities** with
+the Louvain method. Proteins get readable labels from MIBiG's GenBank file
+(`genbank_gene`), and the results are CSV files and offline pages in
+`data/processed/analytics/`, beside the database.
+
+```bash
+python tests/fixtures/survey_graph_shape.py               # look first: the shape of the graph
+python -m microbegraph.fetch --tidy-only --source mibig   # keep each protein's GenBank gene name
+python -m microbegraph.resolve                            # the same decisions as Stage 7c
+python -m microbegraph.build_graph                        # every count must match
+python -m microbegraph.analyze --paths jujube             # one crop, every arrow's evidence
+python -m microbegraph.analyze                            # everything, files and pages
+pytest                                                    # 439 promises
+```
+
+**Why.** This is where the graph starts answering. Every path comes with its
+evidence chain, and the look at the data first (Step 2 of the guide) showed why
+the questions need care: the shortest path from jujube to most microbes runs
+through a general label such as "antibacterial", and on the whole graph the
+labels also come out as the biggest "bridges". Choosing which arrows count is
+part of the answer.
 
 **Before you start:** Stage 7c ran the last check Stage 7b handed on, so every
-same-structure join now agrees in 3D or is backed by MIBiG's own structure
-(38 of them by that alone, which a person still has to check against the
-literature), and the 9 compounds it couldn't settle stand alone until a person
-decides (recipe R24). Paths in this stage walk through the graph as it stands
-after Stage 7c.
+same-structure join now agrees in 3D or is backed by MIBiG's own structure.
+Nothing needs installing: NetworkX, plotly and pyvis have been in
+`requirements.txt` since Stage 1.
 
-**Open:** `07-graph-analytics.md`. If the weakest-link idea is new to you, try
-[`interactive/evidence_chain.html`](interactive/evidence_chain.html) first.
-**Checkpoint:** you can print a path from a crop back to candidate microbes, with
-every arrow's evidence shown.
+**New ideas in this stage:** shortest paths and why they mislead in a
+knowledge graph; typed routes (metapaths); ranking paths when their weakest
+links tie; leads; degree, betweenness and centrality; the production layer;
+single points of failure; communities, the Louvain method and modularity;
+random seeds and reproducible results; results beside the database; pages that
+work offline (pyvis, plotly).
+
+**Open:** [`07-graph-analytics.md`](07-graph-analytics.md); recipes R25 and N6
+to N9 in [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md#9-the-same-facts-as-a-graph-networkx-recipes-n1-to-n9);
+[`interactive/hubs_bridges_groups.html`](interactive/hubs_bridges_groups.html)
+to try every measure on a small network, and
+[`interactive/evidence_chain.html`](interactive/evidence_chain.html) if the
+weakest-link idea is new.
+**Checkpoint:** you can print a path from a crop back to candidate microbes,
+with every arrow's evidence shown (`--paths jujube`); `pytest` passes;
+`data/processed/analytics/` holds the full run's nine files and `crop_paths.html`
+opens without an internet connection; the **Actions** tab is green.
+**What you should get:** on the real data (the same downloads as Stage 7c), 10 paths and 9 leads to 5
+crops, every weakest link `curated_literature`; *Bacillus velezensis* FZB42
+carries 4 of the 9 leads, and without it jujube and maize would have none. The
+busiest nodes are the labels antibacterial (936 arrows) and cytotoxic (627);
+the production layer has 7,750 nodes, 6,733 arrows and 1,183 pieces, with
+"*Streptomyces* sp.", *Allostigmatella aurantiaca* Sg a15 and carotenoid as
+its top bridges; Louvain finds 63 communities without the proteins, modularity
+0.778 (a randomly rewired copy of the same graph scores 0.700). 18,289 proteins
+carry a GenBank gene name, 15,812 of them with none from MIBiG's curators, and
+6,668 with none from UniProt either. The graph itself is unchanged: 48,234 nodes, 57,014 arrows,
+ledger 25,789.
 **Commit message:** `feat: add path finding, centrality, and community detection`.
+**Estimated time:** 8-10 hours.
 
 ---
 
@@ -809,6 +857,13 @@ every arrow's evidence shown.
 re-compute the main results with `igraph` as an independent cross-check, and run
 **permutation tests**, which ask whether the structure is stronger than in
 thousands of randomly rewired versions of the graph.
+
+**Before you start:** Stage 8 wrote `data/processed/analytics/node_measures.csv`
+(every node's degree, its betweenness on the production layer and its
+community) and `analytics_summary.json` (63 communities, modularity 0.778, and
+the NetworkX version). Those are the Python results this stage checks from R.
+Stage 8's survey also rewired one copy of the graph at random, and Louvain
+scored 0.700 on it, so the permutation test has a real question to answer.
 
 **Why.** Every network has hubs and clusters, even a random one, so "we found three
 communities" means nothing until you compare it against a null model. Getting the
@@ -1076,7 +1131,10 @@ ritual from [Stage 2](#stage-2-version-control-and-the-end-of-phase-ritual).
 | `No module named 'rdkit'`, pip can't find `rdkit==2025.9.3`, or `[FAIL]  package: rdkit` | [`06c-checking-3d-detail.md`, section 15](06c-checking-3d-detail.md#15-what-could-go-wrong) (usually `.venv` not active, or a Python outside 3.11 to 3.13) |
 | The resolver's 3D check prints other numbers than Stage 7c, says some pairs "couldn't be compared in 3D", or a compound lost its PubChem record | [`06c-checking-3d-detail.md`, section 15](06c-checking-3d-detail.md#15-what-could-go-wrong); recipe R24 lists the compounds left for a person |
 | The review file or the activity synonyms are refused ("has N problem(s)", "names records the graph doesn't have", "can't be joined") | [`curation/README.md`](../curation/README.md); [`06b-closing-the-gaps.md`, section 18](06b-closing-the-gaps.md#18-what-could-go-wrong) |
-| A query fails, finds nothing, or says the database doesn't exist | [`QUERY_COOKBOOK.md`, section 10](QUERY_COOKBOOK.md#10-what-could-go-wrong) |
+| A query fails, finds nothing, or says the database doesn't exist | [`QUERY_COOKBOOK.md`, section 11](QUERY_COOKBOOK.md#11-what-could-go-wrong) |
+| `analyze` says "There's no crop called ...", "N nodes are called ...", or the database doesn't exist | [`07-graph-analytics.md`, section 16](07-graph-analytics.md#16-what-could-go-wrong) |
+| Your communities or modularity differ from Stage 8, a page opens blank, or `hubs_and_bridges.html` shows no chart | [`07-graph-analytics.md`, section 16](07-graph-analytics.md#16-what-could-go-wrong) (another NetworkX version; a page copied without `plotly.min.js`) |
+| Recipe R25 says `Referenced column "genbank_gene" not found`, or the survey still says `none yet` after the MIBiG tidy | The database or the staging table predates Stage 8: [`07-graph-analytics.md`, section 16](07-graph-analytics.md#16-what-could-go-wrong) |
 | Why two records were (or weren't) joined | The ledger: [`QUERY_COOKBOOK.md`, recipes R5 to R8](QUERY_COOKBOOK.md#4-following-the-resolvers-decisions-r5-to-r8), R20 for decisions made by hand, and R23 and R24 for the 3D check |
 | The probe names a newer MIBiG release | Expected; [`ROADMAP.md`, *Watching the sources*](ROADMAP.md#watching-the-sources) says what the plan does about it |
 | A test fails | The test's name says which promise broke; the phase guide's *What could go wrong* table |
@@ -1112,9 +1170,10 @@ ritual from [Stage 2](#stage-2-version-control-and-the-end-of-phase-ritual).
 | [`QUERY_COOKBOOK.md`](QUERY_COOKBOOK.md) | Tested recipes for asking the database questions, SQL in ten minutes, and graph recipes in Python | Stage 7, and whenever you have a question for the graph |
 | [`06b-closing-the-gaps.md`](06b-closing-the-gaps.md) | Phase 4b: GenBank records, keeping every value with its source, PubChem's name search and its rate limits, four clues for a compound, decisions by hand, and the follow-ups after the real run | Stage 7b |
 | [`06c-checking-3d-detail.md`](06c-checking-3d-detail.md) | Phase 4c: stereoisomers, how a SMILES writes 3D, R/S and E/Z, RDKit, comparing two drawings place by place, and a third witness when two sources disagree | Stage 7c |
-| `07-...` to `21-...` | One guide per later phase | As each stage arrives |
+| [`07-graph-analytics.md`](07-graph-analytics.md) | Phase 5: typed routes and evidence paths, ranking leads, degree and betweenness, single points of failure, Louvain communities and modularity, offline pages with pyvis and plotly | Stage 8 |
+| `08-...` to `21-...` | One guide per later phase | As each stage arrives |
 | [`curation/README.md`](../curation/README.md) | The three hand-written files (the bridge, the review file and the activity synonyms): their columns, the confidence scale, how to add a row | Stages 5 and 7b, and whenever you add a finding or a decision |
-| [`tests/fixtures/README.md`](../tests/fixtures/README.md) | Where every test record came from, with fingerprints, and the scripts that look at the real data before each phase | Stages 5-7c, and when a source changes its format |
+| [`tests/fixtures/README.md`](../tests/fixtures/README.md) | Where every test record came from, with fingerprints, and the scripts that look at the real data before each phase | Stages 5-8, and when a source changes its format |
 | [`ROADMAP.md`](ROADMAP.md) | The plan, the reasons for every tool, the product checklist, the source changes being watched | Stage 0, per release, and when a probe names something new |
 | [`GIT-WORKFLOW.md`](GIT-WORKFLOW.md) | Commit messages, the branch flow, fixing git mistakes | Stage 2, and when stuck |
 | [`PRIOR-ART.md`](PRIOR-ART.md) | Related work and what this project does not claim | Stage 0 |
@@ -1124,7 +1183,7 @@ ritual from [Stage 2](#stage-2-version-control-and-the-end-of-phase-ritual).
 | [`GLOSSARY.md`](GLOSSARY.md) | Every term, explained for a beginner | Always open |
 | [`phases.csv`](phases.csv) | The plan as data: hours and status per phase | When updating status |
 | [`CHANGELOG.md`](../CHANGELOG.md) | What changed in each version | Each release |
-| [`img/`](img/) and [`interactive/`](interactive/) | The diagrams and open-in-browser explorers (the journey, the ontology, an evidence chain, and real resolution cases clue by clue), plus the scripts that make them | Throughout |
+| [`img/`](img/) and [`interactive/`](interactive/) | The diagrams and open-in-browser explorers (the journey, the ontology, an evidence chain, real resolution cases clue by clue, and hubs, bridges and groups on a small network), plus the scripts that make them | Throughout |
 
 ---
 
@@ -1157,6 +1216,7 @@ mentions it in that same commit, and add a change-log line.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.11 | 2026-10-18 | Phase 5 built and run: Stage 8 rewritten around the new guide, with two new pictures (the three questions, and what each crop's leads rest on) and a new interactive page (hubs, bridges and groups on a small made-up network). A new command, `python -m microbegraph.analyze`, ranks evidence paths along the typed route, lists single points of failure, finds hubs, bridges on the production layer and Louvain communities, and writes CSV files and offline pages to `data/processed/analytics/`. Proteins carry their GenBank gene name as `genbank_gene` (15,812 had none from MIBiG), shown in labels and never used by the resolver. On the real data: 10 paths and 9 leads to 5 crops, FZB42 behind 4 of them; 63 communities, modularity 0.778 (0.700 on a rewired copy); the graph unchanged (439 tests). Stage 9 starts from `node_measures.csv`; three troubleshooting rows for the analytics; the document map lists the Phase 5 guide; the cookbook has 25 SQL and 9 graph recipes, and its last three sections are renumbered (the graph recipes are section 9, *What could go wrong* section 11); the logo's two words no longer touch |
 | 1.10 | 2026-10-13 | Phase 4c built and run: Stage 7c added, with a new picture (the eight centres echinomycin's two records both describe, and what the resolver does with each pair). Clue 2 now compares the two records' chiral centres and double bonds with RDKit, pinned to 2025.9.3 because newer versions have no Intel-Mac install, and counts only when they agree; when they differ, MIBiG's own structure decides. On the real data: 183 pairs, 118 agree, 65 differ; 38 keep MIBiG's number, 17 move to the record PubChem names, 9 compounds wait for a person, kosinostatin's tie is settled, and echinomycin is settled by hand against the literature (1,967 compounds with a PubChem record, eight decisions by hand, ledger 25,789, 398 tests). Stage 8's "before you start" now points at the finished check; Stage 7b notes which of its numbers Stage 7c moves; two troubleshooting rows for RDKit and the 3D check; the document map lists the Phase 4c guide; the resolution cases page has ten cases; the cookbook has 24 SQL recipes |
 | 1.9 | 2026-10-13 | The four follow-ups from Stage 7b, run on the real data: every PubChem number a MIBiG entry lists is a candidate (17 entries list two; round 1 asks about 1,209 numbers, 54 requests in all); clue 2 no longer confirms a record built with an unusual isotope, so ferrichrome joins its own record instead of "[55Fe] Ferrichrome"; the ledger names whose name search found a record nobody joined; KEGG maps no arrow reaches are left out with a ledger row (53 maps became 48). Two ties the first change revealed are settled in the review file (epoxomicin, mureidomycin B), and three compounds now wait for a person (valclavam, corallopyronin, glidobactin). Stage 7b's numbers are the new real ones (48,234 nodes, 57,014 arrows, 1,975 MIBiG compounds with a PubChem record, 80 joins on the formula alone, ledger 25,775, 361 tests), with a new picture of the follow-ups; Stage 8 starts with one remaining check, same-structure joins with different 3D detail (137 of 180); a troubleshooting row for the maps line and the names file being searched again; the resolution cases page has a seventh case |
 | 1.8 | 2026-10-12 | PubChem's name search ran, in PubChem's names file: the web name search was refused after 372 of 1,655 names, so the fetch now downloads `CID-Synonym-filtered.gz` (931 MB) once and searches it on your computer, and round 3 was answered in full on the fourth run that day. Stage 7b's numbers are the real ones now (48,239 nodes, 57,014 arrows, 1,978 MIBiG compounds with a PubChem record, 82 joins on the formula alone, 356 tests); the "still to run" step is gone; Stage 8 starts with the small follow-ups (ferrichrome's record, every PubChem number an entry lists, two small fixes); a troubleshooting row for the names file; the gaps picture, the four-clues picture and the resolution cases page show the real outcomes |

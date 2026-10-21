@@ -428,8 +428,25 @@ means, matching the build log below. Nothing is shown before it exists.*
   ([`06c-checking-3d-detail.md`](docs/06c-checking-3d-detail.md)).
 
   ![Checking the 3D detail of a shared skeleton](docs/img/three_d_check.svg)
-- **Phases 5-9 (Release 1.0, the science):** *(pending)* graph analytics,
-  statistical validation in R, graph machine learning, the app, GraphRAG.
+- **Phase 5. Graph analytics:** ✅ the graph starts answering questions. One
+  command, `python -m microbegraph.analyze`, walks back from any crop to
+  candidate microbes along a typed route (microbe, cluster, compound, pathogen,
+  crop) rather than the shortest path, which on this graph runs through general
+  labels such as "antibacterial". It ranks the paths by their weakest arrow,
+  then by how much an experiment backs them, and shows every arrow's evidence:
+  10 paths and 9 leads to 5 crops. It also lists the single points of failure:
+  *Bacillus velezensis* FZB42 carries 4 of the 9 leads, and each pathogen rests
+  on one paper. Hubs (the label "antibacterial", 936 arrows), bridges on the
+  production layer (carotenoid, made by 17 microbes) and Louvain communities
+  (63, modularity 0.778, against 0.700 for a randomly rewired copy) come with
+  CSV files and pages that open without an internet connection. 15,812 proteins
+  without a gene name from MIBiG's curators get one from MIBiG's GenBank file.
+  439 offline tests
+  ([`07-graph-analytics.md`](docs/07-graph-analytics.md)).
+
+  ![What each crop's leads rest on](docs/img/single_points.svg)
+- **Phases 6-9 (Release 1.0, the science):** *(pending)* statistical validation
+  in R, graph machine learning, the app, GraphRAG.
 - **Phases 10-13 (Release 2.0, the platform):** *(pending)* dbt, PostgreSQL +
   Apache AGE + pgvector, Airflow, Snowflake portability.
 - **Phases 14-19 (Release 3.0, the product):** *(pending)* FastAPI, React +
@@ -471,7 +488,7 @@ tool is there, and says openly which one is the weakest fit.
 | 4 | [Entity resolution & building the graph](docs/06-entity-resolution-graph-build.md) | DuckDB, NetworkX, the resolution ledger, SQL, a tested [query cookbook](docs/QUERY_COOKBOOK.md) | ✅ |
 | 4b | [Closing the gaps: names, GenBank and a review file](docs/06b-closing-the-gaps.md) | MIBiG's GenBank file, PubChem's name search, every value kept with its entry, decisions by hand | ✅ |
 | 4c | [The 3D check of same-structure joins](docs/06c-checking-3d-detail.md) | RDKit, how a SMILES writes 3D, R/S and E/Z, a third witness | ✅ |
-| 5 | Graph analytics: paths, hubs, communities | `plotly`, `pyvis` | ⬜ |
+| 5 | [Graph analytics: paths, hubs, communities](docs/07-graph-analytics.md) | `plotly`, `pyvis`, typed routes, centrality, Louvain communities, single points of failure | ✅ |
 | 6 | Statistical validation in R | R, `igraph`, `renv`, permutation tests | ⬜ |
 | 7 | Graph machine learning | `scikit-learn`, node2vec, honest evaluation | ⬜ |
 | 8 | The Streamlit app | Streamlit, read-only SQL console | ⬜ |
@@ -525,7 +542,8 @@ Read them in this order:
 | 06 | [Entity resolution and the graph build](docs/06-entity-resolution-graph-build.md) | Deciding when two records are one thing, and writing down why; formulas and isomers; union-find; a database, SQL, keys and views; one source of truth in two shapes |
 | 06b | [Closing the gaps](docs/06b-closing-the-gaps.md) | GenBank records and gene names; keeping every value with its source; asking a public service politely, and HTTP 429; four clues for a compound; a person's decisions in a pipeline run by rules |
 | 06c | [Checking 3D detail](docs/06c-checking-3d-detail.md) | Stereoisomers; how a SMILES writes 3D; R/S and E/Z; comparing two drawings place by place; symmetry; a third witness when two sources disagree |
-|  | [Query cookbook](docs/QUERY_COOKBOOK.md) | SQL in ten minutes, then 24 tested SQL recipes and 5 graph recipes for asking the graph questions |
+| 07 | [Graph analytics](docs/07-graph-analytics.md) | Why the shortest path misleads, and typed routes; ranking evidence paths; degree and betweenness; single points of failure; Louvain communities and modularity; reproducible results and offline pages |
+|  | [Query cookbook](docs/QUERY_COOKBOOK.md) | SQL in ten minutes, then 25 tested SQL recipes and 9 graph recipes for asking the graph questions |
 |  | [Roadmap](docs/ROADMAP.md) | The nineteen phases and three releases, the reason for each tool, and what "finished" means |
 |  | [Prior art](docs/PRIOR-ART.md) | What already exists, how this differs, and what it does not claim |
 |  | [Git workflow](docs/GIT-WORKFLOW.md) | The commit message convention, the branch flow, and what to do when something goes wrong |
@@ -580,6 +598,8 @@ without an internet connection, and they're made by
 | [A decision by hand](docs/img/review_row.svg) | a real row of the review file, column by column, and where it lands in the ledger | Phase 4b, curation |
 | [Checking the 3D detail](docs/img/three_d_check.svg) | the eight chiral centres echinomycin's two records both describe, and what the resolver does with each pair that shares a skeleton, with the real counts | Phase 4c, results, Handbook |
 | [Four follow-ups](docs/img/follow_ups.svg) | what changed after the real run, before and after: every PubChem number an entry lists, ferrichrome's tracer record, a clearer ledger sentence, maps no arrow reaches | Phase 4b, Handbook |
+| [Three questions for the graph](docs/img/graph_analytics.svg) | the typed route against the shortest one, hubs against bridges, and communities, with the real counts | Phase 5, Handbook |
+| [What each crop's leads rest on](docs/img/single_points.svg) | every crop's leads, compounds and papers, and the one strain behind four of them | Phase 5, results |
 
 | Interactive page (download, then open) | What you can do |
 |---|---|
@@ -587,6 +607,7 @@ without an internet connection, and they're made by
 | [`evidence_chain.html`](docs/interactive/evidence_chain.html) | follow one real chain, filter it by evidence level, and see the weakest link |
 | [`roadmap_timeline.html`](docs/interactive/roadmap_timeline.html) | every phase on one timeline, with hours, status and what each adds |
 | [`resolution_cases.html`](docs/interactive/resolution_cases.html) | ten real cases the resolver had to decide, clue by clue, with what it decided and why (three of them from the 3D check) |
+| [`hubs_bridges_groups.html`](docs/interactive/hubs_bridges_groups.html) | try degree, betweenness (with and without a general label) and communities on a small made-up network, or take a node away and see which microbes still reach the crop |
 
 ---
 
@@ -824,8 +845,9 @@ microbegraph/
 │   │                              DuckDB and NetworkX                         ✅
 │   ├── 06b-closing-the-gaps.md  ← Phase 4b: GenBank, PubChem names, review file ✅
 │   ├── 06c-checking-3d-detail.md ← Phase 4c: the 3D check, with RDKit          ✅
-│   ├── 07..11                   ← Release 1.0: analytics, R validation,
-│   │                              graph ML, app, GraphRAG                     ⬜
+│   ├── 07-graph-analytics.md    ← Phase 5: paths, hubs, bridges, communities  ✅
+│   ├── 08..11                   ← Release 1.0: R validation, graph ML,
+│   │                              app, GraphRAG                               ⬜
 │   ├── 12..15                   ← Release 2.0: dbt, Postgres+AGE+pgvector,
 │   │                              Airflow, Snowflake                          ⬜
 │   ├── 16..21                   ← Release 3.0: FastAPI, React, MCP,
@@ -869,7 +891,12 @@ microbegraph/
 │   │   └── combine.py               ← one node per group; arrows re-pointed       ✅
 │   ├── build_graph.py               ← nodes/edges → DuckDB → NetworkX, compared   ✅
 │   ├── query.py                     ← ask the database: cookbook recipes or your SQL ✅
-│   ├── analytics.py                 ← paths, centrality, communities              ⬜
+│   ├── analyze.py                   ← ask the graph: paths, hubs, bridges, communities ✅
+│   ├── analytics/                   ← the analytics, one file per question (Phase 5)
+│   │   ├── evidence_paths.py        ← typed route, ranking, leads, single points  ✅
+│   │   ├── centrality.py, communities.py ← hubs, bridges, Louvain communities    ✅
+│   │   ├── labels.py                ← readable names (gene first for proteins)    ✅
+│   │   └── pictures.py              ← offline pages with pyvis and plotly         ✅
 │   ├── embed.py                     ← node2vec embeddings (Phase 7)               ⬜
 │   ├── predict.py                   ← link prediction / candidate ranking         ⬜
 │   ├── sql.py                       ← the read-only SQL console engine            ⬜
@@ -883,7 +910,7 @@ microbegraph/
 │
 ├── artifacts/                       ← small precomputed outputs the app reads
 │   ├── graph.graphml                ← the built graph, portable format            ⬜
-│   ├── node_metrics.csv             ← centrality scores per node                  ⬜
+│   ├── node_measures.csv            ← centrality and community per node           ⬜
 │   └── candidate_rankings.csv       ← predicted links, with scores                ⬜
 │
 ├── app/
@@ -922,6 +949,7 @@ microbegraph/
 │   ├── fixtures/capture_mibig_protein_samples.py ← downloads and surveys the protein file ✅
 │   ├── fixtures/capture_resolution_samples.py ← surveys duplicates; cuts the real slice ✅
 │   ├── fixtures/survey_3d_detail.py ← compares same-skeleton pairs two ways (4c) ✅
+│   ├── fixtures/survey_graph_shape.py ← the shape of the graph, before Phase 5   ✅
 │   ├── fixtures/resolve/            ← a real slice of all six sources' tables (Phase 4) ✅
 │   ├── fixtures/mibig/              ← four test records in the MIBiG 4.0 layout, and
 │   │                                  a sample of the protein file (Phase 3b)       ✅
@@ -938,7 +966,8 @@ microbegraph/
 │       ├── staging/                 ← per-source tables: mibig_nodes.csv, ...
 │       ├── nodes.csv, edges.csv     ← the merged graph (Phase 4)
 │       ├── resolution_ledger.csv    ← every merge and refusal, with its grounds
-│       └── microbegraph.duckdb      ← the database the app and analytics read
+│       ├── microbegraph.duckdb      ← the database the app and analytics read
+│       └── analytics/               ← what the analytics found: CSV files and pages (Phase 5)
 │
 ├── .venv/                           ← Python's sealed toolbox. NOT in Git
 └── renv/library/                    ← R's sealed toolbox. NOT in Git
@@ -1011,7 +1040,7 @@ python -m microbegraph.fetch --all          # Phases 1-4b: download, verify, tid
 python -m microbegraph.resolve              # Phase 4: merge aliases, write the ledger
 python -m microbegraph.build_graph          # Phase 4: DuckDB + NetworkX, compared
 python -m microbegraph.query --recipe 9     # Phase 4: microbe -> crop, weakest link named
-python -m microbegraph.analytics            # Phase 5: paths, hubs, communities
+python -m microbegraph.analyze              # Phase 5: paths, hubs, communities
 Rscript R/validate_graph.R                  # Phase 6: null-model validation
 python -m microbegraph.predict              # Phase 7: graph ML + rankings
 

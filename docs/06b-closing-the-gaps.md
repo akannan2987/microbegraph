@@ -1528,7 +1528,7 @@ because of a decision by hand. What does change:
 | Same-structure joins with different 3D detail | 137 of the 180 joins clue 2 makes (echinomycin's among them) | Clue 2 trusts the first InChIKey block, which can't tell two stereoisomers apart. Checked in Phase 4c, which compares the 3D details and lets MIBiG's own structure decide when they differ ([`06c-checking-3d-detail.md`](06c-checking-3d-detail.md)) |
 | Two MIBiG names on one PubChem record | 11 nodes gained a second MIBiG name (16 nodes now hold two) | Most are long-known synonyms (natamycin and pimaricin, netropsin and congocidine). Dixiamycin A and B are now one node too, because PubChem files both names under one record, and pyrrolomycin, a general name, joined pyrrolomycin A's record on the formula alone; whether they should is a person's call |
 | Protein numbers with tied UniProt entries | 40 (42 in Phase 4: CBF82293.1 is settled by hand, and NP_001140431.1 was one of the maize proteins the curators removed) | Each needs a person's reading; the review file is the place |
-| Gene names for proteins without a gene record | 19,759 of the 46,987 CDS in the GenBank file carry a `/gene`, most for proteins MIBiG has no gene record for | Not used yet; [the roadmap](ROADMAP.md#phase-5-graph-analytics) adds them as protein labels in Phase 5, where readable names matter for the network pictures |
+| Gene names for proteins without a gene record | 19,759 of the 46,987 CDS in the GenBank file carry a `/gene`, most for proteins MIBiG has no gene record for | Used from Phase 5 as labels: each protein keeps its GenBank gene name as `genbank_gene`, which the resolver never reads ([`07-graph-analytics.md`, Step 3](07-graph-analytics.md#7-step-3-a-gene-name-for-every-protein-that-has-one)) |
 
 ---
 

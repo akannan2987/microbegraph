@@ -542,7 +542,11 @@ centrality, community detection) so you don't implement them yourself.
 
 ## 9. Layer 5. Analytics: what you can ask a map
 
-The analytics layer asks four families of question.
+The analytics layer asks four families of question. The first three arrived in
+Phase 5 as one command, `python -m microbegraph.analyze`
+([`07-graph-analytics.md`](07-graph-analytics.md)); the fourth is Phase 7. The
+analytics read the graph from the database, read-only, and write their results
+as files beside it in `data/processed/analytics/`, never into it.
 
 ### Paths, "how do I get from A to B?"
 
@@ -553,6 +557,12 @@ bibliography.
 
 This is MicrobeGraph's headline capability, and it's something no single source
 database can do.
+
+The shortest route is the wrong tool for it, though. Most nodes are linked by a
+few general ones (936 compounds share the activity label "antibacterial"), so
+the shortest walk from jujube reaches 592 microbes in six steps or fewer, nearly all
+through a label. The paths therefore follow a **typed route**, microbe,
+cluster, compound, pathogen, crop, and are ranked by their weakest arrow.
 
 ### Centrality, "who are the important dots?"
 
@@ -571,6 +581,13 @@ You'll use two flavours:
 Betweenness is often the more interesting one, because bridges are where
 knowledge is thin and where a single missing fact does the most damage.
 
+Which arrows count changes the answer. On the whole graph both measures crown
+the general labels, so Phase 5 looks for bridges on the production layer only
+(who makes what, and what it does to a pathogen). On the disease side, the same
+question is answered more directly by listing **single points of failure**: the
+facts every path of a lead uses. Today one strain, *Bacillus velezensis*
+FZB42, carries 4 of the 9 leads.
+
 ### Communities, "which dots cluster together?"
 
 In a social network, groups of friends emerge without anyone labelling them:
@@ -580,7 +597,9 @@ automatically.
 In MicrobeGraph, communities tend to correspond to biological themes: a cluster
 of related organisms making chemically related compounds against related
 diseases. A cluster the biology didn't predict is the kind of result worth
-investigating.
+investigating. Phase 5's Louvain run, without the proteins, finds 63 groups
+that read as themes (a genus, an activity, a chemical family); Phase 6 checks
+them against randomly rewired graphs.
 
 ### Link prediction, "which arrow is probably missing?"
 
@@ -619,12 +638,19 @@ same; it comes out far faster because the slow work happened earlier, once.
 So the heavy work runs on your laptop and writes:
 
 - `artifacts/graph.graphml`, the built graph in a portable standard format
-- `artifacts/node_metrics.csv`, centrality scores per node
+- `artifacts/node_measures.csv`, centrality scores and communities per node
 - `artifacts/candidate_rankings.csv`, the predicted links, with scores
 
 Because these files are small, they're committed to Git, so the deployed app
 has them immediately. The app only has to *read*, which is why it can be free,
 fast and reliable.
+
+Until the app exists, the analytics write their results to
+`data/processed/analytics/` on your own computer (Phase 5: `node_measures.csv`
+with every node's degree, betweenness and community, the ranked crop paths, and
+pages to open in a browser). Like everything in `data/`, they're rebuilt from
+the sources rather than committed; the app phase picks the small files it needs
+into `artifacts/`.
 
 ---
 
@@ -794,7 +820,7 @@ surfactin.*
 | 6 | Resolution | MIBiG's and NCBI's records of FZB42 become one node; MIBiG's protein number for srfAA joins its UniProt entry; old identifiers kept as aliases | `data/processed/resolution_ledger.csv` |
 | 7 | Storage (truth) | The nodes and edges are written, each with source and evidence level | `data/processed/microbegraph.duckdb` |
 | 8 | Storage (shape) | The same rows are loaded as dots and arrows | NetworkX graph in memory |
-| 9 | Analytics | Surfactin turns out to sit on many shortest paths, high betweenness | `artifacts/node_metrics.csv` |
+| 9 | Analytics | The typed route finds FZB42, its cluster, surfactin, *Botrytis cinerea* and jujube, and ranks the path with each arrow's evidence | `data/processed/analytics/crop_paths.csv` |
 | 10 | Artifacts | The graph and metrics are saved as small files | `artifacts/` |
 | 11 | App | A user searching "grey mould" sees a chain passing through surfactin | the browser |
 | 12 | AI layer | GraphRAG hands that chain to a language model, which explains it in plain English, citing the MIBiG accession | the browser |
@@ -854,6 +880,12 @@ find the *why* behind a design more useful to remember than the design itself.
    The container files are written once and work with both engines rather than
    maintaining two configurations: see
    [`CONTAINERIZATION.md`](CONTAINERIZATION.md).
+11. **Analysis reads the truth and writes beside it.** The analytics open the
+   database read-only and write their results as separate files, so a mistake
+   in an analysis can never change a fact, and every result can be recomputed
+   from the database at any time. Every list is sorted with a tie-break and every
+   random choice uses a fixed seed, so the result tables come out the same on every run
+   (Phase 5).
 
 ---
 

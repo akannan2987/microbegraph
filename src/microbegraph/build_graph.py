@@ -152,6 +152,7 @@ CREATE VIEW compounds AS
     FROM nodes WHERE node_type = 'Compound';
 CREATE VIEW proteins AS
     SELECT node_id, name, properties->>'gene_name' AS gene_name,
+           properties->>'genbank_gene' AS genbank_gene,
            properties->>'product' AS product,
            properties->>'uniprot_accession' AS uniprot_accession,
            properties->>'protein_names' AS uniprot_name,

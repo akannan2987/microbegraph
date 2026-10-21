@@ -145,7 +145,9 @@ def test_surfactins_cluster_encodes_every_protein_in_the_file(make_adapter, arch
     assert props(ycic) == {
         "protein_id": "CAE02619.1", "id_type": "insdc", "product": "YciC protein",
         "locations": "BGC0000433:64-1341:+", "sequence_length": 425,
-        "sequence_md5": "8d735b44bddcae1d870998ad270ca816", "found_in": "protein_file"}
+        "sequence_md5": "8d735b44bddcae1d870998ad270ca816", "found_in": "protein_file",
+        # Phase 5: the gene name MIBiG's GenBank file gives it, for labels
+        "genbank_gene": "yciC"}
     encodes = edges[("mibig:BGC0000433", "ENCODES", "ncbiprotein:CAE02619.1")]
     assert encodes["evidence_level"] == "database_assertion"
     assert encodes["confidence"] == "0.50"

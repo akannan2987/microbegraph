@@ -396,7 +396,16 @@ way a forwarding address still reaches you after a move.
 route between other nodes*, which makes it a kind of "bridge" score. A road
 junction can be quiet itself and still break half the city's journeys if it
 closes; that junction has high betweenness. This often tells you more than raw
-popularity does.
+popularity does. NetworkX scales it from 0 to 1. On MicrobeGraph's whole graph
+it crowns general labels such as "antibacterial", so Phase 5 computes it on the
+**production layer** instead.
+
+**Bridge**: in this project, a node with high betweenness: one that lies on many
+of the shortest routes between other nodes, so taking it away would pull groups
+apart. On the production layer the biggest are microbes with many clusters and
+compounds made by several unrelated microbes, such as carotenoid (Phase 5). (In
+textbook graph theory a "bridge" is an *arrow* whose removal splits the graph;
+the guides always mean the node.)
 
 **Canonical numbering**: a fixed way of numbering the atoms of a molecule (or
 the nodes of any graph) that gives the same numbers to the same structure
@@ -406,10 +415,13 @@ be matched atom for atom. RDKit's version is `CanonicalRankAtoms` (Phase 4c).
 **Centrality**: any measure of how important a node is within a graph. There
 are several kinds because "important" means different things.
 
+**Community**: a group of nodes with many arrows inside the group and few to the
+rest of the graph. Phase 5 finds 63 in the graph without proteins.
+
 **Community detection**: automatically finding clumps of nodes that are more
 connected to each other than to the rest. Your own social network has them:
 school friends and colleagues form visible clusters without anyone labelling
-them.
+them. MicrobeGraph uses the **Louvain method** (Phase 5).
 
 **CURIE** ("Compact URI", pronounced *curie*): an identifier written as
 `prefix:localid`, e.g. `ncbitaxon:326423`. The prefix says whose numbering
@@ -424,8 +436,8 @@ source, because no rule could make it correctly. Since Phase 4b it goes in the
 **review file**, with a reason and a citation, and the ledger records it under
 its own rule, `reviewed_by_hand`, so it's never mistaken for a rule's decision.
 
-**Degree**: how many arrows touch a node, which you can read as its "popularity"
-score.
+**Degree**: how many arrows touch a node, in or out, which you can read as its
+"popularity" score. Nodes with a high degree are **hubs**.
 
 **Directed graph (DiGraph)**: a graph where arrows have a direction. *A
 produces B* is not the same statement as *B produces A*. MicrobeGraph is
@@ -457,6 +469,11 @@ the answer. See also *RAG*.
 
 **Hop**: one step along one arrow. A "three-hop path" crosses three arrows.
 
+**Hub**: a node with many arrows (a high degree). MicrobeGraph's biggest are
+labels and groups: the activity "antibacterial" (936 arrows), "cytotoxic" (627)
+and the genus *Streptomyces* (399). A label 936 compounds share says little
+about any one of them.
+
 **Isolated node**: a node with no arrow to or from anything (degree 0). In a
 knowledge graph it says nothing, since every fact is an arrow. MicrobeGraph's
 resolver takes out KEGG maps that end up isolated, because every compound KEGG
@@ -467,9 +484,26 @@ follow-ups).
 are meaningful relationships between them, usually with provenance attached.
 MicrobeGraph is one.
 
+**Lead**: one microbe, one compound, one pathogen and one crop joined by at least
+one evidence path (Phase 5). A microbe with two clusters for the same compound
+has two paths but one lead. On today's data there are 9 leads to 5 crops.
+
 **Link prediction**: scoring arrows that *don't* exist yet, to guess which ones
 probably should. Social networks do this when they suggest "People you may
 know". In this project the output is always a hypothesis, never a finding.
+
+**Louvain method**: a way of finding communities (Blondel and colleagues, 2008,
+written at the university in Louvain-la-Neuve). It starts with every node alone,
+moves each node into the neighbouring group that raises the **modularity** most,
+then treats each group as one node and repeats until nothing improves. It visits
+nodes in a random order, so MicrobeGraph fixes the **random seed** (42).
+
+**Metapath** (also *typed route*): a path pattern written in node and arrow types
+instead of particular nodes. MicrobeGraph's evidence paths follow one: Organism
+`HARBORS` GeneCluster `PRODUCES` Compound `INHIBITS` Pathogen `INFECTS` Crop
+(Phase 5). It keeps a path from wandering through general labels, the way a
+recipe that says "flour, then eggs, then milk" won't let you start with the
+salt.
 
 **Naming identifier**: the one identifier a merged node keeps, taken from the most
 specific public authority: a PubChem compound before MIBiG's own compound name,
@@ -493,7 +527,14 @@ decision with the replay attached, can be checked. The review file is this
 project's only override, and every use of it is in the ledger.
 
 **Path**: a sequence of arrows leading from one node to another. Paths are the
-core output of this project, because each one is an evidence chain.
+core output of this project, because each one is an evidence chain. Since
+Phase 5 they follow a **metapath** and are ranked by their **weakest link**.
+
+**Production layer**: the part of MicrobeGraph that says who makes what and what
+it does to a pathogen: only the `HARBORS`, `PRODUCES`, `INHIBITS` and `INFECTS`
+arrows, without labels, the family tree or proteins. On the real data it has
+7,750 nodes, 6,733 arrows and 1,183 separate pieces. Phase 5 looks for
+**bridges** there.
 
 **Property**: a piece of information attached to a node or edge, e.g. a
 compound's molecular weight.
@@ -502,13 +543,22 @@ compound's molecular weight.
 types, these constraints.
 
 **Shortest path**: the route between two nodes crossing the fewest arrows. The
-graph equivalent of "fastest route".
+graph equivalent of "fastest route". In a knowledge graph it can mislead:
+ignoring directions, jujube is six steps or fewer from 592 microbes, almost all through
+a shared label. That's why evidence paths follow a **metapath** (Phase 5).
+
+**Single point of failure**: a fact (a node, or a paper) that every path of a
+lead uses, so the lead would be lost if the fact turned out wrong. On today's
+data *Bacillus velezensis* FZB42 is the biggest: 4 of the 9 leads (Phase 5,
+`single_points.csv`).
 
 **Subtype (a kind of)**: a node type that is a special case of another, and may do
 anything the other may. In MicrobeGraph a Pathogen is a kind of Organism (since
 Phase 4), so a pathogen may harbour gene clusters and sit in the family tree,
 while an ordinary Organism still can't infect a crop. A sports car is a kind of
 car: it may park wherever cars may, but not every car is allowed on the track.
+
+**Typed route**: see **metapath**.
 
 **Union-find** (also *disjoint-set forest*): a small data structure that keeps
 track of which items belong together while groups are joined one pair at a
@@ -523,8 +573,10 @@ and lists every value with the record that gave it, e.g.
 witness statements: the disagreement stays visible (Phase 4b).
 
 **Weakest link**: the least certain arrow along a path. A chain of evidence is only
-as strong as its weakest arrow, so the cookbook's recipe R9, and the analytics
-from Phase 5, name it for every path.
+as strong as its weakest arrow, so the cookbook's recipe R9 and the analytics of
+Phase 5 name it for every path. When weakest links tie, Phase 5 ranks by the
+number of arrows an experiment backs, then by the confidence of the weakest
+arrows.
 
 ---
 
@@ -622,12 +674,22 @@ mis-clicks.
 **pip**: Python's package installer, the command that fetches and installs
 libraries.
 
+**plotly**: a Python library for interactive charts in the browser: hover for
+values, drag to zoom, save as a picture. Phase 5 draws hubs against bridges with
+it, and the page loads `plotly.min.js` from beside it, so it opens without an
+internet connection.
+
 **pyproject.toml**: the standard file describing a Python project: its name,
 where its code lives, and how its tools (pytest, ruff) are set up. If the
 project is a box, this is the label on it.
 
 **Python**: the programming language this project is written in. I chose it for
 readability, and because every library the project needs already exists in it.
+
+**pyvis**: a Python library that turns nodes and arrows into an interactive
+network page (drag, zoom, hover), using the JavaScript library **vis-network**.
+Phase 5's pages carry vis-network inside them (`cdn_resources="in_line"`), so
+they ask no website for anything.
 
 **RDKit**: the free chemistry library for Python (BSD licence) this project uses
 to read SMILES strings and compare how molecules sit in 3D (Phase 4c). It is
@@ -1073,7 +1135,9 @@ Phase 3b the removals are applied and each one is listed in
 **GenBank record**: the text format NCBI and its partners have used since the
 1980s to describe a piece of DNA: a header, a **FEATURES** table saying what sits
 where (each gene that codes for a protein is a **CDS**), and the DNA itself.
-MIBiG publishes one per entry, in its GenBank file.
+MIBiG publishes one per entry, in its GenBank file. Since Phase 5 each protein
+keeps the first `/gene` of its CDS as `genbank_gene`, for readable labels; the
+resolver never reads it.
 
 **ID mapping**: UniProt's service for translating identifiers from another
 database (an INSDC or RefSeq protein number, for example) into UniProt
@@ -1256,6 +1320,16 @@ half larger. Unlike an average, a few giant values can't drag it up: the median
 protein in MIBiG's protein file is 344 amino acids long, although the longest is
 18,447.
 
+**Modularity**: a score for how well a split into communities fits a graph: the
+arrows inside the groups compared with what a random wiring would give if every
+node kept its number of arrows. It runs from below 0 to just under 1, and
+networks with clear groups typically score about 0.3 to 0.7 (Newman and Girvan,
+2004). A method that searches for the best split finds a high score even in
+graphs wired at random (Guimerà, Sales-Pardo and Amaral, 2004), so one score
+proves little. MicrobeGraph's graph without proteins scores 0.778 and a
+randomly rewired copy of it 0.700 (Phase 5); Phase 6 checks the real score
+against a **null model**.
+
 **Normalise (text)**: put text into a consistent form before comparing:
 lowercase, trimmed, punctuation stripped. It stops `Surfactin ` and `surfactin`
 from being treated as different things. Phase 4 calls the result a *name key*,
@@ -1273,6 +1347,11 @@ fixed, and asking how often the shuffled version is as extreme as the real one.
 If the real result beats 999 of 1,000 shuffles, chance is an unlikely
 explanation. Card players will recognise the idea: deal the same cards thousands
 of times and see how often a hand as good as yours turns up.
+
+**Random seed**: the starting number of a program's random choices. The same seed
+gives the same "random" choices on every run, so results can be repeated. Phase
+5 uses 42 for the Louvain method and for the sample of starting nodes in the
+whole-graph betweenness estimate.
 
 ---
 

@@ -1,4 +1,4 @@
-[← Handbook](HANDBOOK.md) · [README](../README.md) · [Glossary](GLOSSARY.md) · [Roadmap](ROADMAP.md) · [Phase 4 guide](06-entity-resolution-graph-build.md) · [Phase 4b guide](06b-closing-the-gaps.md) · [Phase 4c guide](06c-checking-3d-detail.md)
+[← Handbook](HANDBOOK.md) · [README](../README.md) · [Glossary](GLOSSARY.md) · [Roadmap](ROADMAP.md) · [Phase 4 guide](06-entity-resolution-graph-build.md) · [Phase 4b guide](06b-closing-the-gaps.md) · [Phase 4c guide](06c-checking-3d-detail.md) · [Phase 5 guide](07-graph-analytics.md)
 
 # Query cookbook
 
@@ -11,21 +11,25 @@ exists ([`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build
 Step 10). No SQL knowledge is needed: section 2 teaches the little you need, and
 each recipe explains its own new piece.
 
-**What's here:** 24 SQL recipes (R1 to R24) and 5 graph recipes in Python
-(N1 to N5). R20 to R22 arrived with Phase 4b
-([`06b-closing-the-gaps.md`](06b-closing-the-gaps.md)), and R23 and R24 with
-the 3D check of Phase 4c ([`06c-checking-3d-detail.md`](06c-checking-3d-detail.md)). Recipes in Cypher, the query language of graph databases, join them
+**What's here:** 25 SQL recipes (R1 to R25) and 9 graph recipes in Python
+(N1 to N9). R20 to R22 arrived with Phase 4b
+([`06b-closing-the-gaps.md`](06b-closing-the-gaps.md)), R23 and R24 with
+the 3D check of Phase 4c ([`06c-checking-3d-detail.md`](06c-checking-3d-detail.md)),
+and R25 and N6 to N9 with the graph analytics of Phase 5
+([`07-graph-analytics.md`](07-graph-analytics.md)). Recipes in Cypher, the query language of graph databases, join them
 in Phase 11, when the graph also moves into PostgreSQL with Apache AGE
 ([`ROADMAP.md`](ROADMAP.md#phase-11-postgresql--apache-age--pgvector)).
 
 **How the recipes stay correct:** [`tests/test_query.py`](../tests/test_query.py)
 runs every recipe in this file, SQL and Python, on a small real slice of the
 graph each time the tests run, locally and on GitHub. A recipe that stops
-working fails the build. The answers shown below come from the full build of
-2026-10-13 after Phase 4c (MIBiG 4.0 with its GenBank file, UniProt 2026_03,
-the PubChem snapshot with the name search, and the 3D check,
-[`06c-checking-3d-detail.md`, Step 6](06c-checking-3d-detail.md#10-step-6-run-it-on-your-data));
-yours match if you built from the same downloads.
+working fails the build. The answers shown below come from the full build
+after Phase 5 (MIBiG 4.0 with its GenBank file, UniProt 2026_03, the PubChem
+snapshot with the name search, the 3D check of Phase 4c, and the GenBank gene
+names of [`07-graph-analytics.md`, Step 3](07-graph-analytics.md#7-step-3-a-gene-name-for-every-protein-that-has-one)).
+Phase 5 added a property and changed no node or arrow, so every answer from R1
+to R24 and N1 to N5 is the same as after Phase 4c; yours match if you built
+from the same downloads.
 
 > Every term here is also in [`GLOSSARY.md`](GLOSSARY.md). How the database is
 > built is in [`06-entity-resolution-graph-build.md`](06-entity-resolution-graph-build.md).
@@ -41,9 +45,10 @@ yours match if you built from the same downloads.
 5. [Questions about the science (R9 to R16)](#5-questions-about-the-science-r9-to-r16)
 6. [Housekeeping (R17 to R19)](#6-housekeeping-r17-to-r19)
 7. [Decisions by hand and disagreements (R20 to R24)](#7-decisions-by-hand-and-disagreements-r20-to-r24)
-8. [The same facts as a graph: NetworkX recipes (N1 to N5)](#8-the-same-facts-as-a-graph-networkx-recipes-n1-to-n5)
-9. [Writing a recipe of your own](#9-writing-a-recipe-of-your-own)
-10. [What could go wrong](#10-what-could-go-wrong)
+8. [What proteins are called (R25)](#8-what-proteins-are-called-r25)
+9. [The same facts as a graph: NetworkX recipes (N1 to N9)](#9-the-same-facts-as-a-graph-networkx-recipes-n1-to-n9)
+10. [Writing a recipe of your own](#10-writing-a-recipe-of-your-own)
+11. [What could go wrong](#11-what-could-go-wrong)
 
 ---
 
@@ -1019,7 +1024,56 @@ decision in `curation/resolution_decisions.csv` once a paper settles it
 
 ---
 
-## 8. The same facts as a graph: NetworkX recipes (N1 to N5)
+## 8. What proteins are called (R25)
+
+### R25. Where does each protein's gene name come from?
+
+A protein's gene name can come from three places, and the labels in the graph
+analytics try them in this order: MIBiG's curators (`gene_name`, in a
+cluster's gene records), MIBiG's GenBank file (`genbank_gene`, from Phase 5),
+and UniProt's list of gene names. This recipe counts each protein once, under
+the first place that gives it one.
+
+```sql
+SELECT CASE
+           WHEN gene_name IS NOT NULL THEN '1. MIBiG gene record'
+           WHEN genbank_gene IS NOT NULL THEN '2. GenBank file'
+           WHEN (properties->>'gene_names') IS NOT NULL THEN '3. UniProt only'
+           ELSE '4. none'
+       END AS gene_name_from,
+       count(*) AS proteins
+FROM proteins
+JOIN nodes USING (node_id)
+GROUP BY gene_name_from
+ORDER BY gene_name_from;
+```
+
+You should see:
+
+```
+gene_name_from        proteins
+--------------------  --------
+1. MIBiG gene record  3908
+2. GenBank file       15812
+3. UniProt only       4850
+4. none               14784
+(4 rows)
+```
+
+`CASE ... WHEN ... THEN ... END` picks the first `WHEN` that is true, like a
+row of sieves with the finest at the top. The `proteins` view has no column
+for UniProt's gene names, so `JOIN nodes USING (node_id)` brings in each
+protein's full `properties` (`USING (node_id)` is a short way of writing
+`ON proteins.node_id = nodes.node_id`). The numbers at the start of each label
+make `ORDER BY` list the places in the order they are tried. The 15,812 in the
+second row are the proteins whose label takes its gene from the GenBank file
+since Phase 5. UniProt names 9,144 of them too, so for 6,668 the GenBank file
+is the only source of a gene name
+([`07-graph-analytics.md`, Step 3](07-graph-analytics.md#7-step-3-a-gene-name-for-every-protein-that-has-one)).
+
+---
+
+## 9. The same facts as a graph: NetworkX recipes (N1 to N9)
 
 SQL is good at counting and filtering. Walking from dot to dot is easier in a
 graph library, and NetworkX is the one this project uses. `load_graph()` builds
@@ -1167,9 +1221,125 @@ one node now, named `baeI`. The map arrived with PubChem's name search: it
 moved bacilysin to the record PubChem files its name under, 86583338, and KEGG
 places that record on map00998.
 
+### From Phase 5: the analytics functions (N6 to N9)
+
+The next four recipes use the functions behind `python -m microbegraph.analyze`
+([`07-graph-analytics.md`](07-graph-analytics.md)), so you can ask the same
+questions from Python and change them.
+
+### N6. Rank the leads to a crop
+
+```python
+from microbegraph.analytics.evidence_paths import group_leads, paths_to_crop
+from microbegraph.build_graph import load_graph
+
+G = load_graph()
+leads = group_leads(G, paths_to_crop(G, "mg.crop:wheat"))
+for number, lead in enumerate(leads, start=1):
+    best = lead.best
+    print(number, G.nodes[lead.organism]["name"], "->", G.nodes[lead.compound]["name"],
+          "| weakest:", best.weakest, "| experiments:", best.experiments,
+          "| paths:", len(lead.paths))
+```
+
+You should see:
+
+```
+1 Bacillus velezensis FZB42 -> bacillomycin D | weakest: curated_literature | experiments: 2 | paths: 1
+2 Pseudomonas fluorescens -> 2,4-diacetylphloroglucinol | weakest: curated_literature | experiments: 2 | paths: 2
+```
+
+`paths_to_crop` walks backwards from the crop along the typed route, microbe,
+cluster, compound, pathogen, crop, and sorts the paths by the ranking in the
+guide (weakest link, then experiments, then the confidence of the weakest
+arrows). `group_leads` puts the two paths from *Pseudomonas fluorescens* (two
+clusters, one compound) into one lead. Change `wheat` to any crop R9 lists.
+
+### N7. The busiest nodes
+
+```python
+from microbegraph.build_graph import load_graph
+
+G = load_graph()
+busiest = sorted(G.degree, key=lambda nd: (-nd[1], nd[0]))[:5]
+for node, degree in busiest:
+    print(degree, G.nodes[node]["node_type"], G.nodes[node]["name"])
+```
+
+You should see:
+
+```
+936 Activity antibacterial
+627 Activity cytotoxic
+399 Organism Streptomyces
+368 Activity antifungal
+188 Activity inhibitor
+```
+
+`G.degree` gives every node with its number of arrows, in and out. The `key`
+sorts the biggest first and breaks ties by identifier, so the list never
+shuffles. Four of the five are activity labels: busy because they are general.
+
+### N8. Bridges on the production layer
+
+```python
+from microbegraph.analytics.centrality import betweenness, layer, top_nodes
+from microbegraph.build_graph import load_graph
+
+G = load_graph()
+values = betweenness(layer(G))
+for node, value in top_nodes(values, 5):
+    print(f"{value:.5f}", G.nodes[node]["node_type"], G.nodes[node]["name"])
+```
+
+You should see (after half a minute or so):
+
+```
+0.00355 Organism Streptomyces sp.
+0.00307 Organism Allostigmatella aurantiaca Sg a15
+0.00301 Compound carotenoid
+0.00298 Organism Myxococcus xanthus DK 1622
+0.00284 Organism Myxococcus xanthus
+```
+
+`layer(G)` keeps only the `HARBORS`, `PRODUCES`, `INHIBITS` and `INFECTS`
+arrows, without directions; `betweenness` scores how often each node lies on
+the shortest routes between the others. Pass other arrow types to `layer`, for
+example `layer(G, ("HARBORS", "PRODUCES", "HAS_ACTIVITY"))`, and watch the
+labels take over the top.
+
+### N9. Which community is jujube in?
+
+```python
+from collections import Counter
+
+from microbegraph.analytics.communities import find_communities, without_proteins
+from microbegraph.build_graph import load_graph
+
+G = load_graph()
+found = find_communities(without_proteins(G))
+home = next(c for c in found if "mg.crop:jujube" in c)
+print("jujube's community has", len(home), "nodes")
+print(sorted(Counter(G.nodes[n]["node_type"] for n in home).items()))
+```
+
+You should see:
+
+```
+jujube's community has 104 nodes
+[('Compound', 49), ('Crop', 1), ('GeneCluster', 17), ('Organism', 35), ('Pathogen', 1), ('Pathway', 1)]
+```
+
+`find_communities` runs the Louvain method with seed 42 and returns the groups
+biggest first; `next(...)` picks the first group that holds jujube. The 35
+organisms are mostly fungi: *Botrytis cinerea*'s relatives in the family tree,
+with surfactin and a *Botrytis* strain's botrydial cluster. *Bacillus
+velezensis* FZB42, jujube's one lead, sits in another group, the *Bacillus*
+one (41).
+
 ---
 
-## 9. Writing a recipe of your own
+## 10. Writing a recipe of your own
 
 1. **Start from the recipe closest to your question.** Copy its SQL into
    `python -m microbegraph.query "..."`, or into Python.
@@ -1186,7 +1356,7 @@ places that record on map00998.
 
 ---
 
-## 10. What could go wrong
+## 11. What could go wrong
 
 | Symptom | Cause | Fix |
 |---|---|---|

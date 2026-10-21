@@ -2,13 +2,15 @@
 MicrobeGraph, the interactive teaching pages.
 
 WHAT THIS SCRIPT DOES
-    Writes four self-contained web pages into docs/interactive/:
+    Writes five self-contained web pages into docs/interactive/:
 
         ontology_explorer.html    the rulebook: hover a node type or an arrow
         evidence_chain.html       one real chain, with evidence filters
         roadmap_timeline.html     every phase, its hours and its status
         resolution_cases.html     ten real cases the resolver decided, clue by
                                   clue (Phase 4b, its follow-ups and Phase 4c)
+        hubs_bridges_groups.html  hubs, bridges, communities and single points
+                                  of failure on a small made-up network (Phase 5)
 
         python docs/interactive/make_interactive.py
 
@@ -1010,12 +1012,210 @@ pick(CASES[0].id);
     return page("MicrobeGraph resolution cases", style + body, script, dict(mi.LAYER))
 
 
+# =============================================================================
+# 5. Hubs, bridges and groups (Phase 5)
+# =============================================================================
+# A made-up network small enough to check by hand, built to show what the real
+# graph showed: a general label is both the busiest node and, while its arrows
+# count, the biggest bridge; without it, the bridge is what links two groups of
+# producers. "makes" stands for HARBORS and PRODUCES together (no clusters, to
+# keep it small). The numbers are worked out by the project's own functions.
+TOY_NODES = [  # id, type, name, x, y
+    ("k1", "Crop", "a crop", 110, 370), ("p1", "Pathogen", "a mould", 110, 150),
+    ("c1", "Compound", "compound 1", 290, 150), ("m1", "Organism", "microbe A", 290, 370),
+    ("c2", "Compound", "compound 2", 450, 260), ("m2", "Organism", "microbe B", 480, 420),
+    ("c3", "Compound", "compound 3", 640, 420), ("m3", "Organism", "microbe C", 800, 420),
+    ("c5", "Compound", "compound 5", 800, 260), ("m4", "Organism", "microbe D", 990, 400),
+    ("c4", "Compound", "compound 4", 960, 150), ("c6", "Compound", "compound 6", 1110, 260),
+    ("L", "Activity", "antifungal", 620, 90),
+]
+TOY_ARROWS = [  # from, to, type
+    ("m1", "c1", "makes"), ("m1", "c2", "makes"), ("m2", "c2", "makes"), ("m2", "c3", "makes"),
+    ("m3", "c3", "makes"), ("m3", "c5", "makes"), ("m4", "c4", "makes"), ("m4", "c5", "makes"),
+    ("m4", "c6", "makes"), ("c1", "L", "HAS_ACTIVITY"), ("c2", "L", "HAS_ACTIVITY"),
+    ("c4", "L", "HAS_ACTIVITY"), ("c5", "L", "HAS_ACTIVITY"), ("c6", "L", "HAS_ACTIVITY"),
+    ("c1", "p1", "INHIBITS"), ("p1", "k1", "INFECTS"),
+]
+
+
+def centrality_explorer() -> str:
+    import networkx as nx
+
+    from microbegraph.analytics.centrality import betweenness
+    from microbegraph.analytics.communities import find_communities, modularity
+
+    whole = nx.Graph()
+    whole.add_nodes_from(n[0] for n in TOY_NODES)
+    whole.add_edges_from(sorted((a, b) for a, b, _ in TOY_ARROWS))
+    production = whole.subgraph([n for n in whole if n != "L"]).copy()
+    groups = find_communities(whole)
+    measures = {
+        "degree": dict(whole.degree()),
+        "between_all": betweenness(whole),
+        "between_production": betweenness(production),
+        # sorted, so that the page comes out byte for byte the same on every run
+        "group": {n: i for i, members in enumerate(groups, start=1) for n in sorted(members)},
+    }
+    where = {n[0]: (n[3], n[4]) for n in TOY_NODES}
+    shapes = []
+    for a, b, kind in TOY_ARROWS:
+        (x1, y1), (x2, y2) = where[a], where[b]
+        dash = ' stroke-dasharray="6 5"' if kind == "HAS_ACTIVITY" else ""
+        shapes.append(f'<line class="arrow" data-from="{a}" data-to="{b}" x1="{x1}" y1="{y1}" '
+                      f'x2="{x2}" y2="{y2}" stroke="var(--base)" stroke-width="2.5"{dash}/>')
+    r = 26
+    for node_id, kind, name, x, y in TOY_NODES:
+        layer = mi.NODE_INFO[kind][0]
+        shapes.append(
+            f'<g class="hot node" tabindex="0" role="button" data-id="{node_id}" '
+            f'aria-label="{escape(name)}, {kind}">'
+            f'<circle class="ring" cx="{x}" cy="{y}" r="{r + 8}" fill="none" stroke="transparent" '
+            f'stroke-width="6"/>'
+            f'<circle cx="{x}" cy="{y}" r="{r}" fill="var(--surface)" stroke="var(--{layer})" '
+            f'stroke-width="3"/>{mi.icon(kind, x, y, size=r * 1.3, color=mi.LAYER[layer])}'
+            f'<text x="{x}" y="{y + r + 24}" text-anchor="middle" font-size="13.5" font-weight="600" '
+            f'paint-order="stroke" stroke="var(--surface)" stroke-width="5">{escape(name)}</text>'
+            f'<text class="value" x="{x}" y="{y - r - 14}" text-anchor="middle" font-size="13" '
+            f'font-weight="700" paint-order="stroke" stroke="var(--surface)" stroke-width="5"></text>'
+            f'</g>')
+    svg = (f'<svg viewBox="0 0 1180 480" role="group" aria-label="A small network">'
+           f"{''.join(shapes)}</svg>")
+    modes = [("degree", "Hubs: arrows per node (degree)"),
+             ("between_all", "Bridges, every arrow counted"),
+             ("between_production", "Bridges, without the label's arrows"),
+             ("group", "Communities (Louvain)"),
+             ("remove", "Take a node away")]
+    radios = "".join(
+        f'<label><input type="radio" name="mode" value="{m}"{" checked" if i == 0 else ""}> '
+        f'{escape(text)}</label>' for i, (m, text) in enumerate(modes))
+    rows = "".join(
+        f"<tr><td>{escape(name)}</td><td>{kind}</td><td class='num'>{measures['degree'][n]}</td>"
+        f"<td class='num'>{measures['between_all'][n]:.3f}</td>"
+        f"<td class='num'>{measures['between_production'].get(n, 0):.3f}"
+        f"{'' if n in measures['between_production'] else ' (left out)'}</td>"
+        f"<td class='num'>{measures['group'][n]}</td></tr>"
+        for n, kind, name, _x, _y in TOY_NODES)
+    q = modularity(whole, groups)
+    body = f"""
+<h1>Hubs, bridges and groups</h1>
+<p class="lede">A made-up network of four microbes, six compounds, one activity label, a mould and a
+crop, small enough to check by hand. Pick a question below and the numbers above each node change.
+Solid lines are "makes", "inhibits" and "infects"; dashed lines are "has the activity". The numbers
+come from the same functions <span class="mono">python -m microbegraph.analyze</span> uses on the
+real graph.</p>
+<div class="controls" role="radiogroup" aria-label="Question">{radios}</div>
+<div class="card figure">{svg}</div>
+<div class="card panel" id="panel" aria-live="polite"></div>
+<details><summary>The same numbers as a table</summary>
+<table><tr><th>node</th><th>type</th><th class="num">arrows</th><th class="num">betweenness, every
+arrow</th><th class="num">betweenness, without the label</th><th class="num">community</th></tr>{rows}
+</table><p class="muted">Betweenness is scaled from 0 to 1, as NetworkX does (normalized). The
+communities come from the Louvain method with seed 42; modularity {q:.3f}.</p></details>"""
+    nodes = [{"id": n, "type": k, "name": name} for n, k, name, _x, _y in TOY_NODES]
+    arrows = [{"from": a, "to": b, "type": t} for a, b, t in TOY_ARROWS]
+    texts = {
+        "degree": "<h2>Hubs</h2><p>Degree counts the arrows touching a node. The label "
+                  "<b>antifungal</b> has the most (5): every antifungal compound points at it. "
+                  "In the real graph the busiest node is the label antibacterial, with 936 "
+                  "compounds pointing at it.</p>",
+        "between_all": "<h2>Bridges, every arrow counted</h2><p>Betweenness asks how often a node "
+                       "sits on the shortest route between two others. With the label's arrows "
+                       "counted, <b>antifungal</b> wins again: any two antifungal compounds are two "
+                       "steps apart through it. The same happens in the real graph, which is why "
+                       "Phase 5 looks for bridges without the labels.</p>",
+        "between_production": "<h2>Bridges, without the label</h2><p>Take the label's arrows away "
+                              "and only who makes what, and what it does to the mould, is left. "
+                              "Now <b>compound 3</b> and <b>microbe B</b> come first: they are the "
+                              "only link between the producers on the left and on the right, so "
+                              "every route between the two sides runs through them.</p>",
+        "group": f"<h2>Communities</h2><p>The Louvain method moves each node into the group that "
+                 f"raises a score called modularity, until no move helps. Here it finds "
+                 f"{len(groups)} groups (modularity {q:.3f}). Each node's group number is above "
+                 f"it; nodes of a group share a ring colour.</p>",
+        "remove": "<h2>Take a node away</h2><p>Click a node to take it away, and again to bring "
+                  "it back. The panel says which microbes still reach the crop along the route "
+                  "microbe, makes, compound, inhibits, pathogen, infects, crop. Try compound 1 "
+                  "(the only compound known to inhibit the mould), then the label.</p>",
+    }
+    script = f"""
+const NODES = {json.dumps(nodes)};
+const ARROWS = {json.dumps(arrows)};
+const M = {json.dumps(measures)};
+const TEXT = {json.dumps(texts)};
+const RING = ['var(--genomics)', 'var(--proteomics)', 'var(--metabolomics)', 'var(--phenotype)',
+              'var(--context)'];
+const panel = document.getElementById('panel');
+const removed = new Set();
+let mode = 'degree';
+function esc(s) {{ const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }}
+function leads() {{
+  const keep = id => !removed.has(id);
+  const out = [];
+  for (const m of NODES.filter(n => n.type === 'Organism' && keep(n.id))) {{
+    for (const a of ARROWS.filter(a => a.from === m.id && a.type === 'makes' && keep(a.to))) {{
+      for (const b of ARROWS.filter(b => b.from === a.to && b.type === 'INHIBITS' && keep(b.to))) {{
+        if (ARROWS.some(c => c.from === b.to && c.type === 'INFECTS' && keep(c.to)))
+          out.push(NODES.find(n => n.id === m.id).name + ' via ' + NODES.find(n => n.id === a.to).name);
+      }}
+    }}
+  }}
+  return out;
+}}
+function draw() {{
+  document.querySelectorAll('.node').forEach(g => {{
+    const id = g.dataset.id, value = g.querySelector('.value'), ring = g.querySelector('.ring');
+    g.classList.toggle('dim', removed.has(id));
+    ring.setAttribute('stroke', 'transparent');
+    if (mode === 'degree') value.textContent = M.degree[id];
+    else if (mode === 'group') {{
+      value.textContent = 'group ' + M.group[id];
+      ring.setAttribute('stroke', RING[(M.group[id] - 1) % RING.length]);
+    }} else if (mode === 'remove') value.textContent = '';
+    else {{
+      const v = M[mode][id];
+      value.textContent = v === undefined ? 'left out' : v.toFixed(3);
+    }}
+  }});
+  document.querySelectorAll('.arrow').forEach(l => {{
+    const gone = removed.has(l.dataset.from) || removed.has(l.dataset.to)
+      || (mode === 'between_production' && (l.dataset.from === 'L' || l.dataset.to === 'L'));
+    l.classList.toggle('dim', gone);
+  }});
+  let html = TEXT[mode];
+  if (mode === 'remove') {{
+    const found = leads();
+    const gone = [...removed].map(id => NODES.find(n => n.id === id).name);
+    html += '<p><b>Taken away:</b> ' + (gone.length ? esc(gone.join(', ')) : 'nothing yet') + '</p>'
+      + '<p><b>Microbes that still reach the crop:</b> '
+      + (found.length ? esc(found.join('; ')) : 'none') + '</p>';
+  }}
+  panel.innerHTML = html;
+}}
+document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', () => {{
+  mode = r.value; if (mode !== 'remove') removed.clear(); draw();
+}}));
+document.querySelectorAll('.node').forEach(g => {{
+  const toggle = () => {{
+    if (mode !== 'remove') return;
+    const id = g.dataset.id;
+    if (removed.has(id)) removed.delete(id); else removed.add(id);
+    draw();
+  }};
+  g.addEventListener('click', toggle);
+  g.addEventListener('keydown', e => {{ if (e.key === 'Enter' || e.key === ' ') {{ e.preventDefault(); toggle(); }} }});
+}});
+draw();
+"""
+    return page("MicrobeGraph hubs, bridges and groups", body, script, mi.LAYER)
+
+
 def main() -> None:
     print("Writing MicrobeGraph interactive pages")
     write("ontology_explorer.html", ontology_explorer())
     write("evidence_chain.html", evidence_chain())
     write("roadmap_timeline.html", roadmap_timeline())
     write("resolution_cases.html", resolution_cases())
+    write("hubs_bridges_groups.html", centrality_explorer())
 
 
 if __name__ == "__main__":

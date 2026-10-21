@@ -7,7 +7,7 @@ phase,short,title,release,effort_low,effort_high,optional,status,doc,adds
 4,Entity resolution,Entity resolution and the graph build,1.0,10,12,no,done,06-entity-resolution-graph-build.md,"DuckDB, NetworkX, the resolution ledger, SQL, query cookbook"
 4b,Closing the gaps,"Closing the gaps: names, GenBank and a review file",1.0,6,8,no,done,06b-closing-the-gaps.md,"MIBiG's GenBank file, PubChem name search, a review file, activity synonyms"
 4c,3D check,The 3D check of same-structure joins,1.0,3,4,no,done,06c-checking-3d-detail.md,"RDKit, how a SMILES writes 3D, R/S and E/Z, a third witness"
-5,Graph analytics,Graph analytics: paths · hubs · communities,1.0,8,10,no,planned,07-graph-analytics.md,"plotly, pyvis, centrality, evidence chains"
+5,Graph analytics,Graph analytics: paths · hubs · communities,1.0,8,10,no,done,07-graph-analytics.md,"plotly, pyvis, centrality, evidence chains, Louvain communities"
 6,Validation in R,Statistical validation in R,1.0,6,8,no,planned,08-statistical-validation-r.md,"R, igraph, renv, permutation tests"
 7,Graph ML,Graph machine learning,1.0,12,14,no,planned,09-graph-machine-learning.md,"scikit-learn, node2vec, honest evaluation"
 8,Streamlit app,The Streamlit app,1.0,10,12,no,planned,10-app-streamlit.md,"Streamlit, read-only SQL console"

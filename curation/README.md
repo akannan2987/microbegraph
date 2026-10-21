@@ -115,6 +115,21 @@ Git's history is this file's provenance log: it records who added each row,
 when and why. That's why a row is never edited silently. If a row turns out to
 be wrong, change it in its own commit that says so.
 
+### Which rows matter most
+
+Every lead from a crop back to a microbe rests on rows of this file, and since
+Phase 5 the graph analytics say how much each one carries. After
+`python -m microbegraph.analyze`, `data/processed/analytics/single_points.csv`
+lists every paper (and every node) some lead rests on entirely, with the leads
+that would be lost if it were wrong. Today each pathogen rests on one paper. A
+row backs both its `INHIBITS` and its `INFECTS` arrow with the same citation,
+so the most useful thing you can add is a second, independent paper that shows
+the same compound acting against the same pathogen on the same crop, in that
+row's `citation`; start with the rows whose loss would leave a crop with no
+lead (the papers behind maize, melon and jujube,
+[`docs/07-graph-analytics.md`, Step 5](../docs/07-graph-analytics.md#9-step-5-hubs-bridges-and-single-points-of-failure)).
+Several papers for one claim go in one row's `citation`, joined with `|`.
+
 ---
 
 ## 2. The review file: decisions made by a person

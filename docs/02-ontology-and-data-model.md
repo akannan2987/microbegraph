@@ -293,6 +293,7 @@ records (Phase 3) and its protein file (Phase 3b):
 | `comment`, `mutation_phenotype` | text | A curator's note, and what happened when the gene was switched off, when MIBiG gives them |
 | `gene_record_id` | text | The id the gene record used, when it isn't the protein number (a locus tag or gene name) |
 | `locus_tags` | text | The genome's label(s) for the gene, from the protein file, joined with `\|` |
+| `genbank_gene` | text | The gene name MIBiG's GenBank file gives this protein (the first `/gene` of its CDS), e.g. `yciC`. Used for labels only; the resolver never reads it (Phase 5) |
 | `locations` | text | Where the gene sits, one per place the protein file lists it, e.g. `BGC0000433:8558-19312:+` |
 | `sequence_length`, `sequence_md5` | number, text | The sequence's length in amino acids and its MD5 fingerprint; the letters stay in the protein file |
 | `found_in` | text | Where the node came from: `gene_records`, `protein_file`, or both |
@@ -627,7 +628,8 @@ a plain column, so the database built in Phase 4 has a **view** for each node
 type with properties worth showing (`organisms`, `compounds`, `proteins`...) with
 the handful of properties we filter
 on most as plain columns. Start simple, and promote a property once there's a
-reason to.
+reason to: `genbank_gene` became a column of the `proteins` view in Phase 5,
+when the labels started using it.
 
 **When a source disagrees with itself** (Phase 4b). Two MIBiG entries can give
 one compound two different values: two formulas, two PubChem numbers. The

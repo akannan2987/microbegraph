@@ -970,8 +970,9 @@ confidence.
 
 UniProt's nodes carry no arrows of their own, so they have no evidence level.
 Their `reviewed`, `protein_existence` and `annotation_score` properties say how
-much UniProt itself knows about each protein, and Phase 5 can use them to rank or
-filter.
+much UniProt itself knows about each protein. Nothing uses them yet: the roadmap
+plans them as features for Phase 7's machine learning and as filters in the app
+(Phase 8).
 
 ---
 
